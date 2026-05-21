@@ -1,3 +1,4 @@
+import { auth } from '@/auth';
 import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -190,7 +191,7 @@ const tools = {
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
         );
         const weatherData = await weatherRes.json();
-        
+
         return {
           location: location || "the requested coordinates",
           latitude: lat,
@@ -266,7 +267,7 @@ const tools = {
         });
 
         const formatted = formatter.format(now);
-        
+
         return {
           location: resolvedLocation,
           timezone: timezone,
@@ -288,8 +289,11 @@ const tools = {
     }),
     execute: async ({ status, priority, search }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const filter: any = {};
+        const filter: any = { userId: session.user.id };
         if (status) filter.status = status;
         if (priority) filter.priority = priority;
         if (search) {
@@ -315,8 +319,11 @@ const tools = {
     }),
     execute: async (data) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const task = await Task.create(data);
+        const task = await Task.create({ ...data, userId: session.user.id });
         return { success: true, task: JSON.parse(JSON.stringify(task)) };
       } catch (error: any) {
         return { success: false, error: error.message };
@@ -337,8 +344,11 @@ const tools = {
     }),
     execute: async ({ id, ...updateData }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const task = await Task.findByIdAndUpdate(id, updateData, { new: true });
+        const task = await Task.findOneAndUpdate({ _id: id, userId: session.user.id }, updateData, { new: true });
         if (!task) return { success: false, error: "Task not found" };
         return { success: true, task: JSON.parse(JSON.stringify(task)) };
       } catch (error: any) {
@@ -354,8 +364,11 @@ const tools = {
     }),
     execute: async ({ id }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const result = await Task.deleteOne({ _id: id });
+        const result = await Task.deleteOne({ _id: id, userId: session.user.id });
         if (result.deletedCount === 0) return { success: false, error: "Task not found" };
         return { success: true, message: "Task deleted successfully" };
       } catch (error: any) {
@@ -371,8 +384,11 @@ const tools = {
     }),
     execute: async ({ status }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const filter: any = {};
+        const filter: any = { userId: session.user.id };
         if (status) filter.status = status;
         const tasks = await ScheduleTask.find(filter).sort({ updatedAt: -1 }).limit(50);
         return { success: true, tasks: JSON.parse(JSON.stringify(tasks)) };
@@ -401,6 +417,9 @@ const tools = {
     }),
     execute: async (data) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
         const normalized = {
           ...data,
@@ -411,7 +430,7 @@ const tools = {
           runAt: data.runAt ? new Date(data.runAt) : undefined,
         };
         const nextRunAt = computeNextRunAt(normalized as any);
-        const task = await ScheduleTask.create({ ...normalized, nextRunAt });
+        const task = await ScheduleTask.create({ ...normalized, nextRunAt, userId: session.user.id });
         return { success: true, task: JSON.parse(JSON.stringify(task)) };
       } catch (error: any) {
         return { success: false, error: error.message };
@@ -439,15 +458,18 @@ const tools = {
     }),
     execute: async ({ id, ...updateData }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const existing = await ScheduleTask.findById(id);
+        const existing = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
         if (!existing) return { success: false, error: "Schedule task not found" };
 
         const normalizedPayload = updateData.payload
           ? {
-              ...updateData.payload,
-              ...(updateData.payload.phone ? { phone: cleanPhone(String(updateData.payload.phone)) } : {}),
-            }
+            ...updateData.payload,
+            ...(updateData.payload.phone ? { phone: cleanPhone(String(updateData.payload.phone)) } : {}),
+          }
           : undefined;
 
         const merged: any = {
@@ -485,8 +507,11 @@ const tools = {
     }),
     execute: async ({ id }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
         await dbConnect();
-        const result = await ScheduleTask.deleteOne({ _id: id });
+        const result = await ScheduleTask.deleteOne({ _id: id, userId: session.user.id });
         if (result.deletedCount === 0) return { success: false, error: "Schedule task not found" };
         return { success: true, message: "Schedule task deleted successfully" };
       } catch (error: any) {
@@ -565,7 +590,7 @@ const tools = {
     execute: async ({ owner, repo, path, ref }) => {
       let url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
       if (ref) url += `?ref=${ref}`;
-      
+
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
@@ -574,7 +599,7 @@ const tools = {
       });
       if (!res.ok) return { error: `GitHub API error: ${res.statusText}` };
       const data = await res.json();
-      
+
       if (data.type === 'file' && data.content) {
         const content = Buffer.from(data.content, 'base64').toString('utf8');
         return { content, size: data.size, name: data.name };
@@ -618,7 +643,7 @@ const tools = {
     execute: async ({ owner, repo, per_page, sha }) => {
       let url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${per_page}`;
       if (sha) url += `&sha=${sha}`;
-      
+
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
@@ -655,7 +680,7 @@ const tools = {
 
         if (!res.ok) return { error: `Gmail API error: ${res.statusText}` };
         const data = await res.json();
-        
+
         if (!data.messages) return { messages: [], total: 0 };
 
         const messages = await Promise.all(
@@ -693,7 +718,7 @@ const tools = {
 
         if (!res.ok) return { error: `Gmail API error: ${res.statusText}` };
         const data = await res.json();
-        
+
         const headers = data.payload.headers;
         const subject = headers.find((h: any) => h.name === 'Subject')?.value;
         const from = headers.find((h: any) => h.name === 'From')?.value;
@@ -768,11 +793,14 @@ const tools = {
     }),
     execute: async ({ name, phone }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { error: "Unauthorized" };
+
         await dbConnect();
         const cleanPhone = phone.replace(/[^0-9]/g, '');
         const contact = await Contact.findOneAndUpdate(
-          { phone: cleanPhone },
-          { name, phone: cleanPhone },
+          { phone: cleanPhone, userId: session.user.id },
+          { name, phone: cleanPhone, userId: session.user.id },
           { upsert: true, new: true }
         );
         return { success: true, contact };
@@ -787,8 +815,11 @@ const tools = {
     inputSchema: z.object({}),
     execute: async () => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { error: "Unauthorized" };
+
         await dbConnect();
-        const contacts = await Contact.find({}).sort({ name: 1 });
+        const contacts = await Contact.find({ userId: session.user.id }).sort({ name: 1 });
         return { contacts };
       } catch (error: any) {
         return { error: error.message };
@@ -816,8 +847,11 @@ const tools = {
     }),
     execute: async ({ type, search }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+
         await dbConnect();
-        const filter: any = {};
+        const filter: any = { userId: session.user.id };
         if (type) filter.type = type;
         if (search) {
           filter.$text = { $search: search };
@@ -838,8 +872,11 @@ const tools = {
     }),
     execute: async ({ id }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+
         await dbConnect();
-        const item = await VaultItem.findById(id);
+        const item = await VaultItem.findOne({ _id: id, userId: session.user.id });
         if (!item) return { success: false, error: "Vault item not found" };
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
       } catch (error: any) {
@@ -858,8 +895,11 @@ const tools = {
     }),
     execute: async (data) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+
         await dbConnect();
-        const item = await VaultItem.create(data);
+        const item = await VaultItem.create({ ...data, userId: session.user.id });
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
       } catch (error: any) {
         return { success: false, error: error.message };
@@ -877,8 +917,11 @@ const tools = {
     }),
     execute: async ({ id, ...updateData }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+
         await dbConnect();
-        const item = await VaultItem.findByIdAndUpdate(id, updateData, { new: true });
+        const item = await VaultItem.findOneAndUpdate({ _id: id, userId: session.user.id }, updateData, { new: true });
         if (!item) return { success: false, error: "Vault item not found" };
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
       } catch (error: any) {
@@ -894,8 +937,11 @@ const tools = {
     }),
     execute: async ({ id }) => {
       try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+
         await dbConnect();
-        const result = await VaultItem.deleteOne({ _id: id });
+        const result = await VaultItem.deleteOne({ _id: id, userId: session.user.id });
         if (result.deletedCount === 0) return { success: false, error: "Vault item not found" };
         return { success: true, message: "Vault item deleted successfully" };
       } catch (error: any) {
@@ -927,7 +973,7 @@ const tools = {
         }
 
         const res = await fetch(url, fetchOptions);
-        
+
         let responseData;
         const contentType = res.headers.get("content-type") || "";
         if (contentType.includes("application/json")) {
@@ -971,7 +1017,7 @@ const tools = {
       try {
         const token = await getGoogleAccessToken();
         const requestId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        
+
         const eventBody = {
           summary,
           description,
@@ -1186,6 +1232,10 @@ const tools = {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    const userName = session?.user?.name || "the user";
+    const userEmail = session?.user?.email || "unknown";
+
     const parsed = chatRequestSchema.safeParse(await req.json());
 
     if (!parsed.success) {
@@ -1200,13 +1250,13 @@ export async function POST(req: Request) {
       ? requestedModel
       : 'mistral-large-latest';
 
-    const provider = model === 'deepseek-reasoner' 
-      ? deepseek 
+    const provider = model === 'deepseek-reasoner'
+      ? deepseek
       : model === 'gpt-4o-mini'
         ? openai
-      : model === 'gemini-2.5-flash'
-        ? google
-        : mistral;
+        : model === 'gemini-2.5-flash'
+          ? google
+          : mistral;
 
     let canPersist = false;
     try {
@@ -1241,6 +1291,7 @@ export async function POST(req: Request) {
     const now = new Date();
     const systemPrompt = [
       "You are Jarvis, a helpful and sophisticated AI assistant. You are polite, efficient, and have a slight British flair, similar to Tony Stark's assistant. You help users with coding, analysis, and general tasks.",
+      `Current User Identity: You are currently talking to user name "${userName}" (Email: "${userEmail}"). Use this context to personalize your responses.`,
       `Current Time Context: ${now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} (Asia/Kolkata). Today is ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' })}. Use this current time as the source of truth for scheduling and relative dates/times (e.g. "tomorrow", "next Tuesday", etc).`,
       "Tool & Memory policy:",
       "1. To remember information: call 'saveMemory' when explicitly asked to remember/memorize/store facts. Pick categories carefully.",
@@ -1265,6 +1316,8 @@ export async function POST(req: Request) {
     const finalSystemPrompt = clientSystemPrompt
       ? `${systemPrompt}\n\nAdditional Context:\n${clientSystemPrompt}`
       : systemPrompt;
+
+    // console.log(finalSystemPrompt, 'real prompt')
 
     // console.log(clientSystemPrompt, finalSystemPrompt, "tara")
 
@@ -1292,8 +1345,8 @@ export async function POST(req: Request) {
             toolInvocations: m.toolInvocations || [],
           }));
 
-          const assistantMessage = { 
-            role: 'assistant', 
+          const assistantMessage = {
+            role: 'assistant',
             content: text,
             toolInvocations: toolResults?.map(result => ({
               ...result,
@@ -1305,13 +1358,17 @@ export async function POST(req: Request) {
           if (validChatId) {
             await Chat.findByIdAndUpdate(validChatId, {
               $set: { messages: dbMessages },
-              $setOnInsert: { title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...` }
+              $setOnInsert: {
+                title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...`,
+                ...(session?.user?.id ? { userId: session.user.id } : {})
+              }
             }, { upsert: true });
           } else {
             // Fallback for safety, though validChatId should be present
             await Chat.create({
               title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...`,
               messages: dbMessages,
+              ...(session?.user?.id ? { userId: session.user.id } : {})
             });
           }
         } catch (dbError) {

@@ -10,7 +10,7 @@ export interface IMessage {
 export interface IChat extends Document {
   title: string;
   messages: IMessage[];
-  userId?: string;
+  userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +27,7 @@ const ChatSchema = new Schema<IChat>(
     _id: { type: String, default: () => crypto.randomUUID() },
     title: { type: String, default: 'New Chat' },
     messages: [MessageSchema],
-    userId: { type: String, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
   { timestamps: true }
 );

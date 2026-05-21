@@ -74,9 +74,18 @@ export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
         let parsedData = undefined;
         if (typeof initialData === 'string' && initialData.trim() !== '') {
           // Check if it's stringified JSON
-          if (initialData.trim().startsWith('{')) {
+          if (initialData.trim().startsWith('{') || initialData.trim().startsWith('[')) {
             try {
-              parsedData = JSON.parse(initialData);
+              let parsed = JSON.parse(initialData);
+              if (Array.isArray(parsed)) {
+                parsedData = {
+                  time: Date.now(),
+                  blocks: parsed,
+                  version: '2.28.2'
+                };
+              } else {
+                parsedData = parsed;
+              }
             } catch (e) {
               console.error("Failed to parse initialData as JSON", e);
             }
@@ -118,7 +127,35 @@ export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
             };
           }
         } else if (initialData && typeof initialData === 'object' && Object.keys(initialData).length > 0) {
-          parsedData = initialData;
+          if (Array.isArray(initialData)) {
+            parsedData = {
+              time: Date.now(),
+              blocks: initialData,
+              version: '2.28.2'
+            };
+          } else {
+            parsedData = initialData;
+          }
+        }
+        
+        // Sanitize data before passing to EditorJS to prevent plugin crashes
+        if (parsedData && Array.isArray(parsedData.blocks)) {
+          parsedData.blocks = parsedData.blocks.map((block: any) => {
+            if (block.type === 'list' && block.data && Array.isArray(block.data.items)) {
+              block.data.items = block.data.items.map((item: any) => {
+                if (typeof item === 'string') {
+                  return { content: item, items: [] };
+                } else if (item && typeof item === 'object') {
+                  return {
+                    content: item.content || item.text || '',
+                    items: Array.isArray(item.items) ? item.items : []
+                  };
+                }
+                return { content: '', items: [] };
+              });
+            }
+            return block;
+          });
         }
 
         const editor = new EditorJS({

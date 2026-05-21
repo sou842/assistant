@@ -5,6 +5,7 @@ export interface IVaultItem extends Document {
   type: 'spreadsheet' | 'note' | 'gallery' | 'album';
   content: any; // Using any/Mixed to accommodate Editor.js blocks, Spreadsheet JSON, or Gallery/Album media arrays
   tags: string[];
+  userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +30,12 @@ const vaultItemSchema = new Schema<IVaultItem>(
     tags: {
       type: [String],
       default: [],
+    },
+    userId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true, 
+      index: true 
     },
   },
   {

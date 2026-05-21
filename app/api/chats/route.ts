@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Chat from '@/lib/models/Chat';
+import { auth } from '@/auth';
 
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     await dbConnect();
-    const chats = await Chat.find({})
+    const chats = await Chat.find({ userId: session.user.id })
       .select('title updatedAt createdAt')
       .sort({ updatedAt: -1 });
     
@@ -18,21 +22,23 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     await dbConnect();
     const body = await req.json();
 
-    // Support for single chat creation or bulk sync (migration)
     if (Array.isArray(body)) {
-      // Migration mode
       const operations = body.map((chat) => ({
         updateOne: {
-          filter: { _id: chat.id || chat._id },
+          filter: { _id: chat.id || chat._id, userId: session.user.id },
           update: { 
             $set: { 
               title: chat.title, 
               messages: chat.messages,
               updatedAt: new Date(chat.updatedAt || Date.now()),
               createdAt: new Date(chat.createdAt || Date.now()),
+              userId: session.user.id,
             } 
           },
           upsert: true,
@@ -42,9 +48,8 @@ export async function POST(req: Request) {
       await Chat.bulkWrite(operations);
       return NextResponse.json({ message: 'Migration successful' });
     } else {
-      // Single chat creation
       const { title, messages } = body;
-      const chat = await Chat.create({ title, messages });
+      const chat = await Chat.create({ title, messages, userId: session.user.id });
       return NextResponse.json(chat);
     }
   } catch (error) {

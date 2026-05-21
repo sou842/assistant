@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import type { StoredChat } from "@/lib/chat-storage";
 
 interface SidebarProps {
@@ -55,8 +56,18 @@ export function Sidebar({
   const isCollapsed = !sidebarOpen;
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingTitle, setEditingTitle] = React.useState("");
+
+  const userName = session?.user?.name || "User";
+  const userEmail = session?.user?.email || "";
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   const handleNewChat = () => {
     createNewChat();
@@ -276,21 +287,27 @@ export function Sidebar({
           {isCollapsed ? (
             <div
               onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 bg-white/90 text-black rounded-full mb-2 flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointertransition-all"
+              className="w-10 h-10 bg-white/90 text-black rounded-full mb-2 flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer transition-all"
             >
-              SS
+              {initials}
             </div>
           ) : (
-            <div className="p-3 rounded-2xl flex items-center gap-3 group cursor-pointer hover:border-white/10 transition-all">
-              <div className="relative">
-                <div className="w-9 h-9 bg-white/90 text-black rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
-                  SS
+            <div className="dropdown dropdown-top w-full">
+              <div tabIndex={0} role="button" className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-white/5 transition-all w-full text-left">
+                <div className="relative">
+                  <div className="w-9 h-9 bg-white/90 text-black rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
+                    {initials}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-xs font-bold text-white/70 truncate tracking-tight">{userName}</p>
+                  <p className="text-[10px] text-white/30 truncate font-medium">{userEmail}</p>
                 </div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-xs font-bold text-white/70 truncate tracking-tight">Sourav Samanta</p>
-                <p className="text-[10px] text-white/30 truncate font-medium">samantasourav732@gmail.com</p>
-              </div>
+              <ul tabIndex={0} className="dropdown-content menu bg-black border border-white/10 text-white rounded-xl z-[1] w-full p-2 shadow-lg mb-2">
+                <li><a className="hover:bg-white/10 rounded-lg">Settings</a></li>
+                <li><a onClick={() => signOut()} className="hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg">Logout</a></li>
+              </ul>
             </div>
           )}
         </div>

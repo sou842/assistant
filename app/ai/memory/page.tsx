@@ -64,7 +64,7 @@ export default function MemoryPage() {
         categoryFilter === "all" ||
         memory.category === categoryFilter;
 
-      const searchable = `${memory.title} ${memory.content} ${memory.tags.join(
+      const searchable = `${memory.title} ${memory.content} ${(memory.tags || []).join(
         " "
       )}`.toLowerCase();
 
@@ -165,7 +165,7 @@ export default function MemoryPage() {
       title: memory.title,
       content: memory.content,
       category: memory.category,
-      tags: memory.tags.join(", "),
+      tags: (memory.tags || []).join(", "),
       enabled: memory.enabled,
     });
 

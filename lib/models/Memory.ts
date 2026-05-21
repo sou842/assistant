@@ -10,7 +10,7 @@ export interface IMemory extends Document {
   source: MemorySource;
   tags: string[];
   enabled: boolean;
-  userId?: string;
+  userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +33,7 @@ const MemorySchema = new Schema<IMemory>(
     },
     tags: [{ type: String }],
     enabled: { type: Boolean, default: true },
-    userId: { type: String, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
   { timestamps: true }
 );

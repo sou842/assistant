@@ -201,16 +201,16 @@ Prioritize actions and responses related to this item.`,
           ) : (
             <div className="h-full w-full">
               {data.item.type === "note" ? (
-                <NoteEditor 
+                <NoteEditor
                   key={`${id}-${data.item.updatedAt}`}
-                  initialData={data.item.content} 
-                  onChange={setContent} 
+                  initialData={data.item.content}
+                  onChange={setContent}
                 />
               ) : data.item.type === "spreadsheet" ? (
-                <SpreadsheetEditor 
+                <SpreadsheetEditor
                   key={`${id}-${data.item.updatedAt}`}
-                  initialData={data.item.content} 
-                  onChange={setContent} 
+                  initialData={data.item.content}
+                  onChange={setContent}
                 />
               ) : (
                 <GalleryViewer

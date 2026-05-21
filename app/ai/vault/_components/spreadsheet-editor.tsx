@@ -15,16 +15,28 @@ interface SpreadsheetEditorProps {
 }
 
 export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorProps) {
-  const [data, setData] = useState<any[]>(() => 
-    Array.isArray(initialData) && initialData.length > 0 
-      ? initialData 
+  const parsedInitialData = useMemo(() => {
+    let parsed = initialData;
+    if (typeof initialData === 'string' && initialData.trim() !== '') {
+      try {
+        parsed = JSON.parse(initialData);
+      } catch (e) {
+        console.error("Failed to parse spreadsheet initialData", e);
+      }
+    }
+    return Array.isArray(parsed) ? parsed : [];
+  }, [initialData]);
+
+  const [data, setData] = useState<any[]>(() =>
+    parsedInitialData.length > 0
+      ? parsedInitialData
       : [{ col1: "", col2: "", col3: "" }]
   );
 
   const [columnsList, setColumnsList] = useState<string[]>(() => {
-    if (Array.isArray(initialData) && initialData.length > 0) {
+    if (parsedInitialData.length > 0) {
       const allKeys = new Set<string>();
-      initialData.forEach(row => Object.keys(row).forEach(k => allKeys.add(k)));
+      parsedInitialData.forEach((row: any) => Object.keys(row).forEach(k => allKeys.add(k)));
       return Array.from(allKeys);
     }
     return ["col1", "col2", "col3"];
