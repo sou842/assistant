@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -96,35 +97,39 @@ export async function POST(req: Request) {
 
     // 3.5 Auto-persist file to Vault Gallery in MongoDB
     try {
-      await dbConnect();
-      
-      let gallery = await VaultItem.findOne({ type: 'gallery' });
-      if (!gallery) {
-        gallery = await VaultItem.create({
-          title: 'Gallery',
-          type: 'gallery',
-          content: [],
-          tags: ['gallery', 'media', 'uploads'],
-        });
-      }
-
-      const mediaFile = {
-        id: nanoid(),
-        url: data.secure_url,
-        publicId: data.public_id,
-        filename: file.name || 'uploaded-file',
-        mediaType: processedMime || file.type || 'application/octet-stream',
-        size: data.bytes || file.size || 0,
-        createdAt: new Date(),
-      };
-
-      await VaultItem.updateOne(
-        { _id: gallery._id },
-        { 
-          $push: { content: mediaFile },
-          $set: { updatedAt: new Date() }
+      const session = await auth();
+      if (session?.user?.id) {
+        await dbConnect();
+        
+        let gallery = await VaultItem.findOne({ type: 'gallery', userId: session.user.id });
+        if (!gallery) {
+          gallery = await VaultItem.create({
+            title: 'Gallery',
+            type: 'gallery',
+            content: [],
+            tags: ['gallery', 'media', 'uploads'],
+            userId: session.user.id,
+          });
         }
-      );
+
+        const mediaFile = {
+          id: nanoid(),
+          url: data.secure_url,
+          publicId: data.public_id,
+          filename: file.name || 'uploaded-file',
+          mediaType: processedMime || file.type || 'application/octet-stream',
+          size: data.bytes || file.size || 0,
+          createdAt: new Date(),
+        };
+
+        await VaultItem.updateOne(
+          { _id: gallery._id },
+          { 
+            $push: { content: mediaFile },
+            $set: { updatedAt: new Date() }
+          }
+        );
+      }
     } catch (dbError: any) {
       console.error('Failed to auto-persist upload to Vault Gallery:', dbError.message);
     }
