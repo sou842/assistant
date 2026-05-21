@@ -1,17 +1,15 @@
 "use client";
 
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 import { motion } from 'framer-motion';
 import {
   Bot,
   Brain,
   Database,
-  Github,
   Lock,
-  MessageSquare,
   Calendar,
-  Globe,
-  ArrowRight
+  ArrowUpRight
 } from 'lucide-react';
 
 export default function Home() {
@@ -24,27 +22,7 @@ export default function Home() {
       </div>
 
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="w-full max-w-300 mx-auto border-l border-r border-white/10 px-4 md:px-8">
-          <div className="mx-auto max-w-6xl h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bot className="size-5 text-white" />
-              <span className="text-base font-medium tracking-tight text-white">Jarvis</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
-                Log in
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm font-medium bg-white text-black px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="relative z-10">
         {/* Hero Section */}
@@ -55,7 +33,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-5xl md:text-6xl font-medium tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6"
+                className="text-5xl md:text-6xl font-medium tracking-tighter leading-20 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6"
               >
                 The Intelligent OS for Your Digital Life
               </motion.h1>
@@ -80,7 +58,7 @@ export default function Home() {
                   className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-medium hover:bg-gray-200 transition-all duration-200 group w-full sm:w-auto justify-center"
                 >
                   Start Chatting
-                  <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowUpRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
                 <a
                   href="#features"
