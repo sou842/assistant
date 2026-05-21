@@ -1,4 +1,4 @@
-import { AIButton } from "@/components/ui/ai-button";
+// import { AIButton } from "@/components/ui/ai-button";
 
 export default function LandingLayout({
   children,
@@ -8,7 +8,7 @@ export default function LandingLayout({
   return (
     <>
       {children}
-      <AIButton />
+      {/* <AIButton /> */}
     </>
   );
 }
