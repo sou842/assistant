@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis Browser Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030303;
+      --panel-bg: rgba(10, 10, 10, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #00d2ff;
+      --secondary: #9d4edd;
+      --success: #10b981;
+      --error: #ef4444;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --glow-success: rgba(16, 185, 129, 0.15);
+      --glow-primary: rgba(0, 210, 255, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Gradient Background Lights */
+    .bg-light {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    .light-1 {
+      top: -30px;
+      right: -30px;
+      background: var(--primary);
+      opacity: 0.2;
+    }
+
+    .light-2 {
+      bottom: -30px;
+      left: -30px;
+      background: var(--secondary);
+      opacity: 0.15;
+    }
+
+    /* Main Container */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 15px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-glow {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a5f3fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Connection Status Badge */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-badge.connected .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Stats / Info Panel */
+    .info-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tab-info {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94a3b8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Console / Logs Section */
+    .console-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .console-body {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    /* Log Entry styling */
+    .log-entry {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      padding-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .log-action {
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .log-action.open_tab { background: rgba(0, 210, 255, 0.15); color: #00d2ff; }
+    .log-action.click_element { background: rgba(157, 78, 221, 0.15); color: #c8b6ff; }
+    .log-action.search { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .log-action.execute_script { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+    .log-action.get_active_tab { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+
+    .log-time {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .log-detail {
+      color: #cbd5e1;
+      word-break: break-all;
+    }
+
+    .log-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+    }
+
+    .status-running { color: var(--primary); }
+    .status-success { color: var(--success); }
+    .status-error { color: var(--error); }
+
+    /* Button Action styling */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, rgba(0, 210, 255, 0.6) 100%);
+      color: #030303;
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
+      opacity: 0.95;
+    }
+
+    /* Manual Command Panel */
+    .test-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 15px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; filter: blur(2px) drop-shadow(0 0 4px var(--primary)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-light light-1"></div>
+  <div class="bg-light light-2"></div>
+  
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-area">
+        <div class="logo-glow"></div>
+        <h1>Jarvis AI</h1>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <div class="status-dot"></div>
+        <span id="statusText">Awaiting Webpage</span>
+      </div>
+    </header>
+
+    <!-- Active Tab Info -->
+    <div class="info-panel">
+      <div class="panel-title">Active Browser Tab</div>
+      <div class="tab-info" id="activeTabInfo">Loading active tab details...</div>
+    </div>
+
+    <!-- AI Status & Plan -->
+    <div class="info-panel" id="aiStatusPanel" style="display: none; border-color: rgba(0, 210, 255, 0.2); background: rgba(0, 210, 255, 0.02); transition: all 0.3s ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div class="panel-title" style="color: var(--primary);">Jarvis AI Brain</div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500;">
+          <span id="aiStateIndicator" class="status-running">⚡ Thinking</span>
+        </div>
+      </div>
+      <div id="aiThoughtDetails" style="font-size: 12px; line-height: 1.5; color: #cbd5e1; max-height: 80px; overflow-y: auto; font-style: italic;">
+        Jarvis is deciding on the next step...
+      </div>
+    </div>
+
+    <!-- Live Console logs -->
+    <div class="console-section">
+      <div class="console-header">
+        <span class="panel-title">Execution Log</span>
+        <button id="btnClearLogs" style="padding: 4px 8px; font-size: 10px; border-radius: 6px;">Clear</button>
+      </div>
+      <div class="console-body" id="consoleLogs">
+        <!-- Logs dynamically added here -->
+        <div style="color: var(--text-muted); text-align: center; margin-top: 20px;">No browser commands recorded yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

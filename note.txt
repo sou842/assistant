@@ -1,0 +1,43 @@
+# Deployment Steps for Next.js Project to GitHub Pages
+
+1. Ensure your project is connected to a GitHub repository and the main branch is updated:
+    git add .
+    git commit -m "Deploying Next.js project"
+    git push origin main
+
+2. Install gh-pages (if not already installed):
+   npm install gh-pages --save-dev
+
+3. Ensure next.config.mjs has output: 'export' set:
+   ```javascript
+   const nextConfig = {
+     output: 'export',
+     images: {
+       unoptimized: true,
+     },
+   }
+   ```
+
+4. In your package.json, ensure scripts are:
+   "scripts": {
+     "dev": "next dev",
+     "build": "next build",
+     "start": "next start",
+     "predeploy": "npm run build",
+     "deploy": "gh-pages -d out"
+   }
+
+5. Build and deploy your project:
+   npm run deploy
+
+6. Wait 1–2 minutes, then visit your deployed site at:
+   https://sou842.github.io/
+
+# Redeploy Steps
+1. Make new changes
+2. Run deploy:
+    npm run deploy
+3. Push code to main (optional but recommended):
+    git add .
+    git commit -m "Update project"
+    git push origin main
