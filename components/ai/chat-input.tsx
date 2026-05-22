@@ -156,6 +156,7 @@ interface ChatInputProps {
   setInput: (v: string) => void;
   isLoading: boolean;
   sendMessage: SendChatMessage;
+  stop?: () => void;
   selectedModel: string;
   setSelectedModel: (id: string) => void;
   selectedModelData: ModelItemData | undefined;
@@ -175,6 +176,7 @@ export function ChatInput({
   setInput,
   isLoading,
   sendMessage,
+  stop,
   selectedModel,
   setSelectedModel,
   selectedModelData,
@@ -427,7 +429,8 @@ export function ChatInput({
                 ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20"
                 : "bg-app-surface-glass text-app-text-faint"
                 }`}
-              status={isLoading ? "submitted" : undefined}
+              status={isLoading ? "streaming" : undefined}
+              onStop={stop}
             />
           </PromptInputFooter>
         </PromptInput>

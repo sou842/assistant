@@ -139,7 +139,23 @@ function AIPageContent() {
     },
   });
 
-  const { messages, sendMessage, status, regenerate, setMessages } = chat;
+  const { messages, sendMessage, status, regenerate, setMessages, stop } = chat;
+
+  const deleteMessage = async (id: string) => {
+    const index = messages.findIndex(m => m.id === id);
+    if (index === -1) return;
+    const newMessages = messages.slice(0, index);
+    setMessages(newMessages);
+
+    if (activeChatIdRef.current) {
+      await saveStoredChat({
+        id: activeChatIdRef.current,
+        title: deriveChatTitle(newMessages),
+        messages: newMessages,
+        updatedAt: Date.now(),
+      } as any);
+    }
+  };
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -509,6 +525,7 @@ function AIPageContent() {
                   setInput={setInput}
                   isLoading={isLoading}
                   sendMessage={sendMessageWithMemory}
+                  stop={stop}
                   selectedModel={selectedModel}
                   setSelectedModel={setSelectedModel}
                   selectedModelData={selectedModelData}
@@ -531,6 +548,7 @@ function AIPageContent() {
                 regenerate={regenerateWithMemory}
                 selectedModel={selectedModel}
                 onEditMessage={onEditMessage}
+                onDeleteMessage={deleteMessage}
                 scrollContainerRef={scrollRef}
                 debugPerf={PERF_DEBUG}
                 browserCommandStates={browserCommandStates}
@@ -547,6 +565,7 @@ function AIPageContent() {
             setInput={setInput}
             isLoading={isLoading}
             sendMessage={sendMessageWithMemory}
+            stop={stop}
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
             selectedModelData={selectedModelData}

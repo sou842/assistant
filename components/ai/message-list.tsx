@@ -2,7 +2,7 @@
 
 import React from "react";
 import { UIMessage } from "ai";
-import { Brain, Sparkles, Copy, RotateCcw, ThumbsUp, ThumbsDown, Pencil } from "lucide-react";
+import { Brain, Sparkles, Copy, RotateCcw, ThumbsUp, ThumbsDown, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMessageAttachments, getMessageReasoning, getMessageText } from "@/lib/ai/message-utils";
 import { type RegenerateChatMessage } from "@/components/ai/types";
@@ -25,6 +25,16 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { WeatherCard } from "@/components/ai/weather-card";
 import { BrowserCard } from "@/components/ai/browser-card";
 import { Shimmer } from "../ai-elements/shimmer";
@@ -37,6 +47,7 @@ interface MessageListProps {
   regenerate: RegenerateChatMessage;
   selectedModel: string;
   onEditMessage?: (id: string, content: string) => void;
+  onDeleteMessage?: (id: string) => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   debugPerf?: boolean;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
@@ -50,12 +61,14 @@ export function MessageList({
   regenerate,
   selectedModel,
   onEditMessage,
+  onDeleteMessage,
   scrollContainerRef,
   debugPerf = false,
   browserCommandStates,
 }: MessageListProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingContent, setEditingContent] = React.useState("");
+  const [deletingMessageId, setDeletingMessageId] = React.useState<string | null>(null);
   const [scrollTop, setScrollTop] = React.useState(0);
   const [viewportHeight, setViewportHeight] = React.useState(900);
   const ITEM_ESTIMATE = 240;
@@ -135,10 +148,12 @@ export function MessageList({
                   regenerate={regenerate}
                   selectedModel={selectedModel}
                   onEditMessage={onEditMessage}
+                  onDeleteMessage={onDeleteMessage}
                   editingId={editingId}
                   editingContent={editingContent}
                   setEditingId={setEditingId}
                   setEditingContent={setEditingContent}
+                  setDeletingMessageId={setDeletingMessageId}
                   browserCommandStates={browserCommandStates}
                 />
               );
@@ -158,10 +173,12 @@ export function MessageList({
               regenerate={regenerate}
               selectedModel={selectedModel}
               onEditMessage={onEditMessage}
+              onDeleteMessage={onDeleteMessage}
               editingId={editingId}
               editingContent={editingContent}
               setEditingId={setEditingId}
               setEditingContent={setEditingContent}
+              setDeletingMessageId={setDeletingMessageId}
               browserCommandStates={browserCommandStates}
             />
           );
@@ -173,6 +190,29 @@ export function MessageList({
           <Shimmer duration={1}>Thinking...</Shimmer>
         </Message>
       )}
+
+      <AlertDialog open={!!deletingMessageId} onOpenChange={(open) => !open && setDeletingMessageId(null)}>
+        <AlertDialogContent className="bg-[#0f0f0f] border border-app-border-subtle">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Message?</AlertDialogTitle>
+            <AlertDialogDescription className="text-app-text-secondary">
+              This will permanently delete this message and all subsequent messages in this chat. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent hover:bg-white/5 text-white border-app-border-subtle">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deletingMessageId) onDeleteMessage?.(deletingMessageId);
+                setDeletingMessageId(null);
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -185,10 +225,12 @@ type MessageRowProps = {
   regenerate: RegenerateChatMessage;
   selectedModel: string;
   onEditMessage?: (id: string, content: string) => void;
+  onDeleteMessage?: (id: string) => void;
   editingId: string | null;
   editingContent: string;
   setEditingId: React.Dispatch<React.SetStateAction<string | null>>;
   setEditingContent: React.Dispatch<React.SetStateAction<string>>;
+  setDeletingMessageId: React.Dispatch<React.SetStateAction<string | null>>;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
 };
 
@@ -200,10 +242,12 @@ const MessageRow = React.memo(function MessageRow({
   regenerate,
   selectedModel,
   onEditMessage,
+  onDeleteMessage,
   editingId,
   editingContent,
   setEditingId,
   setEditingContent,
+  setDeletingMessageId,
   browserCommandStates,
 }: MessageRowProps) {
   let text = getMessageText(message);
@@ -323,9 +367,9 @@ const MessageRow = React.memo(function MessageRow({
               </ReasoningContent>
             </Reasoning>
           )}
-          <MessageContent className={message.role === 'user' ? 'group-[.is-user]:bg-app-surface group-[.is-user]:text-app-text-secondary group-[.is-user]:rounded-2xl group-[.is-user]:border group-[.is-user]:border-app-border-subtle group-[.is-user]:shadow-2xl' : 'text-app-text-secondary'}>
+          <MessageContent className={message?.role === 'user' ? 'group-[.is-user]:bg-app-surface group-[.is-user]:text-app-text-secondary group-[.is-user]:rounded-2xl group-[.is-user]:border group-[.is-user]:border-app-border-subtle group-[.is-user]:shadow-2xl' : 'text-app-text-secondary'}>
             {isEditing ? (
-              <div className="flex flex-col w-full min-w-[400px] bg-transparent rounded-[2rem] p-0 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex flex-col w-full min-w-[400px] p-0">
                 <textarea
                   autoFocus
                   className="w-full bg-transparent border-none text-base text-app-text-secondary outline-none resize-none min-h-[80px] placeholder:text-app-text-faint"
@@ -342,13 +386,15 @@ const MessageRow = React.memo(function MessageRow({
                 />
                 <div className="flex justify-end gap-3 mt-4">
                   <button
-                    className="px-4 py-1.5 rounded-full bg-app-canvas text-app-text-primary text-sm font-medium hover:bg-app-canvas/80 transition-all active:scale-95"
+                    title="cancel"
+                    className="px-4 py-1.5 rounded-full border border-white/5 text-app-text-primary text-sm font-medium hover:bg-app-canvas/80 transition-all active:scale-95 cursor-pointer"
                     onClick={() => setEditingId(null)}
                   >
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-1.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-all active:scale-95 shadow-lg"
+                    title="send"
+                    className="px-4 py-1.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-all active:scale-95 shadow-lg cursor-pointer"
                     onClick={() => {
                       onEditMessage?.(message.id, editingContent);
                       setEditingId(null);
@@ -358,12 +404,8 @@ const MessageRow = React.memo(function MessageRow({
                   </button>
                 </div>
               </div>
-            ) : isStreamingAssistant ? (
-              <pre className="whitespace-pre-wrap break-words text-app-text-secondary leading-relaxed text-base">
-                {text}
-              </pre>
             ) : (
-              <MessageResponse isAnimating={isLastStreaming} className="prose prose-invert prose-base max-w-none prose-p:leading-relaxed prose-pre:bg-[#050505] prose-pre:border prose-pre:border-app-border-subtle">
+              <MessageResponse isAnimating={isLastStreaming} className={`prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-[#050505] prose-pre:border prose-pre:border-app-border-subtle ${message.role === 'assistant' ? 'prose-lg' : 'prose-base'}`}>
                 {text}
               </MessageResponse>
             )}
@@ -431,28 +473,40 @@ const MessageRow = React.memo(function MessageRow({
               <MessageAction tooltip="Copy message" onClick={() => copyToClipboard(text)} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
                 <Copy size={13} />
               </MessageAction>
-              <MessageAction tooltip="Save to memory" onClick={() => onSaveMemory(text)} className="hover:text-indigo-300 hover:bg-indigo-500/10 rounded-full cursor-pointer">
+              {message.role === 'assistant' && <MessageAction tooltip="Save to memory" onClick={() => onSaveMemory(text)} className="hover:text-indigo-300 hover:bg-indigo-500/10 rounded-full cursor-pointer">
                 <Brain size={13} />
-              </MessageAction>
+              </MessageAction>}
               {message.role === 'user' && !editingId && (
-                <MessageAction tooltip="Edit message" onClick={() => {
-                  setEditingId(message.id);
-                  setEditingContent(text);
-                }} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
-                  <Pencil size={13} />
-                </MessageAction>
-              )}
-              {message.role === 'assistant' && (
                 <>
                   <MessageAction tooltip="Try again" onClick={() => regenerate({ body: { model: selectedModel } })} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
                     <RotateCcw size={13} />
                   </MessageAction>
+                  <MessageAction
+                    tooltip="Edit message"
+                    className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer"
+                    onClick={() => {
+                      setEditingId(message.id);
+                      setEditingContent(text);
+                    }}
+                  >
+                    <Pencil size={13} />
+                  </MessageAction>
+                  <MessageAction tooltip="Delete message" onClick={() => setDeletingMessageId(message.id)} className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
+                    <Trash2 size={13} />
+                  </MessageAction>
+                </>
+              )}
+              {message.role === 'assistant' && (
+                <>
                   <div className="divider divider-horizontal mx-0 w-px opacity-10 py-1"></div>
                   <MessageAction tooltip="Positive feedback" className="hover:text-green-400 hover:bg-green-400/10 rounded-full cursor-pointer">
                     <ThumbsUp size={13} />
                   </MessageAction>
                   <MessageAction tooltip="Negative feedback" className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
                     <ThumbsDown size={13} />
+                  </MessageAction>
+                  <MessageAction tooltip="Delete message" onClick={() => setDeletingMessageId(message.id)} className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
+                    <Trash2 size={13} />
                   </MessageAction>
                 </>
               )}
