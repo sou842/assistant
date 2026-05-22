@@ -14,11 +14,11 @@ import {
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen bg-black text-white selection:bg-white/30 font-sans overflow-hidden">
+    <main className="app-page-shell app-selection">
       {/* Background Gradients & Grid */}
       <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-200 h-125 bg-white/2 blur-[120px] rounded-full" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        <div className="app-hero-glow absolute top-0 left-1/2 h-125 w-full max-w-200 -translate-x-1/2 rounded-full blur-[120px]" />
+        <div className="app-grid-overlay absolute inset-0" />
       </div>
 
       {/* Navigation */}
@@ -26,14 +26,14 @@ export default function Home() {
 
       <div className="relative z-10">
         {/* Hero Section */}
-        <div className='border-b border-white/10'>
-          <div className="w-full max-w-300 min-h-[calc(100vh-4rem)] mx-auto text-center flex flex-col items-center justify-center relative border-l border-r border-white/10">
+        <div className='border-b border-app-border-default'>
+          <div className="w-full max-w-300 min-h-[calc(100vh-4rem)] mx-auto text-center flex flex-col items-center justify-center relative border-l border-r border-app-border-default">
             <div className="w-full max-w-200 pt-16 pb-20 md:pt-20 md:pb-28 px-4 relative z-20">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-5xl md:text-6xl font-medium tracking-tighter leading-20 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6"
+                className="mb-6 bg-gradient-to-b from-app-text-primary to-app-text-soft bg-clip-text text-5xl font-medium tracking-tighter leading-20 text-transparent md:text-6xl"
               >
                 The Intelligent OS for Your Digital Life
               </motion.h1>
@@ -42,7 +42,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="max-w-2xl mx-auto text-lg text-gray-400 mb-10 leading-relaxed"
+                className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-app-text-muted"
               >
                 Jarvis provides the AI capabilities and cloud infrastructure to build, scale, and automate a faster, more personalized workflow.
               </motion.p>
@@ -55,14 +55,14 @@ export default function Home() {
               >
                 <Link
                   href="/ai"
-                  className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-medium hover:bg-gray-200 transition-all duration-200 group w-full sm:w-auto justify-center"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-app-primary px-6 py-2.5 font-medium text-app-primary-foreground transition-all duration-200 group hover:bg-app-primary-hover sm:w-auto"
                 >
                   Start Chatting
                   <ArrowUpRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
                 <a
                   href="#features"
-                  className="flex items-center gap-2 bg-transparent border border-white/10 text-white px-6 py-2.5 rounded-full font-medium hover:bg-white/5 transition-all duration-200 w-full sm:w-auto justify-center"
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-app-border-default bg-transparent px-6 py-2.5 font-medium text-app-text-primary transition-all duration-200 hover:bg-app-surface-glass sm:w-auto"
                 >
                   View Features
                 </a>
@@ -72,14 +72,14 @@ export default function Home() {
         </div>
 
         {/* Hero Section Divider */}
-        <div className="border-b border-white/10">
-          <div className="w-full max-w-300 mx-auto py-16 border-l border-r border-white/10 px-4 md:px-8 text-center">
+        <div className="border-b border-app-border-default">
+          <div className="w-full max-w-300 mx-auto py-16 border-l border-r border-app-border-default px-4 md:px-8 text-center">
           </div>
         </div>
 
         {/* Feature Grid (Bento Box) */}
-        <div id="features" className="border-b border-white/10 bg-black/20">
-          <div className="w-full max-w-300 mx-auto py-20 md:py-32 border-l border-r border-white/10 px-4 md:px-8">
+        <div id="features" className="border-b border-app-border-default bg-app-canvas/20">
+          <div className="w-full max-w-300 mx-auto border-l border-r border-app-border-default px-4 py-20 md:px-8 md:py-32">
             <div className="mx-auto max-w-6xl">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
 
@@ -89,12 +89,12 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.5 }}
-                  className="md:col-span-2 row-span-2 rounded-3xl border border-white/5 bg-white/[0.01] p-8 md:p-12 relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.02] transition-all duration-500"
+                  className="group relative overflow-hidden rounded-3xl border border-app-border-subtle bg-app-surface-glass-faint p-8 transition-all duration-500 hover:border-app-border-default hover:bg-app-surface-glass-soft md:col-span-2 md:p-12 row-span-2"
                 >
-                  <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <Database className="size-8 text-white/80 mb-6" />
-                  <h3 className="text-2xl font-medium mb-3 tracking-tight text-white/90">The Vault</h3>
-                  <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-md">
+                  <div className="absolute top-0 right-0 h-[500px] w-[500px] translate-x-1/2 -translate-y-1/2 rounded-full bg-app-focus-accent/10 blur-[100px] opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
+                  <Database className="mb-6 size-8 text-app-text-secondary" />
+                  <h3 className="mb-3 text-2xl font-medium tracking-tight text-app-text-secondary">The Vault</h3>
+                  <p className="max-w-md text-sm leading-relaxed text-app-text-muted md:text-base">
                     Natively store markdown notes, interactive spreadsheets, and media galleries. Your personal data is automatically organized and instantly retrievable by the AI whenever you need it.
                   </p>
                 </motion.div>
@@ -105,12 +105,12 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.5, delay: 0.1 }}
-                  className="rounded-3xl border border-white/5 bg-white/[0.01] p-8 relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.02] transition-all duration-500 flex flex-col justify-end min-h-[240px]"
+                  className="group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-3xl border border-app-border-subtle bg-app-surface-glass-faint p-8 transition-all duration-500 hover:border-app-border-default hover:bg-app-surface-glass-soft"
                 >
-                  <div className="absolute bottom-0 right-0 w-[200px] h-[200px] bg-white/5 blur-[50px] rounded-full translate-x-1/4 translate-y-1/4 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <Lock className="size-6 text-white/80 mb-4" />
-                  <h3 className="text-lg font-medium mb-2 tracking-tight text-white/90">Perfect Isolation</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
+                  <div className="absolute bottom-0 right-0 h-[200px] w-[200px] translate-x-1/4 translate-y-1/4 rounded-full bg-app-surface-glass blur-[50px] opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
+                  <Lock className="mb-4 size-6 text-app-text-secondary" />
+                  <h3 className="mb-2 text-lg font-medium tracking-tight text-app-text-secondary">Perfect Isolation</h3>
+                  <p className="text-sm leading-relaxed text-app-text-muted">
                     Secure, multi-tenant architecture. Your data is perfectly isolated.
                   </p>
                 </motion.div>
@@ -121,12 +121,12 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="rounded-3xl border border-white/5 bg-white/[0.01] p-8 relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.02] transition-all duration-500 flex flex-col justify-end min-h-[240px]"
+                  className="group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-3xl border border-app-border-subtle bg-app-surface-glass-faint p-8 transition-all duration-500 hover:border-app-border-default hover:bg-app-surface-glass-soft"
                 >
-                  <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-white/5 blur-[50px] rounded-full -translate-x-1/4 -translate-y-1/4 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <Brain className="size-6 text-white/80 mb-4" />
-                  <h3 className="text-lg font-medium mb-2 tracking-tight text-white/90">Persistent Memory</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
+                  <div className="absolute top-0 left-0 h-[200px] w-[200px] -translate-x-1/4 -translate-y-1/4 rounded-full bg-app-surface-glass blur-[50px] opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
+                  <Brain className="mb-4 size-6 text-app-text-secondary" />
+                  <h3 className="mb-2 text-lg font-medium tracking-tight text-app-text-secondary">Persistent Memory</h3>
+                  <p className="text-sm leading-relaxed text-app-text-muted">
                     Jarvis remembers your facts and context across sessions.
                   </p>
                 </motion.div>
@@ -137,14 +137,14 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.5, delay: 0.3 }}
-                  className="md:col-span-3 rounded-3xl border border-white/5 bg-white/[0.01] p-8 md:p-12 relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.02] transition-all duration-500"
+                  className="group relative overflow-hidden rounded-3xl border border-app-border-subtle bg-app-surface-glass-faint p-8 transition-all duration-500 hover:border-app-border-default hover:bg-app-surface-glass-soft md:col-span-3 md:p-12"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-app-surface-glass-soft to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
                   <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-12 relative z-10">
                     <div className="flex-1">
-                      <Calendar className="size-8 text-white/80 mb-6" />
-                      <h3 className="text-2xl font-medium mb-3 tracking-tight text-white/90">Task Automation</h3>
-                      <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-xl">
+                      <Calendar className="mb-6 size-8 text-app-text-secondary" />
+                      <h3 className="mb-3 text-2xl font-medium tracking-tight text-app-text-secondary">Task Automation</h3>
+                      <p className="max-w-xl text-sm leading-relaxed text-app-text-muted md:text-base">
                         Set up one-time or recurring cron-jobs. Let the AI autonomously check the weather, fetch reports, or send you daily briefings directly to your dashboard without you lifting a finger.
                       </p>
                     </div>
@@ -157,24 +157,24 @@ export default function Home() {
         </div>
 
         {/* CTA Section */}
-        <div className="border-b border-white/10">
-          <div className="w-full max-w-300 mx-auto py-16 border-l border-r border-white/10 px-4 md:px-8 text-center">
+        <div className="border-b border-app-border-default">
+          <div className="w-full max-w-300 mx-auto py-16 border-l border-r border-app-border-default px-4 md:px-8 text-center">
           </div>
         </div>
 
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-black">
-        <div className="w-full max-w-300 mx-auto py-8 border-l border-r border-white/10 px-4 md:px-8">
-          <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between text-gray-500 text-xs">
+      <footer className="border-t border-app-border-default bg-app-canvas">
+        <div className="w-full max-w-300 mx-auto py-8 border-l border-r border-app-border-default px-4 md:px-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between text-xs text-app-text-muted md:flex-row">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Bot className="size-4" />
               <span className="font-medium">Jarvis AI</span>
             </div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+              <a href="#" className="transition-colors hover:text-app-text-secondary">Privacy Policy</a>
+              <a href="#" className="transition-colors hover:text-app-text-secondary">Terms of Service</a>
               <span>© {new Date().getFullYear()}</span>
             </div>
           </div>

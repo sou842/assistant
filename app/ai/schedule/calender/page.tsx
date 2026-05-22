@@ -152,48 +152,48 @@ export default function ScheduleCalenderPage() {
           subtitle="Visual timeline of daily runs and scheduled tasks"
           actions={
             <Link href="/ai/schedule">
-              <Button variant="outline" className="rounded-full border-white/20 bg-[#1e2330] text-white hover:bg-[#252c3c]">Back to List</Button>
+              <Button variant="outline" className="rounded-full border-app-border-strong bg-app-surface-glass text-app-text-primary hover:bg-app-surface-glass-strong">Back to List</Button>
             </Link>
           }
         />
 
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-8xl px-5 py-6 space-y-4">
+          <div className="mx-auto w-full max-w-8xl space-y-4 px-5 py-6">
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-lg border border-[#2d3445] bg-[#1a1f2b] p-4">
-                <div className="flex items-center gap-2 text-[#b4c0d8] text-xs uppercase tracking-wider">
+              <div className="rounded-lg border border-app-border-default bg-app-surface-glass p-4">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-app-text-soft">
                   <CalendarDays className="size-4" /> Month
                 </div>
-                <p className="text-xl text-white mt-2 font-semibold">{format(viewMonth, "MMMM yyyy")}</p>
+                <p className="mt-2 text-xl font-semibold text-app-text-primary">{format(viewMonth, "MMMM yyyy")}</p>
               </div>
-              <div className="rounded-lg border border-[#2d3445] bg-[#1a1f2b] p-4">
-                <p className="text-xs text-[#b4c0d8] uppercase tracking-wider">Scheduled Tasks</p>
-                <p className="text-xl text-white mt-2 font-semibold">{tasks.length}</p>
+              <div className="rounded-lg border border-app-border-default bg-app-surface-glass p-4">
+                <p className="text-xs uppercase tracking-wider text-app-text-soft">Scheduled Tasks</p>
+                <p className="mt-2 text-xl font-semibold text-app-text-primary">{tasks.length}</p>
               </div>
-              <div className="rounded-lg border border-[#2d3445] bg-[#1a1f2b] p-4">
-                <p className="text-xs text-[#b4c0d8] uppercase tracking-wider">Estimated Runs (Month)</p>
-                <p className="text-xl text-white mt-2 font-semibold">{monthlyRuns}</p>
+              <div className="rounded-lg border border-app-border-default bg-app-surface-glass p-4">
+                <p className="text-xs uppercase tracking-wider text-app-text-soft">Estimated Runs (Month)</p>
+                <p className="mt-2 text-xl font-semibold text-app-text-primary">{monthlyRuns}</p>
               </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-lg border border-[#2d3445] bg-[#171b25] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#2d3445] bg-[#1c2130]">
+            <div className="overflow-hidden rounded-lg border border-app-border-default bg-app-surface">
+              <div className="flex items-center justify-between border-b border-app-border-default bg-app-surface-glass px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-[#3a4258] bg-[#252c3c] text-white hover:bg-[#2e3649]" onClick={() => setViewMonth(subMonths(viewMonth, 1))}>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-app-border-strong bg-app-surface-glass text-app-text-primary hover:bg-app-surface-glass-strong" onClick={() => setViewMonth(subMonths(viewMonth, 1))}>
                     <ChevronLeft className="size-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-[#3a4258] bg-[#252c3c] text-white hover:bg-[#2e3649]" onClick={() => setViewMonth(addMonths(viewMonth, 1))}>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-app-border-strong bg-app-surface-glass text-app-text-primary hover:bg-app-surface-glass-strong" onClick={() => setViewMonth(addMonths(viewMonth, 1))}>
                     <ChevronRight className="size-4" />
                   </Button>
-                  <h2 className="ml-2 text-sm font-semibold text-white">{format(viewMonth, "MMMM yyyy")}</h2>
+                  <h2 className="ml-2 text-sm font-semibold text-app-text-primary">{format(viewMonth, "MMMM yyyy")}</h2>
                 </div>
-                <Button variant="outline" className="h-8 rounded-full border-[#3a4258] bg-[#252c3c] text-white hover:bg-[#2e3649]" onClick={() => setViewMonth(startOfMonth(new Date()))}>Today</Button>
+                <Button variant="outline" className="h-8 rounded-full border-app-border-strong bg-app-surface-glass text-app-text-primary hover:bg-app-surface-glass-strong" onClick={() => setViewMonth(startOfMonth(new Date()))}>Today</Button>
               </div>
 
-              <div className="grid grid-cols-7 border-b border-[#2d3445] bg-[#202636]">
+              <div className="grid grid-cols-7 border-b border-app-border-default bg-app-surface-glass">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
-                  <div key={label} className="text-xs text-[#a7b4cd] px-3 py-2.5 font-medium border-r border-[#2d3445] last:border-r-0">{label}</div>
+                  <div key={label} className="border-r border-app-border-default px-3 py-2.5 text-xs font-medium text-app-text-soft last:border-r-0">{label}</div>
                 ))}
               </div>
 
@@ -209,27 +209,27 @@ export default function ScheduleCalenderPage() {
                           key={key}
                           onClick={() => setSelectedDay(day)}
                           className={cn(
-                            "min-h-32 w-full text-left border-r border-b border-[#2d3445] p-2.5 transition-colors last:border-r-0",
-                            inMonth ? "bg-[#171b25]" : "bg-[#121620]",
-                            isToday(day) && "bg-[#1d2a47]",
-                            key === selectedDayKey && "ring-1 ring-inset ring-[#77a9ff]"
+                            "min-h-32 w-full border-r border-b border-app-border-default p-2.5 text-left transition-colors last:border-r-0",
+                            inMonth ? "bg-app-surface" : "bg-app-canvas",
+                            isToday(day) && "bg-app-focus-accent/15",
+                            key === selectedDayKey && "ring-1 ring-inset ring-app-focus-accent"
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className={cn("text-xs font-medium", inMonth ? "text-white/90" : "text-white/35")}>{format(day, "d")}</span>
+                            <span className={cn("text-xs font-medium", inMonth ? "text-app-text-secondary" : "text-app-text-faint")}>{format(day, "d")}</span>
                             {dayInfo.runs > 0 && (
-                              <span className="text-[10px] rounded bg-[#2f6fed]/20 text-[#9dc1ff] px-1.5 py-0.5">{dayInfo.runs} runs</span>
+                              <span className="rounded bg-app-focus-accent/20 px-1.5 py-0.5 text-[10px] text-blue-200">{dayInfo.runs} runs</span>
                             )}
                           </div>
 
                           <div className="space-y-1">
                             {dayInfo.tasks.slice(0, 2).map((task) => (
-                              <div key={`${task._id}-${key}`} className="text-[10px] rounded-full border border-[#3a4258] bg-[#25304a] px-1.5 py-1 text-[#d4def3] truncate">
+                              <div key={`${task._id}-${key}`} className="truncate rounded-full border border-app-border-strong bg-app-surface-glass px-1.5 py-1 text-[10px] text-app-text-secondary">
                                 {task.title}
                               </div>
                             ))}
                             {dayInfo.tasks.length > 2 && (
-                              <div className="text-[10px] text-[#9ba9c4]">+{dayInfo.tasks.length - 2} more</div>
+                              <div className="text-[10px] text-app-text-faint">+{dayInfo.tasks.length - 2} more</div>
                             )}
                           </div>
                         </button>
@@ -239,18 +239,18 @@ export default function ScheduleCalenderPage() {
                 ))}
               </div>
             </div>
-            <div className="rounded-lg border border-[#2d3445] bg-[#1a1f2b] p-4 h-fit sticky top-4">
-              <h3 className="text-sm font-semibold text-white">{format(selectedDay, "EEEE, MMM d, yyyy")}</h3>
-              <p className="text-xs text-[#9ba9c4] mt-1">{selectedDayInfo.runs} estimated runs</p>
+            <div className="sticky top-4 h-fit rounded-lg border border-app-border-default bg-app-surface-glass p-4">
+              <h3 className="text-sm font-semibold text-app-text-primary">{format(selectedDay, "EEEE, MMM d, yyyy")}</h3>
+              <p className="mt-1 text-xs text-app-text-faint">{selectedDayInfo.runs} estimated runs</p>
 
               {selectedTaskDetails.length === 0 ? (
-                <p className="text-xs text-[#9ba9c4] mt-4">No scheduled tasks for this day.</p>
+                <p className="mt-4 text-xs text-app-text-faint">No scheduled tasks for this day.</p>
               ) : (
                 <div className="mt-4 space-y-2">
                   {selectedTaskDetails.map(({ task, runs }) => (
-                    <div key={`${task._id}-${selectedDayKey}`} className="rounded-md border border-[#3a4258] bg-[#20283a] p-2.5">
-                      <p className="text-xs text-white font-medium truncate">{task.title}</p>
-                      <div className="mt-1 space-y-1 text-[11px] text-[#c3d0e8]">
+                    <div key={`${task._id}-${selectedDayKey}`} className="rounded-md border border-app-border-strong bg-app-surface p-2.5">
+                      <p className="truncate text-xs font-medium text-app-text-primary">{task.title}</p>
+                      <div className="mt-1 space-y-1 text-[11px] text-app-text-soft">
                         <p>Runs: {runs}</p>
                         <p>Type: {task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}</p>
                         <p>Status: <span className="capitalize">{task.status}</span></p>

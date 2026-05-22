@@ -47,30 +47,30 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-black text-white selection:bg-white/30 font-sans overflow-hidden">
+    <main className="app-page-shell app-selection">
       {/* Background Gradients & Grid */}
       <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-200 h-125 bg-white/2 blur-[120px] rounded-full" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        <div className="app-hero-glow absolute top-0 left-1/2 h-125 w-full max-w-200 -translate-x-1/2 rounded-full blur-[120px]" />
+        <div className="app-grid-overlay absolute inset-0" />
       </div>
 
       <Link href="/" className="fixed top-4 left-6 z-50 text-center flex items-center gap-2 cursor-pointer">
-        <Bot className="size-5 text-white" />
-        <span className="text-lg font-medium tracking-tight text-white">Jarvis</span>
+        <Bot className="size-5 text-app-text-primary" />
+        <span className="text-lg font-medium tracking-tight text-app-text-primary">Jarvis</span>
       </Link>
 
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 pt-16">
         <div className="w-full max-w-90">
           <div className="text-center mb-8">
-            <h2 className="text-[28px] font-medium tracking-tight text-white">
+            <h2 className="text-[28px] font-medium tracking-tight text-app-text-primary">
               Create your account
             </h2>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
-                <p className="text-sm text-red-200 text-center">{error}</p>
+              <div className="rounded-xl border border-app-danger-border bg-app-danger-soft p-3">
+                <p className="text-center text-sm text-app-danger-foreground">{error}</p>
               </div>
             )}
 
@@ -79,7 +79,7 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   required
-                  className="block w-full rounded-xl border border-white/10 bg-[#0A0A0A] px-4 py-3 text-white placeholder-gray-500 transition-colors focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  className="block w-full rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-app-text-primary placeholder:text-app-text-muted transition-colors focus:border-app-border-strong focus:outline-none focus:ring-1 focus:ring-app-focus"
                   placeholder="Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -89,7 +89,7 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   required
-                  className="block w-full rounded-xl border border-white/10 bg-[#0A0A0A] px-4 py-3 text-white placeholder-gray-500 transition-colors focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  className="block w-full rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-app-text-primary placeholder:text-app-text-muted transition-colors focus:border-app-border-strong focus:outline-none focus:ring-1 focus:ring-app-focus"
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -100,7 +100,7 @@ export default function RegisterPage() {
                   type="password"
                   required
                   minLength={6}
-                  className="block w-full rounded-xl border border-white/10 bg-[#0A0A0A] px-4 py-3 text-white placeholder-gray-500 transition-colors focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  className="block w-full rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-app-text-primary placeholder:text-app-text-muted transition-colors focus:border-app-border-strong focus:outline-none focus:ring-1 focus:ring-app-focus"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -111,7 +111,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center rounded-xl bg-[#EDEDED] px-4 py-3 text-sm font-medium text-black transition-all hover:bg-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 cursor-pointer"
+              className="flex w-full justify-center rounded-xl bg-app-primary px-4 py-3 text-sm font-medium text-app-primary-foreground transition-all hover:bg-app-primary-hover focus:outline-none focus:ring-2 focus:ring-app-text-primary focus:ring-offset-2 focus:ring-offset-app-canvas disabled:opacity-50 cursor-pointer"
             >
               {loading ? "Creating account..." : "Continue with Email"}
             </button>
@@ -120,7 +120,7 @@ export default function RegisterPage() {
           <div className="mt-6 space-y-3">
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#0A0A0A] px-4 py-3 text-sm font-medium text-white transition-all hover:bg-[#111] hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:ring-offset-2 focus:ring-offset-black"
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-sm font-medium text-app-text-primary transition-all hover:border-app-border-strong hover:bg-app-surface-hover focus:border-app-focus-accent focus:outline-none focus:ring-2 focus:ring-app-focus-accent focus:ring-offset-2 focus:ring-offset-app-canvas"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                 <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.54998L20.0303 3.125C17.9503 1.19 15.2353 0 12.0003 0C7.31028 0 3.25528 2.69 1.28027 6.60998L5.27028 9.70498C6.21528 6.71 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
@@ -132,7 +132,7 @@ export default function RegisterPage() {
             </button>
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-[#0A0A0A] px-4 py-3 text-sm font-medium text-white transition-all hover:bg-[#111] hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black"
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-sm font-medium text-app-text-primary transition-all hover:border-app-border-strong hover:bg-app-surface-hover focus:outline-none focus:ring-2 focus:ring-app-text-primary focus:ring-offset-2 focus:ring-offset-app-canvas"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
@@ -141,9 +141,9 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <div className="mt-8 text-center text-sm text-gray-500">
+          <div className="mt-8 text-center text-sm text-app-text-muted">
             Already have an account?
-            <Link href="/login" className="inline ml-1.5 font-semibold text-white hover:text-gray-300 transition-colors cursor-pointer">
+            <Link href="/login" className="inline ml-1.5 font-semibold text-app-text-primary transition-colors cursor-pointer hover:text-app-text-secondary">
               Log in
             </Link>
           </div>

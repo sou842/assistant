@@ -19,39 +19,39 @@ export function PageHeader({ icon, title, subtitle, children, actions, backHref 
   const { setMobileSidebarOpen } = useAI();
 
   return (
-    <header className="w-full h-16 shrink-0 border-b border-white/5 bg-black/70 backdrop-blur-xl z-30 sticky top-0">
+    <header className="sticky top-0 z-30 h-16 w-full shrink-0 border-b border-app-border-subtle bg-app-canvas/70 backdrop-blur-xl">
       <div className="mx-auto max-w-8xl px-5 h-full">
         <div className="flex items-center justify-between gap-4 h-full">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {backHref ? (
               <Link
                 href={backHref}
-                className="size-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white shrink-0 hover:bg-white/10 transition"
+                className="size-9 shrink-0 rounded-full border border-app-border-default bg-app-surface-glass flex items-center justify-center text-app-text-primary transition hover:bg-app-surface-glass-strong"
               >
                 <ArrowLeft size={16} />
               </Link>
             ) : (
               <button
-                className="md:hidden size-9 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white shrink-0"
+                className="md:hidden size-9 shrink-0 rounded-xl border border-app-border-default bg-app-surface-glass flex items-center justify-center text-app-text-primary"
                 onClick={() => setMobileSidebarOpen(true)}
               >
                 <Menu size={16} />
               </button>
             )}
 
-            <div className="size-9 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center shrink-0">
+            <div className="size-9 shrink-0 rounded-xl border border-app-border-default bg-app-surface-glass flex items-center justify-center">
               {React.cloneElement(icon as React.ReactElement, { className: "size-4 text-indigo-200" })}
             </div>
 
             <div className="min-w-0 flex-1">
               {typeof title === "string" ? (
-                <h1 className="text-base font-medium tracking-tight text-white truncate">{title}</h1>
+                <h1 className="truncate text-base font-medium tracking-tight text-app-text-primary">{title}</h1>
               ) : (
                 title
               )}
               {subtitle && (
                 typeof subtitle === "string" ? (
-                  <p className="text-xs text-white/35 truncate">{subtitle}</p>
+                  <p className="truncate text-xs text-app-text-faint">{subtitle}</p>
                 ) : (
                   subtitle
                 )

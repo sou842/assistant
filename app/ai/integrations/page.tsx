@@ -28,13 +28,13 @@ function IntegrationStatus() {
   return (
     <div className="px-6 py-4">
       {success && (
-        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
-          <span className="text-green-200">GitHub connected successfully!</span>
+        <div className="flex items-center gap-3 rounded-xl border border-app-success-border bg-app-success-soft p-4">
+          <span className="text-app-success-foreground">GitHub connected successfully!</span>
         </div>
       )}
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <span className="text-red-200">Failed to connect GitHub. Please try again.</span>
+        <div className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4">
+          <span className="text-app-danger-foreground">Failed to connect GitHub. Please try again.</span>
         </div>
       )}
     </div>
@@ -49,7 +49,7 @@ const activeIntegrations = [
     id: 'github',
     name: 'GitHub',
     icon: (
-      <svg className="size-6 text-white" viewBox="0 0 16 16" fill="currentColor">
+      <svg className="size-6 text-app-text-primary" viewBox="0 0 16 16" fill="currentColor">
         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
       </svg>
     ),
@@ -166,22 +166,22 @@ const pendingIntegrations = [
 ];
 
   return (
-    <div className="min-h-screen bg-black">
-      <header className="w-full h-16 sticky top-0 z-30 border-b border-white/5 bg-black/70 backdrop-blur-xl">
+    <div className="min-h-screen bg-app-canvas">
+      <header className="sticky top-0 z-30 h-16 w-full border-b border-app-border-subtle bg-app-canvas/70 backdrop-blur-xl">
         <div className="mx-auto max-w-8xl px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              className="md:hidden size-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white"
+              className="md:hidden flex size-10 items-center justify-center rounded-xl border border-app-border-default bg-app-surface-glass text-app-text-primary"
               onClick={() => setMobileSidebarOpen(true)}
             >
               <Menu size={16} />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="size-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                <Layers className="size-4 text-white/70" />
+              <div className="flex size-8 items-center justify-center rounded-lg border border-app-border-default bg-app-surface-glass">
+                <Layers className="size-4 text-app-text-soft" />
               </div>
-              <h1 className="text-lg font-medium text-white tracking-tight">Integrations</h1>
+              <h1 className="text-lg font-medium tracking-tight text-app-text-primary">Integrations</h1>
             </div>
           </div>
         </div>
@@ -192,7 +192,7 @@ const pendingIntegrations = [
           <IntegrationStatus />
         </Suspense>
 
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-white/5">
+        <div className="grid w-full grid-cols-1 border-app-border-subtle md:grid-cols-2 lg:grid-cols-3">
           {/* Active Integrations */}
           {activeIntegrations.map((item) => (
             <div
@@ -202,16 +202,16 @@ const pendingIntegrations = [
                   window.location.href = "/api/integrations/github/connect";
                 }
               }}
-              className="group p-8 border-r border-b border-white/5 hover:bg-white/3 transition-all duration-300 flex items-center justify-between cursor-pointer"
+              className="group flex cursor-pointer items-center justify-between border-r border-b border-app-border-subtle p-8 transition-all duration-300 hover:bg-app-surface-glass-soft"
             >
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  <div className="size-14 rounded-2xl bg-white/3 border border-white/10 flex items-center justify-center group-hover:border-white/30 group-hover:bg-white/5 transition-all duration-300 shadow-2xl">
+                  <div className="flex size-14 items-center justify-center rounded-2xl border border-app-border-default bg-app-surface-glass-soft shadow-2xl transition-all duration-300 group-hover:border-app-border-strong group-hover:bg-app-surface-glass">
                     {item.icon}
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-base font-semibold text-white tracking-tight group-hover:text-white transition-colors">{item.name}</span>
+                  <span className="text-base font-semibold tracking-tight text-app-text-primary transition-colors group-hover:text-app-text-primary">{item.name}</span>
                 </div>
               </div>
             </div>
@@ -221,15 +221,15 @@ const pendingIntegrations = [
           {pendingIntegrations.map((item) => (
             <div
               key={item.name}
-              className="group p-8 border-r border-b border-white/5 hover:bg-white/2 transition-all duration-300 flex items-center justify-between cursor-pointer opacity-40 grayscale hover:grayscale-0 hover:opacity-100"
+              className="group flex cursor-pointer items-center justify-between border-r border-b border-app-border-subtle p-8 opacity-40 grayscale transition-all duration-300 hover:bg-app-surface-glass-faint hover:grayscale-0 hover:opacity-100"
             >
               <div className="flex items-center gap-6">
-                <div className="size-14 rounded-2xl bg-white/2 border border-white/5 flex items-center justify-center group-hover:border-white/20 transition-all duration-300">
+                <div className="flex size-14 items-center justify-center rounded-2xl border border-app-border-subtle bg-app-surface-glass-faint transition-all duration-300 group-hover:border-app-border-strong">
                   {item.icon}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-base font-semibold text-white/60 tracking-tight">{item.name}</span>
-                  <span className="text-xs text-white/20 font-medium">Coming Soon</span>
+                  <span className="text-base font-semibold tracking-tight text-app-text-soft">{item.name}</span>
+                  <span className="text-xs font-medium text-app-text-ghost">Coming Soon</span>
                 </div>
               </div>
             </div>

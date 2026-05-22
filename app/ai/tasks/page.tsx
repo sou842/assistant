@@ -335,35 +335,35 @@ export default function TasksPage() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-screen relative overflow-hidden bg-zinc-950">
+      <div className="relative flex h-screen overflow-hidden bg-app-surface-elevated">
         <div className="flex-1 flex flex-col min-w-0 relative">
-          <header className="w-full h-16 shrink-0 border-b border-white/5 bg-black/70 backdrop-blur-xl z-30">
+          <header className="z-30 h-16 w-full shrink-0 border-b border-app-border-subtle bg-app-canvas/70 backdrop-blur-xl">
             <div className="mx-auto max-w-8xl px-5 py-4 h-full">
               <div className="flex items-center justify-between gap-4 h-full">
                 <div className="flex items-center gap-3">
                   <button
-                    className="md:hidden size-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white"
+                    className="md:hidden flex size-10 items-center justify-center rounded-xl border border-app-border-default bg-app-surface-glass text-app-text-primary"
                     onClick={() => setMobileSidebarOpen(true)}
                   >
                     <Menu size={16} />
                   </button>
 
-                  <div className="size-9 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
+                  <div className="flex size-9 items-center justify-center rounded-xl border border-app-border-default bg-app-surface-glass">
                     <BookOpenCheck className="size-4 text-indigo-200" />
                   </div>
 
                   <div>
-                    <h1 className="text-base font-medium tracking-tight text-white">Tasks</h1>
-                    <p className="text-xs text-white/35">Manage your upcoming tasks</p>
+                    <h1 className="text-base font-medium tracking-tight text-app-text-primary">Tasks</h1>
+                    <p className="text-xs text-app-text-faint">Manage your upcoming tasks</p>
                   </div>
                 </div>
 
-                <div className="hidden sm:flex items-center bg-white/5 border border-white/10 rounded-full p-1">
+                <div className="hidden items-center rounded-full border border-app-border-default bg-app-surface-glass p-1 sm:flex">
                   <button
                     onClick={() => setView("kanban")}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
-                      view === "kanban" ? "bg-white text-black" : "text-white/40 hover:text-white"
+                      view === "kanban" ? "bg-app-primary text-app-primary-foreground" : "text-app-text-faint hover:text-app-text-primary"
                     )}
                   >
                     Kanban
@@ -372,7 +372,7 @@ export default function TasksPage() {
                     onClick={() => setView("table")}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
-                      view === "table" ? "bg-white text-black" : "text-white/40 hover:text-white"
+                      view === "table" ? "bg-app-primary text-app-primary-foreground" : "text-app-text-faint hover:text-app-text-primary"
                     )}
                   >
                     Table
@@ -393,7 +393,7 @@ export default function TasksPage() {
 
                   <Button
                     onClick={() => openAddPanel()}
-                    className="h-9 px-4 rounded-full bg-white text-black hover:bg-white/90 transition flex items-center gap-2 text-sm ml-2"
+                    className="ml-2 flex h-9 items-center gap-2 rounded-full bg-app-primary px-4 text-sm text-app-primary-foreground transition hover:bg-app-primary-hover"
                   >
                     <Plus size={16} />
                     <span>New Task</span>
@@ -407,19 +407,19 @@ export default function TasksPage() {
             <div className="mx-auto w-full max-w-8xl px-5 py-12 pb-0">
               {isTasksLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="size-8 border-2 border-white/10 border-t-white rounded-full animate-spin" />
-                  <p className="text-sm text-white/20">Loading tasks...</p>
+                  <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
+                  <p className="text-sm text-app-text-ghost">Loading tasks...</p>
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 px-6 rounded-3xl border border-white/5 bg-white/2 backdrop-blur-sm text-center">
-                  <div className="size-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-                    <BookOpenCheck className="size-8 text-white/20" />
+                <div className="flex flex-col items-center justify-center rounded-3xl border border-app-border-subtle bg-app-surface-glass-soft px-6 py-24 text-center backdrop-blur-sm">
+                  <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-app-surface-glass">
+                    <BookOpenCheck className="size-8 text-app-text-ghost" />
                   </div>
-                  <h2 className="text-xl font-semibold text-white mb-2">No tasks yet</h2>
-                  <p className="text-white/40 max-w-sm mb-8">
+                  <h2 className="mb-2 text-xl font-semibold text-app-text-primary">No tasks yet</h2>
+                  <p className="mb-8 max-w-sm text-app-text-faint">
                     Stay organized and keep track of your goals. Create your first task to get started.
                   </p>
-                  <Button onClick={() => openAddPanel()} className="bg-white text-black">
+                  <Button onClick={() => openAddPanel()} className="bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover">
                     Create First Task
                   </Button>
                 </div>

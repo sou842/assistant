@@ -28,12 +28,12 @@ export function AIShell({ children }: { children: React.ReactNode }) {
 
   if (!mounted) {
     return (
-      <div className="h-screen w-full bg-[#000000]" />
+      <div className="h-screen w-full bg-app-canvas" />
     );
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-[#000000] text-[#E5E5E5] font-sans selection:bg-primary/30">
+    <div className="h-screen overflow-hidden bg-app-canvas font-sans text-app-text-secondary selection:bg-primary/30">
       <div className="relative flex h-full">
         <Sidebar
           activeChatId={activeChatId}
@@ -51,13 +51,13 @@ export function AIShell({ children }: { children: React.ReactNode }) {
 
         {sidebarOpen && (
           <button
-            className="relative z-20 hidden w-px cursor-col-resize bg-zinc-800/60 transition hover:bg-zinc-600 md:block"
+            className="relative z-20 hidden w-px cursor-col-resize bg-app-border-default transition hover:bg-app-border-strong md:block"
             onMouseDown={startResize}
             type="button"
           />
         )}
 
-        <main className="relative flex min-w-0 flex-1 flex-col bg-[#000000]">
+        <main className="relative flex min-w-0 flex-1 flex-col bg-app-canvas">
           {children}
         </main>
       </div>

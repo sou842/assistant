@@ -117,7 +117,7 @@ export default function SchedulePage() {
           subtitle="Manage recurring and one-time automations"
           actions={
             <Link href="/ai/schedule/calender">
-              <Button variant="outline" className="rounded-full border-white/20 text-white/80">
+              <Button variant="outline" className="rounded-full border-app-border-strong text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
                 <CalendarDays className="size-4" />
                 Calendar View
               </Button>
@@ -126,13 +126,13 @@ export default function SchedulePage() {
         />
 
         <div className="flex-1 overflow-y-auto scrollbar-hide relative z-10">
-          <div className="mx-auto w-full max-w-7xl px-5 py-8 space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
+          <div className="mx-auto w-full max-w-7xl space-y-6 px-5 py-8">
+            <div className="rounded-2xl border border-app-border-default bg-app-surface-glass p-4 sm:p-5">
               <div className="flex items-start gap-3 mb-3">
-                <Bot className="size-5 text-white/70 mt-0.5" />
+                <Bot className="mt-0.5 size-5 text-app-text-soft" />
                 <div>
-                  <h2 className="text-white text-sm font-medium">Create with AI</h2>
-                  <p className="text-xs text-white/40">Example: send weather every hour to +91..., remind me tomorrow 9am.</p>
+                  <h2 className="text-sm font-medium text-app-text-primary">Create with AI</h2>
+                  <p className="text-xs text-app-text-faint">Example: send weather every hour to +91..., remind me tomorrow 9am.</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -140,17 +140,17 @@ export default function SchedulePage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Create a schedule task..."
-                  className="bg-white/5 border-white/10 rounded-full pl-4"
+                  className="rounded-full border-app-border-default bg-app-surface-glass pl-4"
                 />
-                <Button onClick={createFromAI} disabled={isCreating} className="rounded-full">
+                <Button onClick={createFromAI} disabled={isCreating} className="rounded-full bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover">
                   <Plus className="size-4" />
                   {isCreating ? "Creating..." : "Create"}
                 </Button>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/3 overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/10 text-xs text-white/50">
+            <div className="overflow-hidden rounded-2xl border border-app-border-default bg-app-surface-glass-soft">
+              <div className="grid grid-cols-12 gap-2 border-b border-app-border-default px-4 py-3 text-xs text-app-text-faint">
                 <div className="col-span-4">Task</div>
                 <div className="col-span-2">Type</div>
                 <div className="col-span-2">Next Run</div>
@@ -159,18 +159,18 @@ export default function SchedulePage() {
               </div>
 
               {isLoading ? (
-                <div className="p-6 text-white/30 text-sm">Loading schedule tasks...</div>
+                <div className="p-6 text-sm text-app-text-ghost">Loading schedule tasks...</div>
               ) : tasks.length === 0 ? (
-                <div className="p-6 text-white/30 text-sm">No schedule tasks yet.</div>
+                <div className="p-6 text-sm text-app-text-ghost">No schedule tasks yet.</div>
               ) : (
                 tasks.map((task: any) => (
-                  <div key={task._id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/5 items-center">
+                  <div key={task._id} className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3">
                     <div className="col-span-4 min-w-0">
-                      <p className="text-sm text-white truncate">{task.title}</p>
-                      <p className="text-xs text-white/40 truncate">{task.actionType} • {task.payload?.phone || "-"}</p>
+                      <p className="truncate text-sm text-app-text-primary">{task.title}</p>
+                      <p className="truncate text-xs text-app-text-faint">{task.actionType} • {task.payload?.phone || "-"}</p>
                     </div>
-                    <div className="col-span-2 text-xs text-white/60">{task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}</div>
-                    <div className="col-span-2 text-xs text-white/60">{task.nextRunAt ? format(new Date(task.nextRunAt), "MMM d, HH:mm") : "-"}</div>
+                    <div className="col-span-2 text-xs text-app-text-soft">{task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}</div>
+                    <div className="col-span-2 text-xs text-app-text-soft">{task.nextRunAt ? format(new Date(task.nextRunAt), "MMM d, HH:mm") : "-"}</div>
                     <div className="col-span-1">
                       <Badge
                         className={cn(
@@ -185,10 +185,10 @@ export default function SchedulePage() {
                       </Badge>
                     </div>
                     <div className="col-span-3 flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" className="h-8 rounded-full border-white/15" onClick={() => handleRunNow(task._id)}>
+                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={() => handleRunNow(task._id)}>
                         <Zap className="size-3.5" /> Run
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 rounded-full border-white/15" onClick={() => togglePause(task)}>
+                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={() => togglePause(task)}>
                         {task.status === "paused" ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 rounded-full border-red-400/30 text-red-300" onClick={() => handleDelete(task._id)}>

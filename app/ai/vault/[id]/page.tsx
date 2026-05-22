@@ -167,8 +167,8 @@ Prioritize actions and responses related to this item.`,
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-10">
-        <p className="text-red-400 mb-4">Failed to load item</p>
-        <Link href="/ai/vault" className="text-sm text-white/40 hover:text-white underline">Back to Vault</Link>
+        <p className="mb-4 text-app-danger-strong">Failed to load item</p>
+        <Link href="/ai/vault" className="text-sm text-app-text-faint underline hover:text-app-text-primary">Back to Vault</Link>
       </div>
     );
   }
@@ -176,7 +176,7 @@ Prioritize actions and responses related to this item.`,
   const item = data?.item;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0A0A0A]">
+    <div className="flex h-full flex-1 flex-col bg-app-surface">
       <PageHeader
         backHref="/ai/vault"
         icon={item?.type === "note" ? <FileText /> : item?.type === "spreadsheet" ? <Table2 /> : <ImageIcon />}
@@ -184,7 +184,7 @@ Prioritize actions and responses related to this item.`,
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-transparent border-none text-base font-medium text-white outline-none w-full max-w-md placeholder:text-white/20 px-0"
+            className="w-full max-w-md border-none bg-transparent px-0 text-base font-medium text-app-text-primary outline-none placeholder:text-app-text-ghost"
             placeholder="Enter title..."
           />
         }
@@ -192,11 +192,11 @@ Prioritize actions and responses related to this item.`,
       />
 
       {/* CONTENT AREA & CHAT */}
-      <div className="flex-1 flex min-h-0 overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto bg-[#070707] relative">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative flex-1 overflow-y-auto bg-app-canvas">
           {isLoading || content === null ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="size-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+              <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
             </div>
           ) : (
             <div className="h-full w-full">
@@ -233,7 +233,7 @@ Prioritize actions and responses related to this item.`,
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="w-[400px] shrink-0 h-full z-40 relative shadow-2xl border-l border-white/5"
+              className="relative z-40 h-full w-[400px] shrink-0 border-l border-app-border-subtle shadow-2xl"
             >
               <VaultChatSidePanel
                 messages={messages}

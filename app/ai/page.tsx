@@ -525,7 +525,7 @@ function AIPageContent() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#000000] via-[#000000]/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-app-canvas via-app-canvas/80 to-transparent" />
         {!!renderMessages.length && (
           <ChatInput
             input={input}
@@ -555,7 +555,7 @@ function AIPageContent() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="w-[400px] shrink-0 h-full z-40 relative shadow-2xl border-l border-white/5"
+            className="relative z-40 h-full w-[400px] shrink-0 border-l border-app-border-subtle shadow-2xl"
           >
             <GallerySidePanel
               searchQuery={gallerySearchQuery}
@@ -580,9 +580,9 @@ function AIPageContent() {
 export default function AIPage() {
   return (
     <Suspense fallback={
-      <div className="h-full w-full flex items-center justify-center bg-[#000000] text-white/20">
+      <div className="flex h-full w-full items-center justify-center bg-app-canvas text-app-text-ghost">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary"></div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Initializing Jarvis...</span>
         </div>
       </div>

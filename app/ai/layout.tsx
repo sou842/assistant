@@ -11,7 +11,7 @@ export default function AILayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="ai-layout bg-[#0A0A0A] min-h-screen text-white">
+    <div className="ai-layout min-h-screen bg-app-surface text-app-text-primary">
       <Suspense>
         <AIProvider>
           <AIShell>

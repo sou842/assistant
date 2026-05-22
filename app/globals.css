@@ -40,6 +40,49 @@
   --sidebar-ring: oklch(0.55 0.015 90);
 
   --brand-primary: #eca8d6;
+  --brand-secondary: #a78bfa;
+  --brand-tertiary: #67e8f9;
+  --brand-quaternary: #fbbf24;
+
+  --app-canvas: #000000;
+  --app-surface: #0a0a0a;
+  --app-surface-elevated: #0f0f0f;
+  --app-surface-hover: #111111;
+  --app-surface-glass: rgb(255 255 255 / 0.05);
+  --app-surface-glass-strong: rgb(255 255 255 / 0.1);
+  --app-surface-glass-soft: rgb(255 255 255 / 0.02);
+  --app-surface-glass-faint: rgb(255 255 255 / 0.01);
+  --app-surface-glow: rgb(255 255 255 / 0.02);
+
+  --app-text-primary: #ffffff;
+  --app-text-secondary: rgb(255 255 255 / 0.9);
+  --app-text-muted: #a3a3a3;
+  --app-text-soft: rgb(255 255 255 / 0.6);
+  --app-text-faint: rgb(255 255 255 / 0.4);
+  --app-text-ghost: rgb(255 255 255 / 0.2);
+
+  --app-border-subtle: rgb(255 255 255 / 0.05);
+  --app-border-default: rgb(255 255 255 / 0.1);
+  --app-border-strong: rgb(255 255 255 / 0.2);
+  --app-grid-line: rgb(255 255 255 / 0.03);
+
+  --app-primary: #ededed;
+  --app-primary-hover: #ffffff;
+  --app-primary-foreground: #000000;
+
+  --app-focus: rgb(255 255 255 / 0.2);
+  --app-focus-accent: #3b82f6;
+  --app-selection: rgb(255 255 255 / 0.3);
+  --app-overlay: rgb(0 0 0 / 0.7);
+  --app-hero-glow: rgb(255 255 255 / 0.02);
+
+  --app-success-soft: rgb(34 197 94 / 0.1);
+  --app-success-border: rgb(34 197 94 / 0.2);
+  --app-success-foreground: #bbf7d0;
+  --app-danger-soft: rgb(239 68 68 / 0.1);
+  --app-danger-border: rgb(239 68 68 / 0.2);
+  --app-danger-foreground: #fecaca;
+  --app-danger-strong: #f87171;
 }
 
 @theme inline {
@@ -84,6 +127,43 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-tertiary: var(--brand-tertiary);
+  --color-brand-quaternary: var(--brand-quaternary);
+  --color-app-canvas: var(--app-canvas);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-elevated: var(--app-surface-elevated);
+  --color-app-surface-hover: var(--app-surface-hover);
+  --color-app-surface-glass: var(--app-surface-glass);
+  --color-app-surface-glass-strong: var(--app-surface-glass-strong);
+  --color-app-surface-glass-soft: var(--app-surface-glass-soft);
+  --color-app-surface-glass-faint: var(--app-surface-glass-faint);
+  --color-app-surface-glow: var(--app-surface-glow);
+  --color-app-text-primary: var(--app-text-primary);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-text-soft: var(--app-text-soft);
+  --color-app-text-faint: var(--app-text-faint);
+  --color-app-text-ghost: var(--app-text-ghost);
+  --color-app-border-subtle: var(--app-border-subtle);
+  --color-app-border-default: var(--app-border-default);
+  --color-app-border-strong: var(--app-border-strong);
+  --color-app-grid-line: var(--app-grid-line);
+  --color-app-primary: #ededed;
+  --color-app-primary-hover: #ffffff;
+  --color-app-primary-foreground: #000000;
+  --color-app-focus: var(--app-focus);
+  --color-app-focus-accent: var(--app-focus-accent);
+  --color-app-selection: var(--app-selection);
+  --color-app-overlay: var(--app-overlay);
+  --color-app-hero-glow: var(--app-hero-glow);
+  --color-app-success-soft: var(--app-success-soft);
+  --color-app-success-border: var(--app-success-border);
+  --color-app-success-foreground: var(--app-success-foreground);
+  --color-app-danger-soft: var(--app-danger-soft);
+  --color-app-danger-border: var(--app-danger-border);
+  --color-app-danger-foreground: var(--app-danger-foreground);
+  --color-app-danger-strong: var(--app-danger-strong);
 }
 
 @layer base {
@@ -99,6 +179,30 @@
 }
 
 @layer utilities {
+  .app-page-shell {
+    @apply relative min-h-screen overflow-hidden bg-app-canvas text-app-text-primary font-sans;
+  }
+
+  .app-selection {
+    @apply selection:bg-app-selection;
+  }
+
+  .app-grid-overlay {
+    background-image:
+      linear-gradient(to right, var(--app-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--app-grid-line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      var(--app-canvas) 70%,
+      transparent 100%
+    );
+  }
+
+  .app-hero-glow {
+    background: var(--app-hero-glow);
+  }
+
   .font-display {
     font-family: var(--font-display);
   }
@@ -193,9 +297,9 @@
     background: linear-gradient(
       45deg,
       var(--brand-primary) 0%,
-      #a78bfa 25%,
-      #67e8f9 50%,
-      #fbbf24 75%,
+      var(--brand-secondary) 25%,
+      var(--brand-tertiary) 50%,
+      var(--brand-quaternary) 75%,
       var(--brand-primary) 100%
     );
     background-size: 300% 300%;

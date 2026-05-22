@@ -72,27 +72,27 @@ export default function VaultPage() {
       >
         <div className="flex items-center justify-end gap-3 w-full">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-white/25" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-app-text-ghost" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search vault..."
-              className="h-9 w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-4 text-xs outline-none focus:border-white/20 transition-all"
+              className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-glass pl-9 pr-4 text-xs text-app-text-primary outline-none transition-all placeholder:text-app-text-faint focus:border-app-border-strong"
             />
           </div>
           <div className="dropdown dropdown-end">
             <button
               tabIndex={0}
-              className="h-9 px-4 rounded-full border border-white/10 bg-white/5 text-xs text-white/60 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
+              className="flex h-9 cursor-pointer items-center gap-2 rounded-full border border-app-border-default bg-app-surface-glass px-4 text-xs text-app-text-soft transition-all hover:text-app-text-primary"
             >
               {filterType === "all" ? "All Types" : filterType === "note" ? "Notes" : filterType === "spreadsheet" ? "Spreadsheets" : filterType === "gallery" ? "Media Galleries" : "Albums"}
               <ChevronDown size={14} className="opacity-40" />
             </button>
-            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-2xl bg-[#0F0F0F] border border-white/10 rounded-xl w-48 mt-2">
+            <ul tabIndex={0} className="dropdown-content z-[1] menu mt-2 w-48 rounded-xl border border-app-border-default bg-app-surface-elevated p-2 shadow-2xl">
               <li>
                 <button 
                   onClick={() => setFilterType("all")}
-                  className={cn("text-xs py-2", filterType === "all" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", filterType === "all" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   All Types
                 </button>
@@ -100,7 +100,7 @@ export default function VaultPage() {
               <li>
                 <button 
                   onClick={() => setFilterType("note")}
-                  className={cn("text-xs py-2", filterType === "note" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", filterType === "note" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   Notes
                 </button>
@@ -108,7 +108,7 @@ export default function VaultPage() {
               <li>
                 <button 
                   onClick={() => setFilterType("spreadsheet")}
-                  className={cn("text-xs py-2", filterType === "spreadsheet" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", filterType === "spreadsheet" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   Spreadsheets
                 </button>
@@ -116,7 +116,7 @@ export default function VaultPage() {
               <li>
                 <button 
                   onClick={() => setFilterType("gallery")}
-                  className={cn("text-xs py-2", filterType === "gallery" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", filterType === "gallery" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   Media Galleries
                 </button>
@@ -124,7 +124,7 @@ export default function VaultPage() {
               <li>
                 <button 
                   onClick={() => setFilterType("album")}
-                  className={cn("text-xs py-2", filterType === "album" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", filterType === "album" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   Albums
                 </button>
@@ -139,17 +139,17 @@ export default function VaultPage() {
         <div className="mx-auto max-w-8xl">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <div className="size-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+              <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
             </div>
           ) : error ? (
-            <div className="text-center py-20 text-red-400">Failed to load vault items.</div>
+            <div className="py-20 text-center text-app-danger-strong">Failed to load vault items.</div>
           ) : items.length === 0 ? (
-            <div className="min-h-[400px] rounded-3xl border border-dashed border-white/10 bg-[#050505] flex flex-col items-center justify-center text-center px-6">
-              <div className="size-16 rounded-3xl bg-white/3 border border-white/10 flex items-center justify-center mb-5">
-                <Database className="size-7 text-white/25" />
+            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-app-border-default bg-app-canvas px-6 text-center">
+              <div className="mb-5 flex size-16 items-center justify-center rounded-3xl border border-app-border-default bg-app-surface-glass-soft">
+                <Database className="size-7 text-app-text-ghost" />
               </div>
               <h2 className="text-xl font-semibold">Vault is empty</h2>
-              <p className="max-w-md mt-3 text-sm leading-7 text-white/35">
+              <p className="mt-3 max-w-md text-sm leading-7 text-app-text-faint">
                 Create a note or spreadsheet, or ask Jarvis to save data for you.
               </p>
             </div>
@@ -159,10 +159,10 @@ export default function VaultPage() {
                 <div
                   key={item._id}
                   onClick={() => handleEdit(item)}
-                  className="group relative flex flex-col p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer overflow-hidden"
+                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-app-border-subtle bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass"
                 >
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="p-2.5 rounded-full bg-white/5">
+                    <div className="rounded-full bg-app-surface-glass p-2.5">
                       {item.type === 'note' ? (
                         <FileText size={24} className="text-blue-400" />
                       ) : item.type === 'spreadsheet' ? (
@@ -173,28 +173,28 @@ export default function VaultPage() {
                     </div>
                     <button
                       onClick={(e) => handleDelete(e, item._id)}
-                      className="p-1.5 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-full opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      className="cursor-pointer rounded-full p-1.5 text-app-text-ghost opacity-0 transition-all hover:bg-app-danger-soft hover:text-app-danger-strong group-hover:opacity-100"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
 
-                  <h3 className="font-semibold text-white truncate mb-1">{item.title}</h3>
-                  <div className="text-xs text-white/40 mb-4 flex items-center gap-2">
+                  <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
+                  <div className="mb-4 flex items-center gap-2 text-xs text-app-text-faint">
                     <span className="capitalize">{item.type}</span>
                     <span>•</span>
                     <span>{format(new Date(item.updatedAt), 'MMM d, yyyy')}</span>
                   </div>
 
                   {item.tags && item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-auto pt-4 border-t border-white/5">
+                    <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-subtle pt-4">
                       {item.tags.slice(0, 3).map((tag: string, i: number) => (
-                        <span key={i} className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-white/50 border border-white/5">
+                        <span key={i} className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
                           {tag}
                         </span>
                       ))}
                       {item.tags.length > 3 && (
-                        <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-white/50 border border-white/5">
+                        <span className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
                           +{item.tags.length - 3}
                         </span>
                       )}
@@ -212,25 +212,25 @@ export default function VaultPage() {
         <div className="dropdown dropdown-top dropdown-end">
           <button
             tabIndex={0}
-            className="size-14 rounded-full bg-white text-black shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
+            className="group flex size-14 cursor-pointer items-center justify-center rounded-full bg-app-primary text-app-primary-foreground shadow-2xl transition-all hover:scale-110 hover:bg-app-primary-hover active:scale-95"
           >
             <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
           </button>
-          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-2xl bg-[#0F0F0F] border border-white/10 rounded-xl w-48 mb-4">
+          <ul tabIndex={0} className="dropdown-content z-[1] menu mb-4 w-48 rounded-xl border border-app-border-default bg-app-surface-elevated p-2 shadow-2xl">
             <li>
-              <button onClick={() => handleCreate("note")} className="flex items-center gap-3 py-3 text-sm hover:bg-white/5 transition text-white">
+              <button onClick={() => handleCreate("note")} className="flex items-center gap-3 py-3 text-sm text-app-text-primary transition hover:bg-app-surface-glass">
                 <FileText size={18} className="text-blue-400" />
                 New Note
               </button>
             </li>
             <li>
-              <button onClick={() => handleCreate("spreadsheet")} className="flex items-center gap-3 py-3 text-sm hover:bg-white/5 transition text-white">
+              <button onClick={() => handleCreate("spreadsheet")} className="flex items-center gap-3 py-3 text-sm text-app-text-primary transition hover:bg-app-surface-glass">
                 <Table2 size={18} className="text-green-400" />
                 New Spreadsheet
               </button>
             </li>
             <li>
-              <button onClick={() => handleCreate("album")} className="flex items-center gap-3 py-3 text-sm hover:bg-white/5 transition text-white">
+              <button onClick={() => handleCreate("album")} className="flex items-center gap-3 py-3 text-sm text-app-text-primary transition hover:bg-app-surface-glass">
                 <ImageIcon size={18} className="text-pink-400" />
                 New Album
               </button>

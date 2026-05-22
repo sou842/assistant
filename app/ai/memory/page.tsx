@@ -216,10 +216,10 @@ export default function MemoryPage() {
 
   if (isSyncing) {
     return (
-      <div className="h-full bg-black flex items-center justify-center text-white">
+      <div className="flex h-full items-center justify-center bg-app-canvas text-app-text-primary">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-          <span className="text-xs uppercase tracking-[0.3em] text-white/30">
+          <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
+          <span className="text-xs uppercase tracking-[0.3em] text-app-text-ghost">
             Syncing memories
           </span>
         </div>
@@ -237,27 +237,27 @@ export default function MemoryPage() {
       >
         <div className="flex items-center justify-end gap-3 w-full">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-white/25" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-app-text-ghost" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search memories..."
-              className="h-9 w-full rounded-full border border-white/10 bg-white/5 pl-9 pr-4 text-xs outline-none focus:border-white/20 transition-all"
+              className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-glass pl-9 pr-4 text-xs text-app-text-primary outline-none transition-all placeholder:text-app-text-faint focus:border-app-border-strong"
             />
           </div>
           <div className="dropdown dropdown-end">
             <button
               tabIndex={0}
-              className="h-9 px-4 rounded-full border border-white/10 bg-white/5 text-xs text-white/60 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
+              className="flex h-9 cursor-pointer items-center gap-2 rounded-full border border-app-border-default bg-app-surface-glass px-4 text-xs text-app-text-soft transition-all hover:text-app-text-primary"
             >
               {categoryFilter === "all" ? "All Categories" : memoryCategories.find(c => c.id === categoryFilter)?.label}
               <ChevronDown size={14} className="opacity-40" />
             </button>
-            <ul tabIndex={0} className="dropdown-content z-10 menu p-2 shadow-2xl bg-[#0F0F0F] border border-white/10 rounded-xl w-48 mt-2">
+            <ul tabIndex={0} className="dropdown-content z-10 menu mt-2 w-48 rounded-xl border border-app-border-default bg-app-surface-elevated p-2 shadow-2xl">
               <li>
                 <button 
                   onClick={() => setCategoryFilter("all")}
-                  className={cn("text-xs py-2", categoryFilter === "all" ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                  className={cn("py-2 text-xs", categoryFilter === "all" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
                   All Categories
                 </button>
@@ -266,7 +266,7 @@ export default function MemoryPage() {
                 <li key={category.id}>
                   <button
                     onClick={() => setCategoryFilter(category.id)}
-                    className={cn("text-xs py-2", categoryFilter === category.id ? "bg-white/10 text-white" : "text-white/40 hover:bg-white/5")}
+                    className={cn("py-2 text-xs", categoryFilter === category.id ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                   >
                     {category.label}
                   </button>
@@ -279,18 +279,18 @@ export default function MemoryPage() {
 
       {/* CONTENT */}
 
-      <div className="w-full mx-auto max-w-8xl px-5 py-6 overflow-y-auto">
+      <div className="mx-auto w-full max-w-8xl overflow-y-auto px-5 py-6">
         {filteredMemories.length === 0 ? (
-          <div className="min-h-[500px] rounded-3xl border border-dashed border-white/10 bg-[#050505] flex flex-col items-center justify-center text-center px-6">
-            <div className="size-16 rounded-3xl bg-white/3 border border-white/10 flex items-center justify-center mb-5">
-              <Brain className="size-7 text-white/25" />
+          <div className="flex min-h-[500px] flex-col items-center justify-center rounded-3xl border border-dashed border-app-border-default bg-app-canvas px-6 text-center">
+            <div className="mb-5 flex size-16 items-center justify-center rounded-3xl border border-app-border-default bg-app-surface-glass-soft">
+              <Brain className="size-7 text-app-text-ghost" />
             </div>
 
             <h2 className="text-xl font-semibold">
               No memories yet
             </h2>
 
-            <p className="max-w-md mt-3 text-sm leading-7 text-white/35">
+            <p className="mt-3 max-w-md text-sm leading-7 text-app-text-faint">
               Save important preferences, facts,
               and context for Jarvis to remember
               across conversations.
@@ -300,7 +300,7 @@ export default function MemoryPage() {
               onClick={() =>
                 setOpenDrawer(true)
               }
-              className="mt-6 h-11 px-5 rounded-xl bg-white text-black text-sm font-medium hover:bg-white/90 transition"
+              className="mt-6 h-11 rounded-xl bg-app-primary px-5 text-sm font-medium text-app-primary-foreground transition hover:bg-app-primary-hover"
             >
               Add your first memory
             </button>
@@ -323,7 +323,7 @@ export default function MemoryPage() {
           resetForm();
           setOpenDrawer(true);
         }}
-        className="fixed bottom-6 right-6 z-40 h-14 px-5 rounded-2xl bg-white text-black shadow-2xl flex items-center gap-2 text-sm font-semibold hover:bg-white/90 transition"
+        className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-2 rounded-2xl bg-app-primary px-5 text-sm font-semibold text-app-primary-foreground shadow-2xl transition hover:bg-app-primary-hover"
       >
         <Plus size={18} />
         Add Memory
@@ -339,14 +339,14 @@ export default function MemoryPage() {
       >
         <div
           onClick={resetForm}
-          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition ${openDrawer
+          className={`absolute inset-0 bg-app-overlay backdrop-blur-sm transition ${openDrawer
             ? "opacity-100"
             : "opacity-0"
             }`}
         />
 
         <div
-          className={`absolute right-0 top-0 h-full w-full max-w-md border-l border-white/10 bg-black transition-transform duration-300 ${openDrawer
+          className={`absolute right-0 top-0 h-full w-full max-w-md border-l border-app-border-default bg-app-canvas transition-transform duration-300 ${openDrawer
             ? "translate-x-0"
             : "translate-x-full"
             }`}
@@ -355,7 +355,7 @@ export default function MemoryPage() {
             onSubmit={submitMemory}
             className="h-full flex flex-col"
           >
-            <div className="h-16 border-b border-white/10 px-5 flex items-center justify-between">
+            <div className="flex h-16 items-center justify-between border-b border-app-border-default px-5">
               <div>
                 <h2 className="font-semibold">
                   {editingId
@@ -363,7 +363,7 @@ export default function MemoryPage() {
                     : "Add Memory"}
                 </h2>
 
-                <p className="text-xs text-white/35 mt-1">
+                <p className="mt-1 text-xs text-app-text-faint">
                   Enabled memories are used in
                   future chats
                 </p>
@@ -372,7 +372,7 @@ export default function MemoryPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="size-9 rounded-xl hover:bg-white/[0.05] flex items-center justify-center text-white/40"
+                className="flex size-9 items-center justify-center rounded-xl text-app-text-faint hover:bg-app-surface-glass"
               >
                 <X size={18} />
               </button>
@@ -381,7 +381,7 @@ export default function MemoryPage() {
             <div className="flex-1 overflow-y-auto p-5">
               <div className="space-y-5">
                 <div>
-                  <label className="text-xs text-white/40">
+                  <label className="text-xs text-app-text-faint">
                     Title
                   </label>
 
@@ -394,12 +394,12 @@ export default function MemoryPage() {
                       }))
                     }
                     placeholder="Short label"
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-[#070707] px-4 text-sm outline-none focus:border-white/20"
+                    className="mt-2 h-12 w-full rounded-2xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-primary outline-none focus:border-app-border-strong"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-white/40">
+                  <label className="text-xs text-app-text-faint">
                     Memory
                   </label>
 
@@ -412,13 +412,13 @@ export default function MemoryPage() {
                       }))
                     }
                     placeholder="Remember that..."
-                    className="mt-2 min-h-[180px] w-full resize-none rounded-2xl border border-white/10 bg-[#070707] p-4 text-sm leading-7 outline-none focus:border-white/20"
+                    className="mt-2 min-h-[180px] w-full resize-none rounded-2xl border border-app-border-default bg-app-surface p-4 text-sm leading-7 text-app-text-primary outline-none focus:border-app-border-strong"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-white/40">
+                    <label className="text-xs text-app-text-faint">
                       Category
                     </label>
 
@@ -432,7 +432,7 @@ export default function MemoryPage() {
                               .value as MemoryCategory,
                         }))
                       }
-                      className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-[#070707] px-4 text-sm outline-none focus:border-white/20"
+                      className="mt-2 h-12 w-full rounded-2xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-primary outline-none focus:border-app-border-strong"
                     >
                       {memoryCategories.map(
                         (category) => (
@@ -448,7 +448,7 @@ export default function MemoryPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-white/40">
+                    <label className="text-xs text-app-text-faint">
                       Status
                     </label>
 
@@ -463,7 +463,7 @@ export default function MemoryPage() {
                       }
                       className={`mt-2 h-12 w-full rounded-2xl border text-sm font-medium transition ${form.enabled
                         ? "border-indigo-400/20 bg-indigo-400/10 text-indigo-100"
-                        : "border-white/10 bg-[#070707] text-white/35"
+                        : "border-app-border-default bg-app-surface text-app-text-faint"
                         }`}
                     >
                       {form.enabled
@@ -474,7 +474,7 @@ export default function MemoryPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-white/40">
+                  <label className="text-xs text-app-text-faint">
                     Tags
                   </label>
 
@@ -487,17 +487,17 @@ export default function MemoryPage() {
                       }))
                     }
                     placeholder="react, work, preference"
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-[#070707] px-4 text-sm outline-none focus:border-white/20"
+                    className="mt-2 h-12 w-full rounded-2xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-primary outline-none focus:border-app-border-strong"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="p-5 border-t border-white/10">
+            <div className="border-t border-app-border-default p-5">
               <button
                 type="submit"
                 disabled={!form.content.trim()}
-                className="h-12 w-full rounded-2xl bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:bg-white/10 disabled:text-white/20 transition"
+                className="h-12 w-full rounded-2xl bg-app-primary text-sm font-semibold text-app-primary-foreground transition hover:bg-app-primary-hover disabled:bg-app-surface-glass-strong disabled:text-app-text-ghost"
               >
                 {editingId
                   ? "Update Memory"
