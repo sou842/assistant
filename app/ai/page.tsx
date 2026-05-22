@@ -502,12 +502,26 @@ function AIPageContent() {
         <div className="flex-1 overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
           <div className="mx-auto w-full max-w-3xl space-y-12 pb-40">
             {renderMessages.length === 0 ? (
-              <EmptyState
-                input={input}
-                setInput={setInput}
-                sendMessage={sendMessageWithMemory}
-                selectedModel={selectedModel}
-              />
+              <EmptyState setInput={setInput}>
+                <ChatInput
+                  className="w-full relative z-20"
+                  input={input}
+                  setInput={setInput}
+                  isLoading={isLoading}
+                  sendMessage={sendMessageWithMemory}
+                  selectedModel={selectedModel}
+                  setSelectedModel={setSelectedModel}
+                  selectedModelData={selectedModelData}
+                  modelSelectorOpen={modelSelectorOpen}
+                  setModelSelectorOpen={setModelSelectorOpen}
+                  onShowGallerySidePanel={(show, search) => {
+                    setShowGallerySidePanel(show);
+                    if (search !== undefined) setGallerySearchQuery(search);
+                  }}
+                  customFileToAttach={customFileToAttach}
+                  onCustomFileAttached={() => setCustomFileToAttach(null)}
+                />
+              </EmptyState>
             ) : (
               <MessageList
                 messages={renderMessages}
@@ -526,6 +540,7 @@ function AIPageContent() {
         </div>
 
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-app-canvas via-app-canvas/80 to-transparent" />
+        
         {!!renderMessages.length && (
           <ChatInput
             input={input}

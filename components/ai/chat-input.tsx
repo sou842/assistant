@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useState, useEffect, useRef } from "react";
+import useSWR from "swr";
 import { CheckIcon, Globe, PlusIcon, User, Search, MessageSquare, X, BookOpenCheck, Image as ImageIcon, FileText } from "lucide-react";
 import { FileUIPart } from "ai";
 import { toast } from "sonner";
@@ -64,8 +65,8 @@ const AttachmentItem = memo(
 
     return (
       <>
-        <Attachment 
-          data={attachment} 
+        <Attachment
+          data={attachment}
           onRemove={() => onRemove(attachment.id)}
           className="!size-16 rounded-xl border border-app-border-default shadow-md overflow-hidden bg-app-surface-glass group transition-all hover:scale-105 duration-200 cursor-zoom-in"
           onClick={handlePreviewClick}
@@ -75,20 +76,20 @@ const AttachmentItem = memo(
         </Attachment>
 
         {isLightboxOpen && attachment.url && (
-          <div 
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-app-canvas/85 backdrop-blur-md animate-in fade-in duration-200 cursor-zoom-out"
+          <div
+            className="fixed inset-0 z-9999 flex items-center justify-center bg-app-canvas/85 backdrop-blur-md animate-in fade-in duration-200 cursor-zoom-out"
             onClick={() => setIsLightboxOpen(false)}
           >
-            <button 
+            <button
               type="button"
               className="absolute top-6 right-6 size-10 rounded-full bg-app-surface-glass-strong hover:bg-white/20 border border-app-border-default text-app-text-primary flex items-center justify-center transition-colors cursor-pointer"
               onClick={() => setIsLightboxOpen(false)}
             >
               <X className="size-5" />
             </button>
-            <img 
-              src={attachment.url} 
-              alt={attachment.filename || "Preview"} 
+            <img
+              src={attachment.url}
+              alt={attachment.filename || "Preview"}
               className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl border border-app-border-subtle animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             />
@@ -102,15 +103,15 @@ AttachmentItem.displayName = "AttachmentItem";
 
 const ModelItem = memo(
   ({ m, selectedModel, onSelect }: { m: ModelItemData; selectedModel: string; onSelect: (id: string) => void }) => (
-    <ModelSelectorItem 
-      onSelect={() => onSelect(m.id)} 
+    <ModelSelectorItem
+      onSelect={() => onSelect(m.id)}
       value={m.id}
       className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors data-[selected=true]:bg-app-surface-glass"
     >
       <div className="flex items-center justify-center size-6 rounded-full bg-white/60 border border-app-border-default">
         <ModelSelectorLogo provider={m.chefSlug} className="size-3.5 opacity-80" />
       </div>
-      
+
       <div className="flex-1 flex flex-col">
         <ModelSelectorName className="text-sm font-medium text-app-text-secondary">
           {m.name}
@@ -165,6 +166,7 @@ interface ChatInputProps {
   onShowGallerySidePanel?: (show: boolean, search?: string) => void;
   customFileToAttach?: any;
   onCustomFileAttached?: () => void;
+  className?: string;
 }
 
 export function ChatInput({
@@ -179,30 +181,19 @@ export function ChatInput({
   setModelSelectorOpen,
   selectedTask,
   setSelectedTask,
-  space=4,
+  space = 4,
   onShowGallerySidePanel,
   customFileToAttach,
-  onCustomFileAttached
+  onCustomFileAttached,
+  className
 }: ChatInputProps) {
-  const [contacts, setContacts] = useState<any[]>([]);
+  const { data: contactsData, mutate: mutateContacts } = useSWR('/api/contacts', (url: string) => fetch(url).then(res => res.json()));
+  const contacts = contactsData?.contacts || [];
   const [showContactSelector, setShowContactSelector] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
   const attachmentsRef = useRef<any>(null);
-
-  useEffect(() => {
-    const fetchContacts = async () => {
-      try {
-        const res = await fetch('/api/contacts');
-        const data = await res.json();
-        setContacts(data.contacts || []);
-      } catch (e) {
-        console.error("Failed to fetch contacts", e);
-      }
-    };
-    fetchContacts();
-  }, []);
 
   useEffect(() => {
     if (customFileToAttach && attachmentsRef.current) {
@@ -235,6 +226,7 @@ export function ChatInput({
     const galleryMatch = value.match(/@g:(\w*)$/);
 
     if (contactMatch) {
+      if (!showContactSelector) mutateContacts();
       setShowContactSelector(true);
       setContactSearch(contactMatch[1]);
       onShowGallerySidePanel?.(false);
@@ -256,17 +248,17 @@ export function ChatInput({
     setShowContactSelector(false);
   };
 
-  const filteredContacts = contacts.filter(c => 
+  const filteredContacts = contacts.filter(c =>
     c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
     c.phone.includes(contactSearch)
   );
 
   return (
-    <div className={`absolute bottom-0 left-0 right-0 z-20 p-${space}`}>
+    <div className={className || `absolute bottom-0 left-0 right-0 z-20 p-${space}`}>
       <div className="mx-auto w-full max-w-3xl relative">
         {/* Contact Selector Dropdown */}
         {showContactSelector && (
-          <div 
+          <div
             ref={selectorRef}
             className="absolute bottom-full left-0 mb-4 w-72 bg-app-surface-elevated border border-app-border-default rounded-2xl shadow-3xl overflow-hidden z-30 animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
@@ -306,7 +298,7 @@ export function ChatInput({
             if (isLoading) return;
             const allFiles = attachmentsRef.current?.files || message.files || [];
             if (!message.text.trim() && allFiles.length === 0) return;
-            
+
             let finalText = message.text;
             if (selectedContact) {
               finalText = `@WhatsApp:${selectedContact.name} (${selectedContact.phone})\n${message.text}`;
@@ -324,7 +316,7 @@ export function ChatInput({
                 }
               }
             );
-            
+
             attachmentsRef.current?.clear?.();
             setInput("");
             onShowGallerySidePanel?.(false);
@@ -332,7 +324,7 @@ export function ChatInput({
         >
           <AttachmentsExposer onAttachmentsReady={(att) => { attachmentsRef.current = att; }} />
           <PromptInputAttachmentsDisplay />
-          
+
           <PromptInputBody className="w-full flex flex-col items-start !justify-start">
             {/* Contact Badge Display */}
             {selectedContact && (
@@ -344,7 +336,7 @@ export function ChatInput({
                   <span className="text-[13px] font-medium text-app-text-secondary leading-none">
                     To: <span className="text-app-text-primary font-bold">{selectedContact.name}</span>
                   </span>
-                  <button 
+                  <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
@@ -367,7 +359,7 @@ export function ChatInput({
                     <span className="shrink-0">Focusing on:</span>
                     <span className="text-app-text-primary font-bold truncate">{selectedTask.title}</span>
                   </span>
-                  <button 
+                  <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
@@ -380,7 +372,7 @@ export function ChatInput({
                 </div>
               </div>
             )}
-            
+
             <PromptInputTextarea
               className="w-full bg-transparent border-none focus:ring-0 outline-none resize-none pt-5 pb-3 px-6 max-h-56 min-h-[60px] text-[15px] font-normal tracking-tight placeholder:text-app-text-muted scrollbar-hide text-app-text-primary text-left"
               onChange={(event) => handleInputChange(event.currentTarget.value)}
@@ -388,7 +380,7 @@ export function ChatInput({
               value={input}
             />
           </PromptInputBody>
-          
+
           <PromptInputFooter className="px-5 pb-4 pt-0 flex items-center justify-between">
             <PromptInputTools className="gap-2">
               <PromptInputActionMenu>
@@ -400,7 +392,7 @@ export function ChatInput({
                   <PromptInputActionAddScreenshot className="rounded-lg hover:bg-app-surface-glass" />
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
-              
+
               <PromptInputButton className="flex items-center justify-center gap-2 rounded-full p-2 pr-2.5 bg-transparent border-none text-app-text-soft hover:text-app-text-primary transition-colors cursor-pointer">
                 <Globe size={15} />
                 <span className="text-sm font-medium">Search</span>
@@ -415,9 +407,9 @@ export function ChatInput({
                 </ModelSelectorTrigger>
                 <ModelSelectorContent className="rounded-2xl shadow-3xl bg-app-surface-elevated border border-app-border-default min-w-[300px] p-2 overflow-hidden">
                   <div className="px-2 pt-2 pb-1">
-                    <ModelSelectorInput 
-                      className="bg-app-surface-glass border border-app-border-subtle rounded-xl h-10 px-3 text-sm focus-within:border-app-border-default transition-all" 
-                      placeholder="Search models..." 
+                    <ModelSelectorInput
+                      className="bg-app-surface-glass border border-app-border-subtle rounded-xl h-10 px-3 text-sm focus-within:border-app-border-default transition-all"
+                      placeholder="Search models..."
                     />
                   </div>
                   <ModelSelectorList className="p-1 max-h-[400px] overflow-y-auto scrollbar-hide">
@@ -434,11 +426,10 @@ export function ChatInput({
               </ModelSelector>
             </PromptInputTools>
             <PromptInputSubmit
-              className={`transition-all duration-200 rounded-lg size-8 flex items-center justify-center ${
-                input?.trim() || isLoading || selectedContact
-                  ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20" 
+              className={`transition-all duration-200 rounded-lg size-8 flex items-center justify-center ${input?.trim() || isLoading || selectedContact
+                  ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20"
                   : "bg-app-surface-glass text-app-text-faint"
-              }`}
+                }`}
               status={isLoading ? "submitted" : undefined}
             />
           </PromptInputFooter>

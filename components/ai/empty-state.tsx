@@ -19,37 +19,16 @@ import { nanoid } from "nanoid";
 import type { UIMessage } from "ai";
 
 interface EmptyStateProps {
-  input: string;
   setInput: (v: string) => void;
-  sendMessage: SendChatMessage;
-  selectedModel: string;
+  children?: React.ReactNode;
 }
 
-export function EmptyState({ input, setInput, sendMessage, selectedModel }: EmptyStateProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const { activeChatId, setChats, chats } = useAI();
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    await sendMessage(
-      { text: input, files: [] },
-      { body: { model: selectedModel } }
-    );
-    setInput("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
+export function EmptyState({ setInput, children }: EmptyStateProps) {
   const handleQuickAction = (text: string) => {
     setInput(text);
-    inputRef.current?.focus();
   };
+
+
 
   return (
     <div className="h-fit mt-64 bg-app-canvas flex flex-col items-center justify-center px-4 text-app-text-primary">
@@ -61,44 +40,8 @@ export function EmptyState({ input, setInput, sendMessage, selectedModel }: Empt
       {/* Main Area */}
       <div className="w-full max-w-[860px]">
         {/* Input Container */}
-        <div className="h-[64px] rounded-[32px] bg-app-surface-glass border border-app-border-subtle flex items-center px-4 shadow-sm focus-within:border-app-border-strong transition-colors">
-          {/* Left */}
-          <button className="text-app-text-soft hover:text-app-text-primary transition p-2">
-            <Plus size={20} strokeWidth={2.2} />
-          </button>
-
-          {/* Input */}
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask anything"
-            className="flex-1 bg-transparent border-none outline-none px-2 text-base text-app-text-primary placeholder:text-app-text-muted font-normal"
-          />
-
-          {/* Right */}
-          <div className="flex items-center gap-3">
-            <button className="text-app-text-soft hover:text-app-text-primary transition p-2">
-              <Mic size={18} strokeWidth={2} />
-            </button>
-
-            <button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className={`h-10 w-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${input.trim()
-                ? "bg-app-primary text-app-primary-foreground shadow-md hover:scale-105 active:scale-95"
-                : "bg-app-surface-glass-strong text-app-text-faint cursor-not-allowed"
-                }`}
-            >
-              {input.trim() ? (
-                <ArrowRight size={20} strokeWidth={2.5} />
-              ) : (
-                <AudioLines size={18} strokeWidth={2.4} />
-              )}
-            </button>
-          </div>
+        <div className="w-full">
+          {children}
         </div>
 
         {/* Actions */}
