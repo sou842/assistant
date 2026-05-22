@@ -38,7 +38,7 @@ export default function RegisterPage() {
         password,
       });
 
-      router.push("/ai");
+      window.location.href = "/ai";
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
     } finally {

@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (res?.error) {
         setError("Invalid email or password");
       } else {
-        router.push("/ai");
+        window.location.href = "/ai";
       }
     } catch (err) {
       setError("An unexpected error occurred");

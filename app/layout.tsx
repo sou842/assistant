@@ -1,7 +1,21 @@
+import type { Metadata } from 'next'
 import { Inter, Instrument_Serif, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import './globals.css'
+
+export const metadata: Metadata = {
+  title: {
+    default: 'Jarvis',
+    template: '%s | Jarvis',
+  },
+  description: 'Your intelligent personal assistant.',
+  icons: {
+    icon: '/icon.svg',
+    // shortcut: '/favicon-16x16.png',
+    // apple: '/apple-touch-icon.png',
+  },
+}
 
 const inter = Inter({
   subsets: ["latin"],
