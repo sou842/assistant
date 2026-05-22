@@ -49,6 +49,7 @@ import {
   PlusIcon,
   SquareIcon,
   XIcon,
+  MessageSquare,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import type {
@@ -437,48 +438,38 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
-export type PromptInputActionAddScreenshotProps = ComponentProps<
+export type PromptInputActionContactProps = ComponentProps<
   typeof DropdownMenuItem
 > & {
   label?: string;
 };
 
-export const PromptInputActionAddScreenshot = ({
-  label = "Take screenshot",
+export const PromptInputActionContact = ({
+  label = "Contacts",
   onSelect,
   ...props
-}: PromptInputActionAddScreenshotProps) => {
-  const attachments = usePromptInputAttachments();
-
-  const handleSelect = useCallback(
-    async (event: Event) => {
-      onSelect?.(event);
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      try {
-        const screenshot = await captureScreenshot();
-        if (screenshot) {
-          attachments.add([screenshot]);
-        }
-      } catch (error) {
-        if (
-          error instanceof DOMException &&
-          (error.name === "NotAllowedError" || error.name === "AbortError")
-        ) {
-          return;
-        }
-        throw error;
-      }
-    },
-    [onSelect, attachments]
-  );
-
+}: PromptInputActionContactProps) => {
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
-      <Monitor className="mr-2 size-4" />
-      {label}
+    <DropdownMenuItem {...props} onSelect={onSelect}>
+      <MessageSquare className="mr-2 size-4" /> {label}
+    </DropdownMenuItem>
+  );
+};
+
+export type PromptInputActionGalleryProps = ComponentProps<
+  typeof DropdownMenuItem
+> & {
+  label?: string;
+};
+
+export const PromptInputActionGallery = ({
+  label = "Gallery",
+  onSelect,
+  ...props
+}: PromptInputActionGalleryProps) => {
+  return (
+    <DropdownMenuItem {...props} onSelect={onSelect}>
+      <ImageIcon className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
 };

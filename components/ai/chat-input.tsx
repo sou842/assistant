@@ -27,7 +27,8 @@ import {
 import {
   PromptInput,
   PromptInputActionAddAttachments,
-  PromptInputActionAddScreenshot,
+  PromptInputActionContact,
+  PromptInputActionGallery,
   PromptInputActionMenu,
   PromptInputActionMenuContent,
   PromptInputActionMenuTrigger,
@@ -388,28 +389,24 @@ export function ChatInput({
                   <PlusIcon className="size-4" />
                 </PromptInputActionMenuTrigger>
                 <PromptInputActionMenuContent className="rounded-2xl shadow-3xl bg-app-surface border border-app-border-default p-1">
-                  <PromptInputActionAddAttachments className="rounded-lg hover:bg-app-surface-glass" />
-                  <PromptInputActionAddScreenshot className="rounded-lg hover:bg-app-surface-glass" />
+                  <PromptInputActionAddAttachments className="rounded-lg hover:bg-app-surface-glass cursor-pointer" />
+                  <PromptInputActionContact className="rounded-lg hover:bg-app-surface-glass cursor-pointer" onSelect={() => setShowContactSelector(true)} />
+                  <PromptInputActionGallery className="rounded-lg hover:bg-app-surface-glass cursor-pointer" onSelect={() => onShowGallerySidePanel?.(true)} />
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
 
-              <PromptInputButton className="flex items-center justify-center gap-2 rounded-full p-2 pr-2.5 bg-transparent border-none text-app-text-soft hover:text-app-text-primary transition-colors cursor-pointer">
-                <Globe size={15} />
-                <span className="text-sm font-medium">Search</span>
-              </PromptInputButton>
-
               <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
                 <ModelSelectorTrigger asChild>
-                  <PromptInputButton className="flex items-center justify-center gap-2 rounded-full p-2 pr-2.5 bg-transparent border-none text-app-text-soft hover:text-app-text-primary transition-colors cursor-pointer">
-                    {selectedModelData?.chefSlug && <ModelSelectorLogo className="size-3.5 opacity-60" provider={selectedModelData.chefSlug} />}
+                  <PromptInputButton className="flex items-center justify-center gap-1 rounded-full p-2 pr-2.5 bg-white/5 border border-transparent hover:border-white/5 text-app-text-soft hover:text-app-text-primary/80 transition-all cursor-pointer">
+                    {selectedModelData?.chefSlug && <ModelSelectorLogo className="size-4.5 opacity-60" provider={selectedModelData.chefSlug} />}
                     <span className="text-sm font-medium">{selectedModelData?.name}</span>
                   </PromptInputButton>
                 </ModelSelectorTrigger>
                 <ModelSelectorContent className="rounded-2xl shadow-3xl bg-app-surface-elevated border border-app-border-default min-w-[300px] p-2 overflow-hidden">
-                  <div className="px-2 pt-2 pb-1">
+                  <div className="px-2 pt-5 pb-1">
                     <ModelSelectorInput
                       className="bg-app-surface-glass border border-app-border-subtle rounded-xl h-10 px-3 text-sm focus-within:border-app-border-default transition-all"
-                      placeholder="Search models..."
+                      placeholder="Search models"
                     />
                   </div>
                   <ModelSelectorList className="p-1 max-h-[400px] overflow-y-auto scrollbar-hide">
@@ -427,8 +424,8 @@ export function ChatInput({
             </PromptInputTools>
             <PromptInputSubmit
               className={`transition-all duration-200 rounded-lg size-8 flex items-center justify-center ${input?.trim() || isLoading || selectedContact
-                  ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20"
-                  : "bg-app-surface-glass text-app-text-faint"
+                ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20"
+                : "bg-app-surface-glass text-app-text-faint"
                 }`}
               status={isLoading ? "submitted" : undefined}
             />
