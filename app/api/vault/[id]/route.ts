@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import VaultItem from '@/lib/models/VaultItem';
+import { auth } from '@/auth';
 
 export async function GET(
   req: Request,
@@ -8,8 +9,11 @@ export async function GET(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
-    const item = await VaultItem.findById(id);
+    const item = await VaultItem.findOne({ _id: id, userId: session.user.id });
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
   } catch (error: any) {
@@ -23,9 +27,12 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
     const body = await req.json();
-    const item = await VaultItem.findByIdAndUpdate(id, body, { new: true });
+    const item = await VaultItem.findOneAndUpdate({ _id: id, userId: session.user.id }, body, { new: true });
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
   } catch (error: any) {
@@ -39,8 +46,11 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
-    const result = await VaultItem.deleteOne({ _id: id });
+    const result = await VaultItem.deleteOne({ _id: id, userId: session.user.id });
     if (result.deletedCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error: any) {
