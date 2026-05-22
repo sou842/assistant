@@ -9,6 +9,7 @@ import { formatMemoriesForPrompt } from '@/lib/memory-storage';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import Task from '@/lib/models/Task';
+import User from '@/lib/models/User';
 import Contact from '@/lib/models/Contact';
 import VaultItem from '@/lib/models/VaultItem';
 import ScheduleTask from '@/lib/models/ScheduleTask';
@@ -43,6 +44,15 @@ async function getGoogleAccessToken() {
 
   const data = await response.json();
   return data.access_token;
+}
+
+async function getGithubToken() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.githubAccessToken) throw new Error("GitHub account not connected. Please connect it in the Integrations page.");
+  return user.githubAccessToken;
 }
 
 
@@ -524,9 +534,11 @@ const tools = {
     description: "Get the authenticated GitHub user's profile information. Use this to find out who the current user is.",
     inputSchema: z.object({}),
     execute: async () => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       const res = await fetch("https://api.github.com/user", {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });
@@ -542,9 +554,11 @@ const tools = {
       per_page: z.number().max(100).default(30),
     }),
     execute: async ({ sort, per_page }) => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       const res = await fetch(`https://api.github.com/user/repos?sort=${sort}&per_page=${per_page}`, {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });
@@ -568,9 +582,11 @@ const tools = {
       repo: z.string().describe("The name of the repository. The name is not case sensitive."),
     }),
     execute: async ({ owner, repo }) => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });
@@ -588,12 +604,14 @@ const tools = {
       ref: z.string().optional().describe("The name of the commit/branch/tag. Default: the repository's default branch."),
     }),
     execute: async ({ owner, repo, path, ref }) => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       let url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
       if (ref) url += `?ref=${ref}`;
 
       const res = await fetch(url, {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });
@@ -615,9 +633,11 @@ const tools = {
       per_page: z.number().max(100).default(10),
     }),
     execute: async ({ q, per_page }) => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       const res = await fetch(`https://api.github.com/search/code?q=${encodeURIComponent(q)}&per_page=${per_page}`, {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });
@@ -641,12 +661,14 @@ const tools = {
       sha: z.string().optional().describe("SHA or branch name to start listing commits from."),
     }),
     execute: async ({ owner, repo, per_page, sha }) => {
+      let token;
+      try { token = await getGithubToken(); } catch (e: any) { return { error: e.message }; }
       let url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${per_page}`;
       if (sha) url += `&sha=${sha}`;
 
       const res = await fetch(url, {
         headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github.v3+json",
         },
       });

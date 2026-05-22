@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Layers,
   Menu,
@@ -16,6 +17,29 @@ import {
   Plus
 } from "lucide-react";
 import { useAI } from "../_components/ai-provider";
+
+function IntegrationStatus() {
+  const searchParams = useSearchParams();
+  const success = searchParams.get("success");
+  const error = searchParams.get("error");
+
+  if (!success && !error) return null;
+
+  return (
+    <div className="px-6 py-4">
+      {success && (
+        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3">
+          <span className="text-green-200">GitHub connected successfully!</span>
+        </div>
+      )}
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <span className="text-red-200">Failed to connect GitHub. Please try again.</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function IntegrationsPage() {
   const { setMobileSidebarOpen } = useAI();
@@ -164,11 +188,20 @@ const pendingIntegrations = [
       </header>
 
       <main className="w-full overflow-y-auto">
+        <Suspense fallback={null}>
+          <IntegrationStatus />
+        </Suspense>
+
         <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-white/5">
           {/* Active Integrations */}
           {activeIntegrations.map((item) => (
             <div
               key={item.id}
+              onClick={() => {
+                if (item.id === 'github') {
+                  window.location.href = "/api/integrations/github/connect";
+                }
+              }}
               className="group p-8 border-r border-b border-white/5 hover:bg-white/3 transition-all duration-300 flex items-center justify-between cursor-pointer"
             >
               <div className="flex items-center gap-6">
