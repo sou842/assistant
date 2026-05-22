@@ -67,7 +67,7 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
       header: () => (
         <div className="flex items-center justify-between group">
           <input
-            className="bg-transparent border-none outline-none text-white/70 font-semibold text-sm w-full"
+            className="bg-transparent border-none outline-none text-app-text-soft font-semibold text-sm w-full"
             value={colKey}
             onChange={(e) => {
               const newKey = e.target.value;
@@ -97,7 +97,7 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onBlur={onBlur}
-            className="w-full bg-transparent border-none outline-none text-sm text-white/90 p-2 focus:bg-white/5 transition-colors"
+            className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-2 focus:bg-app-surface-glass transition-colors"
             placeholder="..."
           />
         );
@@ -132,28 +132,28 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={addRow}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-white/80 transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
         >
           <Plus size={14} /> Add Row
         </button>
         <button
           onClick={addColumn}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-white/80 transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
         >
           <Plus size={14} /> Add Column
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto border border-white/10 rounded-xl bg-black">
+      <div className="flex-1 overflow-auto border border-app-border-default rounded-xl bg-app-canvas">
         <table className="w-full text-left border-collapse">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-white/10 bg-white/5">
-                <th className="w-10 p-2 border-r border-white/10"></th>
+              <tr key={headerGroup.id} className="border-b border-app-border-default bg-app-surface-glass">
+                <th className="w-10 p-2 border-r border-app-border-default"></th>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="p-3 border-r border-white/10 last:border-r-0 min-w-[150px]"
+                    className="p-3 border-r border-app-border-default last:border-r-0 min-w-[150px]"
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -166,17 +166,17 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row, index) => (
-              <tr key={row.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                <td className="w-10 p-2 border-r border-white/10 text-center">
+              <tr key={row.id} className="border-b border-app-border-subtle hover:bg-app-surface-glass-soft">
+                <td className="w-10 p-2 border-r border-app-border-default text-center">
                   <button
                     onClick={() => removeRow(index)}
-                    className="p-1 text-white/20 hover:text-red-400 rounded transition opacity-50 hover:opacity-100"
+                    className="p-1 text-app-text-faint hover:text-red-400 rounded transition opacity-50 hover:opacity-100"
                   >
                     <Trash2 size={12} />
                   </button>
                 </td>
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-0 border-r border-white/10 last:border-r-0">
+                  <td key={cell.id} className="p-0 border-r border-app-border-default last:border-r-0">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -185,7 +185,7 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
           </tbody>
         </table>
         {data.length === 0 && (
-          <div className="p-8 text-center text-white/40 text-sm">
+          <div className="p-8 text-center text-app-text-muted text-sm">
             No rows added yet.
           </div>
         )}

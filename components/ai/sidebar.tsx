@@ -98,39 +98,39 @@ export function Sidebar({
     <>
       {mobileSidebarOpen && (
         <button
-          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-app-overlay backdrop-blur-sm md:hidden"
           onClick={() => setMobileSidebarOpen(false)}
           type="button"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#111] bg-[#000000] md:static md:z-10 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-app-border-default bg-app-canvas md:static md:z-10 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           } transition-all duration-300 ease-in-out`}
         style={{ width: isCollapsed ? 76 : sidebarWidth }}
       >
         {/* Header */}
-        <div className={`p-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-[#111] h-16 shrink-0`}>
+        <div className={`p-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-app-border-default h-16 shrink-0`}>
           {isCollapsed ? (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-9 h-9 bg-white/95 rounded-full flex items-center justify-center text-black shrink-0 cursor-pointer"
+              className="w-9 h-9 bg-app-primary rounded-full flex items-center justify-center text-app-primary-foreground shrink-0 cursor-pointer"
             >
               <Bot size={20} />
             </button>
           ) : (
             <>
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 bg-white/95 rounded-full flex items-center justify-center text-black shrink-0">
+                <div className="w-8 h-8 bg-app-primary rounded-full flex items-center justify-center text-app-primary-foreground shrink-0">
                   <Bot size={18} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-white truncate">Jarvis AI</span>
-                  <span className="text-xs text-white/40 font-medium truncate uppercase tracking-wider">Neural Shell</span>
+                  <span className="text-sm font-bold text-app-text-primary truncate">Jarvis AI</span>
+                  <span className="text-xs text-app-text-muted font-medium truncate uppercase tracking-wider">Neural Shell</span>
                 </div>
               </div>
               <button
-                className="p-1.5 text-white/30 hover:text-white hover:bg-white/5 rounded-lg transition-all md:block hidden shrink-0 cursor-pointer"
+                className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all md:block hidden shrink-0 cursor-pointer"
                 onClick={() => setSidebarOpen(false)}
               >
                 <PanelLeftClose size={18} />
@@ -143,15 +143,15 @@ export function Sidebar({
         <div className={`flex-1 overflow-y-auto p-3 space-y-8 scrollbar-hide ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
           {/* Workspace Section */}
           <div className={`${isCollapsed ? 'w-full flex flex-col items-center gap-4' : 'w-full flex flex-col gap-1'}`}>
-            {!isCollapsed && <div className="px-3 py-2 text-xs font-medium text-white/20">Workspace</div>}
+            {!isCollapsed && <div className="px-3 py-2 text-xs font-medium text-app-text-faint">Workspace</div>}
             <button
               onClick={handleNewChat}
               className={`flex items-center transition-all group cursor-pointer ${isCollapsed
-                ? "w-10 h-10 justify-center rounded-full bg-white/5 hover:bg-white/10"
-                : "w-full gap-3 px-3 py-2.5 rounded-xl text-white font-medium text-sm hover:bg-white/10"
+                ? "w-10 h-10 justify-center rounded-full bg-app-surface-glass hover:bg-app-surface-glass-strong"
+                : "w-full gap-3 px-3 py-2.5 rounded-xl text-app-text-primary font-medium text-sm hover:bg-app-surface-glass-strong"
                 }`}
             >
-              <SquarePlus size={16} className="text-white/40 group-hover:text-white transition-colors shrink-0" />
+              <SquarePlus size={16} className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0" />
               {!isCollapsed && <span>New Chat</span>}
             </button>
             <SidebarNavItem
@@ -194,24 +194,24 @@ export function Sidebar({
           {/* Recents Section */}
           {!isCollapsed && (
             <div className="space-y-1">
-              <div className="px-3 py-2 text-xs font-medium text-white/20">Recents</div>
+              <div className="px-3 py-2 text-xs font-medium text-app-text-faint">Recents</div>
               <div className="space-y-0.5">
                 {chats
                   .slice()
                   .sort((a, b) => b.updatedAt - a.updatedAt)
                   .map((chat) => (
                     <div
-                      className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-white/5 text-white" : "text-white/40 hover:bg-white/[0.02] hover:text-white/80"
+                      className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
                         }`}
                       key={chat.id}
                       onClick={() => onSelectChat(chat.id)}
                     >
-                      <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-indigo-400" : "opacity-40 group-hover:opacity-70"}`} />
+                      <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-40 group-hover:opacity-70"}`} />
 
                       {editingId === chat.id ? (
                         <input
                           autoFocus
-                          className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-indigo-500/50"
+                          className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-brand-primary"
                           onBlur={handleRename}
                           onChange={(e) => setEditingTitle(e.target.value)}
                           onKeyDown={handleKeyDown}
@@ -224,7 +224,7 @@ export function Sidebar({
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                         <div className="dropdown dropdown-left" onClick={(e) => e.stopPropagation()}>
                           <button
-                            className="rounded-lg p-1 hover:bg-white/5 hover:text-white"
+                            className="rounded-lg p-1 hover:bg-app-surface-glass hover:text-app-text-primary"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -235,13 +235,13 @@ export function Sidebar({
                             <Ellipsis size={14} />
                           </button>
                           <ul
-                            className="dropdown-content z-[30] menu p-2 shadow-2xl bg-[#0F0F0F] border border-white/10 rounded-xl w-32 mt-2"
+                            className="dropdown-content z-[30] menu p-2 shadow-2xl bg-app-surface-elevated border border-app-border-default rounded-xl w-32 mt-2"
                             onClick={(e) => e.stopPropagation()}
                             tabIndex={0}
                           >
                             <li>
                               <button
-                                className="flex items-center gap-2 py-2 text-xs hover:bg-white/5"
+                                className="flex items-center gap-2 py-2 text-xs hover:bg-app-surface-glass"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -254,7 +254,7 @@ export function Sidebar({
                             </li>
                             <li>
                               <button
-                                className="flex items-center gap-2 py-2 text-xs text-red-400 hover:bg-red-500/10"
+                                className="flex items-center gap-2 py-2 text-xs text-app-danger-strong hover:bg-app-danger-soft"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -276,37 +276,30 @@ export function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className={`p-0 border-t border-[#111] ${isCollapsed ? 'flex flex-col items-center space-y-6' : 'space-y-4'}`}>
-          {/* <button className={`flex items-center transition-all group ${
-            isCollapsed ? "justify-center" : "w-full gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl"
-          }`}>
-            <Palette size={18} className={`transition-transform group-hover:rotate-12 ${isCollapsed ? 'text-white/40 hover:text-white' : ''}`} />
-            {!isCollapsed && <span className="text-sm font-medium">Theme: Dark</span>}
-          </button> */}
-
+        <div className={`p-0 border-t border-app-border-default ${isCollapsed ? 'flex flex-col items-center space-y-6' : 'space-y-4'}`}>
           {isCollapsed ? (
             <div
               onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 bg-white/90 text-black rounded-full mb-2 flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer transition-all"
+              className="w-10 h-10 bg-app-primary text-app-primary-foreground rounded-full mb-2 flex items-center justify-center text-[10px] font-bold shadow-inner cursor-pointer transition-all"
             >
               {initials}
             </div>
           ) : (
             <div className="dropdown dropdown-top w-full">
-              <div tabIndex={0} role="button" className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-white/5 transition-all w-full text-left">
+              <div tabIndex={0} role="button" className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-app-surface-glass transition-all w-full text-left">
                 <div className="relative">
-                  <div className="w-9 h-9 bg-white/90 text-black rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
+                  <div className="w-9 h-9 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
                     {initials}
                   </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-xs font-bold text-white/70 truncate tracking-tight">{userName}</p>
-                  <p className="text-[10px] text-white/30 truncate font-medium">{userEmail}</p>
+                  <p className="text-xs font-bold text-app-text-secondary truncate tracking-tight">{userName}</p>
+                  <p className="text-[10px] text-app-text-muted truncate font-medium">{userEmail}</p>
                 </div>
               </div>
-              <ul tabIndex={0} className="dropdown-content menu bg-black border border-white/10 text-white rounded-xl z-[1] w-full p-2 shadow-lg mb-2">
-                <li><a className="hover:bg-white/10 rounded-lg">Settings</a></li>
-                <li><a onClick={() => signOut()} className="hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg">Logout</a></li>
+              <ul tabIndex={0} className="dropdown-content menu bg-app-surface border border-app-border-default text-app-text-primary rounded-xl z-[1] w-full p-2 shadow-lg mb-2">
+                <li><Link href="/ai/setting" className="hover:bg-app-surface-glass-strong rounded-lg">Settings</Link></li>
+                <li><a onClick={() => signOut()} className="hover:bg-app-danger-soft text-app-danger-strong rounded-lg">Logout</a></li>
               </ul>
             </div>
           )}
@@ -331,9 +324,9 @@ function SidebarNavItem({
 }) {
   const content = (
     <div className={`flex items-center transition-all cursor-pointer group ${isCollapsed ? "w-6 h-6 justify-center rounded-xl" : "w-full gap-3 px-3 py-2 rounded-xl"
-      } ${active ? "bg-white/5 text-white" : "text-white/40 hover:bg-white/[0.03] hover:text-white/80"
+      } ${active ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
       }`}>
-      <span className="text-white/40 group-hover:text-white transition-colors shrink-0">{icon}</span>
+      <span className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0">{icon}</span>
       {!isCollapsed && <span>{label}</span>}
     </div>
   );

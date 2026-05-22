@@ -57,15 +57,15 @@ function KanbanColumn({ id, title, tasks, onEdit, onAddTask, color }: any) {
             color === "amber" && "bg-amber-500",
             color === "emerald" && "bg-emerald-500"
           )} />
-          <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">{title}</h3>
-          <Badge variant="outline" className="bg-white/5 border-white/10 text-white/40 rounded-full">
+          <h3 className="text-sm font-semibold text-app-text-soft uppercase tracking-wider">{title}</h3>
+          <Badge variant="outline" className="bg-app-surface-glass border-app-border-default text-app-text-muted rounded-full">
             {tasks.length}
           </Badge>
         </div>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="size-8 hover:bg-white/5 text-white/40 hover:text-white"
+          className="size-8 hover:bg-app-surface-glass text-app-text-muted hover:text-app-text-primary"
           onClick={onAddTask}
         >
           <Plus size={14} />
@@ -74,7 +74,7 @@ function KanbanColumn({ id, title, tasks, onEdit, onAddTask, color }: any) {
 
       <div 
         ref={setNodeRef}
-        className="flex-1 flex flex-col gap-4 p-3 rounded-2xl bg-white/6 border border-dashed border-white/5 transition-colors"
+        className="flex-1 flex flex-col gap-4 p-3 rounded-2xl bg-white/6 border border-dashed border-app-border-subtle transition-colors"
       >
         <SortableContext items={tasks.map((t: any) => String(t._id))} strategy={verticalListSortingStrategy}>
           {tasks?.map((task: any) => (
@@ -83,14 +83,14 @@ function KanbanColumn({ id, title, tasks, onEdit, onAddTask, color }: any) {
         </SortableContext>
         
         {tasks.length === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center py-12 text-white/10 italic text-sm">
+          <div className="flex-1 flex flex-col items-center justify-center py-12 text-app-text-ghost italic text-sm">
             No tasks here
           </div>
         )}
 
         <Button
           variant="ghost"
-          className="w-full justify-start rounded-full text-white/40 hover:text-white/40 hover:bg-white/5 border border-dashed border-transparent hover:border-white/5 h-10 px-3"
+          className="w-full justify-start rounded-full text-app-text-muted hover:text-app-text-muted hover:bg-app-surface-glass border border-dashed border-transparent hover:border-app-border-subtle h-10 px-3"
           onClick={onAddTask}
         >
           <Plus size={14} className="mr-2" />

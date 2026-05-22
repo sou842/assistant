@@ -579,7 +579,7 @@ export function MagicBento({
       >
         {items.map((card, index) => {
           const baseClassName = cn(
-            "bento-card flex flex-col justify-between relative min-h-[200px] w-full p-6 rounded-2xl border border-white/10 overflow-hidden transition-all duration-300 ease-in-out",
+            "bento-card flex flex-col justify-between relative min-h-[200px] w-full p-6 rounded-2xl border border-app-border-default overflow-hidden transition-all duration-300 ease-in-out",
             enableBorderGlow && 'card--border-glow',
             card.colSpan || 'col-span-1',
             card.className
@@ -597,19 +597,19 @@ export function MagicBento({
           const renderContent = () => (
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-mono text-white/50 uppercase tracking-widest">{card.label}</span>
+                <span className="text-xs font-mono text-app-text-soft uppercase tracking-widest">{card.label}</span>
               </div>
               <div className="mt-auto">
                 <h3 className={cn("text-xl font-display mb-2", textAutoHide && "text-clamp-1")}>
                   {card.title}
                 </h3>
-                <p className={cn("text-sm text-white/60 leading-relaxed", textAutoHide && "text-clamp-2")}>
+                <p className={cn("text-sm text-app-text-soft leading-relaxed", textAutoHide && "text-clamp-2")}>
                   {card.description}
                 </p>
                 {card.stats && (
                   <div className="mt-6 pt-20 flex flex-col gap-1">
-                    <span className="text-5xl font-display text-white">{card.stats.value}</span>
-                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">{card.stats.label}</span>
+                    <span className="text-5xl font-display text-app-text-primary">{card.stats.value}</span>
+                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-app-text-muted">{card.stats.label}</span>
                   </div>
                 )}
               </div>

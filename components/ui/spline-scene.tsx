@@ -32,7 +32,7 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
       {inView && (
         <Suspense
           fallback={
-            <div className="w-full h-full flex items-center justify-center bg-black/5 rounded-lg">
+            <div className="w-full h-full flex items-center justify-center bg-app-canvas/5 rounded-lg">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           }

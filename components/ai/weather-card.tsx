@@ -68,7 +68,7 @@ export function WeatherCard({ data }: { data: WeatherData }) {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   
   return (
-    <div className="my-6 w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-[#070707] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="my-6 w-full max-w-md overflow-hidden rounded-[2rem] border border-app-border-default bg-[#070707] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="relative p-6">
         <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition">
@@ -76,49 +76,49 @@ export function WeatherCard({ data }: { data: WeatherData }) {
         </div>
         
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-white/40 mb-1">
+          <div className="flex items-center gap-2 text-app-text-muted mb-1">
             <Navigation size={12} className="rotate-45" />
             <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{data.location}</span>
           </div>
           
           <div className="flex items-baseline gap-1">
-            <h1 className="text-6xl font-light tracking-tighter text-white">
+            <h1 className="text-6xl font-light tracking-tighter text-app-text-primary">
               {Math.round(data.current.temperature)}
             </h1>
-            <span className="text-2xl font-light text-white/30">{data.units.temperature}</span>
+            <span className="text-2xl font-light text-app-text-muted">{data.units.temperature}</span>
           </div>
           
-          <p className="mt-2 text-sm font-medium text-white/70">
+          <p className="mt-2 text-sm font-medium text-app-text-soft">
             {getWeatherDescription(data.current.weathercode)}
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-px bg-white/5 border-y border-white/5">
+      <div className="grid grid-cols-2 gap-px bg-app-surface-glass border-y border-app-border-subtle">
         <div className="bg-[#070707] p-4 flex items-center gap-3">
-          <div className="size-8 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
+          <div className="size-8 rounded-xl bg-app-surface-glass flex items-center justify-center text-app-text-muted">
             <Wind size={14} />
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-white/25">Wind Speed</p>
-            <p className="text-xs font-medium text-white/80">{data.current.windspeed} {data.units.windspeed}</p>
+            <p className="text-xs font-medium text-app-text-secondary">{data.current.windspeed} {data.units.windspeed}</p>
           </div>
         </div>
         <div className="bg-[#070707] p-4 flex items-center gap-3">
-          <div className="size-8 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
+          <div className="size-8 rounded-xl bg-app-surface-glass flex items-center justify-center text-app-text-muted">
             <Thermometer size={14} />
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-white/25">Max Temp</p>
-            <p className="text-xs font-medium text-white/80">{Math.round(data.daily.temperature_2m_max[0])}°</p>
+            <p className="text-xs font-medium text-app-text-secondary">{Math.round(data.daily.temperature_2m_max[0])}°</p>
           </div>
         </div>
       </div>
 
       {/* Forecast */}
       <div className="p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 mb-4">7-Day Forecast</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-text-faint mb-4">7-Day Forecast</p>
         <div className="space-y-4">
           {data.daily.time.slice(1, 6).map((time, i) => {
             const date = new Date(time);
@@ -127,11 +127,11 @@ export function WeatherCard({ data }: { data: WeatherData }) {
             
             return (
               <div key={time} className="flex items-center justify-between group/day">
-                <span className="text-xs font-medium text-white/40 w-10 group-hover/day:text-white/60 transition">
+                <span className="text-xs font-medium text-app-text-muted w-10 group-hover/day:text-app-text-soft transition">
                   {dayName}
                 </span>
                 <div className="flex items-center gap-3 flex-1 px-4">
-                  <div className="size-1 w-full bg-white/5 rounded-full overflow-hidden relative h-1">
+                  <div className="size-1 w-full bg-app-surface-glass rounded-full overflow-hidden relative h-1">
                     <div 
                       className="absolute inset-y-0 bg-gradient-to-r from-blue-500/40 to-indigo-500/40 rounded-full"
                       style={{ 
@@ -144,8 +144,8 @@ export function WeatherCard({ data }: { data: WeatherData }) {
                 <div className="flex items-center gap-3 min-w-[80px] justify-end">
                   {getWeatherIcon(data.daily.weather_code[index], 14)}
                   <div className="flex gap-2 text-[11px] font-medium">
-                    <span className="text-white/70">{Math.round(data.daily.temperature_2m_max[index])}°</span>
-                    <span className="text-white/20">{Math.round(data.daily.temperature_2m_min[index])}°</span>
+                    <span className="text-app-text-soft">{Math.round(data.daily.temperature_2m_max[index])}°</span>
+                    <span className="text-app-text-faint">{Math.round(data.daily.temperature_2m_min[index])}°</span>
                   </div>
                 </div>
               </div>

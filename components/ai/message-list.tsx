@@ -273,12 +273,12 @@ const MessageRow = React.memo(function MessageRow({
               isStreaming={isLastStreaming}
               className="w-full"
             >
-              <ReasoningTrigger className="py-2 px-1 text-white/40 hover:text-white/60" />
-              <ReasoningContent className="py-4 px-1 text-white/50 leading-relaxed max-w-2xl">
+              <ReasoningTrigger className="py-2 px-1 text-app-text-muted hover:text-app-text-soft" />
+              <ReasoningContent className="py-4 px-1 text-app-text-soft leading-relaxed max-w-2xl">
                 <div className="flex flex-col gap-3">
                   {/* AI Reasoning Text */}
                   {getMessageReasoning(message) && (
-                    <div className="text-sm border-l-2 border-white/10 pl-4 py-1 italic mb-2">
+                    <div className="text-sm border-l-2 border-app-border-default pl-4 py-1 italic mb-2">
                       {getMessageReasoning(message)}
                     </div>
                   )}
@@ -290,7 +290,7 @@ const MessageRow = React.memo(function MessageRow({
                         <div key={ti.toolCallId || idx} className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
                           <div className="flex items-center gap-2.5">
                             <div className={`size-1.5 rounded-full shrink-0 ${ti.state === 'result' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-blue-400 animate-pulse'}`} />
-                            <span className="text-xs font-medium tracking-tight text-white/70">
+                            <span className="text-xs font-medium tracking-tight text-app-text-soft">
                               {getToolLabel(ti.toolName, ti.state)}
                             </span>
                           </div>
@@ -323,12 +323,12 @@ const MessageRow = React.memo(function MessageRow({
               </ReasoningContent>
             </Reasoning>
           )}
-          <MessageContent className={message.role === 'user' ? 'group-[.is-user]:bg-[#0A0A0A] group-[.is-user]:text-white/90 group-[.is-user]:rounded-2xl group-[.is-user]:border group-[.is-user]:border-white/5 group-[.is-user]:shadow-2xl' : 'text-white/80'}>
+          <MessageContent className={message.role === 'user' ? 'group-[.is-user]:bg-app-surface group-[.is-user]:text-app-text-secondary group-[.is-user]:rounded-2xl group-[.is-user]:border group-[.is-user]:border-app-border-subtle group-[.is-user]:shadow-2xl' : 'text-app-text-secondary'}>
             {isEditing ? (
               <div className="flex flex-col w-full min-w-[400px] bg-transparent rounded-[2rem] p-0 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                 <textarea
                   autoFocus
-                  className="w-full bg-transparent border-none text-base text-white/90 outline-none resize-none min-h-[80px] placeholder:text-white/20"
+                  className="w-full bg-transparent border-none text-base text-app-text-secondary outline-none resize-none min-h-[80px] placeholder:text-app-text-faint"
                   onChange={(e) => setEditingContent(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -342,7 +342,7 @@ const MessageRow = React.memo(function MessageRow({
                 />
                 <div className="flex justify-end gap-3 mt-4">
                   <button
-                    className="px-4 py-1.5 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80 transition-all active:scale-95"
+                    className="px-4 py-1.5 rounded-full bg-app-canvas text-app-text-primary text-sm font-medium hover:bg-app-canvas/80 transition-all active:scale-95"
                     onClick={() => setEditingId(null)}
                   >
                     Cancel
@@ -359,11 +359,11 @@ const MessageRow = React.memo(function MessageRow({
                 </div>
               </div>
             ) : isStreamingAssistant ? (
-              <pre className="whitespace-pre-wrap break-words text-white/80 leading-relaxed text-base">
+              <pre className="whitespace-pre-wrap break-words text-app-text-secondary leading-relaxed text-base">
                 {text}
               </pre>
             ) : (
-              <MessageResponse isAnimating={isLastStreaming} className="prose prose-invert prose-base max-w-none prose-p:leading-relaxed prose-pre:bg-[#050505] prose-pre:border prose-pre:border-white/5">
+              <MessageResponse isAnimating={isLastStreaming} className="prose prose-invert prose-base max-w-none prose-p:leading-relaxed prose-pre:bg-[#050505] prose-pre:border prose-pre:border-app-border-subtle">
                 {text}
               </MessageResponse>
             )}
@@ -415,7 +415,7 @@ const MessageRow = React.memo(function MessageRow({
                     filename: attachment.filename,
                     mediaType: attachment.mediaType,
                     url: attachment.url
-                  }} className="rounded-xl border border-white/5 bg-white/5 p-1 hover:border-primary/30 transition-all">
+                  }} className="rounded-xl border border-app-border-subtle bg-app-surface-glass p-1 hover:border-primary/30 transition-all">
                     <AttachmentPreview />
                   </Attachment>
                 ))}
@@ -427,7 +427,7 @@ const MessageRow = React.memo(function MessageRow({
             "mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
             message.role === 'user' && "justify-end"
           )}>
-            <MessageActions className="bg-[#080808] p-1 rounded-full border border-white/5 shadow-xl">
+            <MessageActions className="bg-[#080808] p-1 rounded-full border border-app-border-subtle shadow-xl">
               <MessageAction tooltip="Copy message" onClick={() => copyToClipboard(text)} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
                 <Copy size={13} />
               </MessageAction>

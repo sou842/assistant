@@ -263,8 +263,8 @@ export const AttachmentPreview = ({
       return (
         <div className="relative size-full flex items-center justify-center">
           {content}
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <div className="size-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+          <div className="absolute inset-0 bg-app-canvas/60 flex items-center justify-center">
+            <div className="size-4 rounded-full border-2 border-app-border-strong border-t-white animate-spin" />
           </div>
         </div>
       );

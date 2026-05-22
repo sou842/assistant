@@ -63,7 +63,7 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-white data-[state=checked]:text-black"
+          className="translate-y-[2px] border-app-border-strong data-[state=checked]:bg-white data-[state=checked]:text-black"
         />
       ),
       cell: ({ row }) => (
@@ -71,7 +71,7 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
-          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-white data-[state=checked]:text-black"
+          className="translate-y-[2px] border-app-border-strong data-[state=checked]:bg-white data-[state=checked]:text-black"
         />
       ),
       enableSorting: false,
@@ -84,14 +84,14 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="hover:bg-white/5 -ml-4"
+            className="hover:bg-app-surface-glass -ml-4"
           >
             Title
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
-      cell: ({ row }) => <div className="font-medium text-white capitalize">{row?.getValue("title")}</div>,
+      cell: ({ row }) => <div className="font-medium text-app-text-primary capitalize">{row?.getValue("title")}</div>,
     },
     {
       accessorKey: "status",
@@ -139,7 +139,7 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
       header: "Due Date",
       cell: ({ row }) => {
         const date = row.getValue("dueDate");
-        return <div className="text-white/60">{date ? format(new Date(date as string), "MMM d, yyyy") : "-"}</div>;
+        return <div className="text-app-text-soft">{date ? format(new Date(date as string), "MMM d, yyyy") : "-"}</div>;
       },
     },
     {
@@ -149,11 +149,11 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/5">
+              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-app-surface-glass">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+            <DropdownMenuContent align="end" className="bg-zinc-900 border-app-border-default text-app-text-primary">
               <DropdownMenuItem onClick={() => onEdit(task)}>Edit</DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(task._id)}
@@ -196,27 +196,27 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/20" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-faint" />
           <Input
             placeholder="Search tasks..."
             value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("title")?.setFilterValue(event.target.value)
             }
-            className="pl-10 bg-white/5 border-white/10 focus:border-white/20 h-10 rounded-full"
+            className="pl-10 bg-app-surface-glass border-app-border-default focus:border-app-border-strong h-10 rounded-full"
           />
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10 rounded-full bg-white/5 border-white/10 hover:bg-white/10 text-white flex gap-2">
+              <Button variant="outline" className="h-10 rounded-full bg-app-surface-glass border-app-border-default hover:bg-app-surface-glass-strong text-app-text-primary flex gap-2">
                 <Settings2 className="size-4" />
                 <span>View</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[150px] bg-zinc-900 border-white/10 text-white">
+            <DropdownMenuContent align="end" className="w-[150px] bg-zinc-900 border-app-border-default text-app-text-primary">
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuSeparator className="bg-app-surface-glass" />
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
@@ -237,13 +237,13 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/2 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-app-border-default bg-white/2 backdrop-blur-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-white/3">
             {table?.getHeaderGroups()?.map((headerGroup) => (
-              <TableRow key={headerGroup?.id} className="hover:bg-transparent border-white/10">
+              <TableRow key={headerGroup?.id} className="hover:bg-transparent border-app-border-default">
                 {headerGroup?.headers?.map((header) => (
-                  <TableHead key={header?.id} className="text-white/40 py-2 px-6">
+                  <TableHead key={header?.id} className="text-app-text-muted py-2 px-6">
                     {header?.isPlaceholder
                       ? null
                       : flexRender(header?.column?.columnDef?.header, header?.getContext())}
@@ -265,7 +265,7 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-white/20">
+                <TableCell colSpan={columns.length} className="h-24 text-center text-app-text-faint">
                   No tasks found.
                 </TableCell>
               </TableRow>
@@ -273,22 +273,22 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
           </TableBody>
         </Table>
         <div className="flex items-center justify-between px-2 py-4">
-          <div className="text-xs text-white/40">
+          <div className="text-xs text-app-text-muted">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
           <div className="flex items-center gap-6 lg:gap-8">
             <div className="flex items-center gap-2">
-              <p className="text-xs font-medium text-white/40">Rows per page</p>
+              <p className="text-xs font-medium text-app-text-muted">Rows per page</p>
               <div className="dropdown dropdown-top dropdown-end">
                 <button
                   tabIndex={0}
-                  className="h-8 px-3 rounded-full border border-white/10 bg-white/5 text-[11px] text-white/60 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
+                  className="h-8 px-3 rounded-full border border-app-border-default bg-app-surface-glass text-[11px] text-app-text-soft hover:text-app-text-primary flex items-center gap-2 transition-all cursor-pointer"
                 >
                   {table.getState().pagination.pageSize}
                   <ChevronDown size={12} className="opacity-40" />
                 </button>
-                <ul tabIndex={0} className="dropdown-content z-10 menu p-2 shadow-2xl bg-[#0F0F0F] border border-white/10 rounded-xl w-24 mb-2">
+                <ul tabIndex={0} className="dropdown-content z-10 menu p-2 shadow-2xl bg-app-surface-elevated border border-app-border-default rounded-xl w-24 mb-2">
                   {[10, 20, 30, 40, 50].map((pageSize) => (
                     <li key={pageSize}>
                       <button
@@ -296,8 +296,8 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
                         className={cn(
                           "text-[11px] py-2 justify-center",
                           table.getState().pagination.pageSize === pageSize
-                            ? "bg-white/10 text-white"
-                            : "text-white/40 hover:bg-white/5"
+                            ? "bg-app-surface-glass-strong text-app-text-primary"
+                            : "text-app-text-muted hover:bg-app-surface-glass"
                         )}
                       >
                         {pageSize}
@@ -307,28 +307,28 @@ export function TaskTable({ tasks, onEdit, onDelete, onStatusChange }: TaskTable
                 </ul>
               </div>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-xs font-medium text-white/40">
+            <div className="flex w-[100px] items-center justify-center text-xs font-medium text-app-text-muted">
               Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount()}
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-full bg-white/5 border-white/10"
+                className="h-8 w-8 p-0 rounded-full bg-app-surface-glass border-app-border-default"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to previous page</span>
-                <ChevronLeft className="h-4 w-4 text-white" />
+                <ChevronLeft className="h-4 w-4 text-app-text-primary" />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0 rounded-full bg-white/5 border-white/10"
+                className="h-8 w-8 p-0 rounded-full bg-app-surface-glass border-app-border-default"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to next page</span>
-                <ChevronRight className="h-4 w-4 text-white" />
+                <ChevronRight className="h-4 w-4 text-app-text-primary" />
               </Button>
             </div>
           </div>
@@ -355,7 +355,7 @@ function DraggableTableRow({ row, children }: { row: any, children: React.ReactN
       {...listeners}
       data-state={row.getIsSelected() && "selected"}
       className={cn(
-        "hover:bg-white/[0.04] border-white/5 transition-colors cursor-grab active:cursor-grabbing",
+        "hover:bg-white/[0.04] border-app-border-subtle transition-colors cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50"
       )}
     >

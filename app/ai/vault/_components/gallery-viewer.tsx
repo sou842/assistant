@@ -161,17 +161,17 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#070707] text-white">
+    <div className="flex flex-col h-full bg-[#070707] text-app-text-primary">
       
       {/* FILTER & STATS BAR */}
-      <div className="p-6 border-b border-white/5 bg-white/1 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+      <div className="p-6 border-b border-app-border-subtle bg-white/1 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         
         {/* TABS */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-black/40 p-1 rounded-full border border-white/5 w-fit">
+        <div className="flex flex-wrap items-center gap-1.5 bg-app-canvas/40 p-1 rounded-full border border-app-border-subtle w-fit">
           <button
             onClick={() => setActiveTab("all")}
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeTab === "all" ? "bg-white/10 text-white shadow-md border border-white/5" : "text-white/40 hover:text-white"
+              activeTab === "all" ? "bg-app-surface-glass-strong text-app-text-primary shadow-md border border-app-border-subtle" : "text-app-text-muted hover:text-app-text-primary"
             }`}
           >
             All Files
@@ -179,7 +179,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
           <button
             onClick={() => setActiveTab("images")}
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeTab === "images" ? "bg-white/10 text-white shadow-md border border-white/5" : "text-white/40 hover:text-white"
+              activeTab === "images" ? "bg-app-surface-glass-strong text-app-text-primary shadow-md border border-app-border-subtle" : "text-app-text-muted hover:text-app-text-primary"
             }`}
           >
             Images
@@ -187,7 +187,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
           <button
             onClick={() => setActiveTab("documents")}
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeTab === "documents" ? "bg-white/10 text-white shadow-md border border-white/5" : "text-white/40 hover:text-white"
+              activeTab === "documents" ? "bg-app-surface-glass-strong text-app-text-primary shadow-md border border-app-border-subtle" : "text-app-text-muted hover:text-app-text-primary"
             }`}
           >
             Documents
@@ -195,7 +195,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
           <button
             onClick={() => setActiveTab("other")}
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-              activeTab === "other" ? "bg-white/10 text-white shadow-md border border-white/5" : "text-white/40 hover:text-white"
+              activeTab === "other" ? "bg-app-surface-glass-strong text-app-text-primary shadow-md border border-app-border-subtle" : "text-app-text-muted hover:text-app-text-primary"
             }`}
           >
             Other
@@ -205,18 +205,18 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
         {/* SEARCH AND STATS */}
         <div className="flex items-center gap-4 flex-1 max-w-md md:justify-end">
           <div className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-white/30" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-app-text-muted" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search in Gallery..."
-              className="h-9 w-full rounded-full border border-white/5 bg-black/35 pl-9.5 pr-4 text-xs outline-none focus:border-white/15 transition-all text-white/90 placeholder:text-white/20"
+              className="h-9 w-full rounded-full border border-app-border-subtle bg-app-canvas/35 pl-9.5 pr-4 text-xs outline-none focus:border-white/15 transition-all text-app-text-secondary placeholder:text-app-text-faint"
             />
           </div>
           
-          <div className="flex items-center gap-2 shrink-0 text-white/45 text-xs bg-white/3 py-2 px-3.5 border border-white/5 rounded-full">
-            <HardDrive size={13} className="text-white/60" />
+          <div className="flex items-center gap-2 shrink-0 text-white/45 text-xs bg-white/3 py-2 px-3.5 border border-app-border-subtle rounded-full">
+            <HardDrive size={13} className="text-app-text-soft" />
             <span>{stats.totalCount} files ({stats.totalSizeStr})</span>
           </div>
         </div>
@@ -227,11 +227,11 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
       <div className="flex-1 overflow-y-auto p-6">
         {filteredFiles.length === 0 ? (
           <div className="min-h-[300px] flex flex-col items-center justify-center text-center">
-            <div className="size-14 rounded-2xl bg-white/3 border border-white/5 flex items-center justify-center mb-4">
+            <div className="size-14 rounded-2xl bg-white/3 border border-app-border-subtle flex items-center justify-center mb-4">
               <ImageIcon className="size-6 text-white/25" />
             </div>
-            <h3 className="font-semibold text-white/70">No assets found</h3>
-            <p className="text-xs text-white/30 max-w-xs mt-1.5 leading-normal">
+            <h3 className="font-semibold text-app-text-soft">No assets found</h3>
+            <p className="text-xs text-app-text-muted max-w-xs mt-1.5 leading-normal">
               {query ? "Try checking spelling or adjusting the query filters." : "Attach files in Jarvis Chat or paste images inside notes to populate your Vault Gallery."}
             </p>
           </div>
@@ -247,11 +247,11 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
               return (
                 <div
                   key={file.id}
-                  className="group relative flex flex-col rounded-2xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-200 overflow-hidden shadow-lg hover:scale-[1.02]"
+                  className="group relative flex flex-col rounded-2xl border border-app-border-subtle bg-white/[0.01] hover:bg-white/[0.03] transition-all duration-200 overflow-hidden shadow-lg hover:scale-[1.02]"
                 >
                   
                   {/* PREVIEW CONTAINER */}
-                  <div className="relative aspect-video w-full bg-black/40 overflow-hidden border-b border-white/5 flex items-center justify-center shrink-0">
+                  <div className="relative aspect-video w-full bg-app-canvas/40 overflow-hidden border-b border-app-border-subtle flex items-center justify-center shrink-0">
                     {isImage && !failedImages[file.id] ? (
                       <>
                         <img
@@ -263,10 +263,10 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                             setFailedImages(prev => ({ ...prev, [file.id]: true }));
                           }}
                         />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-app-canvas/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <button
                             onClick={() => setLightboxFile(file)}
-                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors shadow-md cursor-pointer"
+                            className="p-2 rounded-full bg-app-surface-glass-strong hover:bg-white/20 text-app-text-primary border border-app-border-default transition-colors shadow-md cursor-pointer"
                             title="Quick View"
                           >
                             <Eye size={15} />
@@ -275,7 +275,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                             href={file.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors shadow-md flex items-center justify-center"
+                            className="p-2 rounded-full bg-app-surface-glass-strong hover:bg-white/20 text-app-text-primary border border-app-border-default transition-colors shadow-md flex items-center justify-center"
                             title="Open original"
                           >
                             <ExternalLink size={15} />
@@ -285,18 +285,18 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                     ) : (
                       <>
                         <div className="flex flex-col items-center gap-2.5">
-                          <div className="size-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
+                          <div className="size-14 rounded-2xl bg-app-surface-glass border border-app-border-default flex items-center justify-center shadow-inner">
                             {isImage ? <ImageIcon className="size-6 text-purple-400/80" /> : getFileIcon(file.mediaType)}
                           </div>
-                          {isImage && <span className="text-[10px] text-white/30">Preview Unavailable</span>}
+                          {isImage && <span className="text-[10px] text-app-text-muted">Preview Unavailable</span>}
                         </div>
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-app-canvas/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           {isImage ? (
                             <a
                               href={file.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors shadow-md flex items-center justify-center"
+                              className="p-2 rounded-full bg-app-surface-glass-strong hover:bg-white/20 text-app-text-primary border border-app-border-default transition-colors shadow-md flex items-center justify-center"
                               title="Open original"
                             >
                               <ExternalLink size={15} />
@@ -305,7 +305,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                             <>
                               <button
                                 onClick={() => setLightboxFile(file)}
-                                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors shadow-md cursor-pointer"
+                                className="p-2 rounded-full bg-app-surface-glass-strong hover:bg-white/20 text-app-text-primary border border-app-border-default transition-colors shadow-md cursor-pointer"
                                 title="Quick View"
                               >
                                 <Eye size={15} />
@@ -314,7 +314,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                                 href={file.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors shadow-md flex items-center justify-center"
+                                className="p-2 rounded-full bg-app-surface-glass-strong hover:bg-white/20 text-app-text-primary border border-app-border-default transition-colors shadow-md flex items-center justify-center"
                                 title="Open in new tab"
                               >
                                 <ExternalLink size={15} />
@@ -329,7 +329,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                     <button
                       disabled={isDeleting === file.id}
                       onClick={() => handleDeleteFile(file.id)}
-                      className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/60 hover:bg-red-500/80 text-white border border-white/10 transition-all opacity-0 group-hover:opacity-100 shadow-md cursor-pointer disabled:opacity-50"
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-app-canvas/60 hover:bg-red-500/80 text-app-text-primary border border-app-border-default transition-all opacity-0 group-hover:opacity-100 shadow-md cursor-pointer disabled:opacity-50"
                       title="Delete asset"
                     >
                       <Trash2 size={13} className={isDeleting === file.id ? "animate-pulse" : ""} />
@@ -339,18 +339,18 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                   {/* DETAILS PANELS */}
                   <div className="p-4 flex flex-col flex-1 min-w-0 justify-between">
                     <div className="min-w-0">
-                      <h4 className="font-medium text-xs text-white/90 truncate select-all" title={file.filename}>
+                      <h4 className="font-medium text-xs text-app-text-secondary truncate select-all" title={file.filename}>
                         {file.filename}
                       </h4>
                       
                       <div className="text-[10px] text-white/35 mt-1.5 flex items-center gap-1.5">
-                        <span className="absolute top-2 left-2 bg-white/5 px-2 py-0.5 rounded-full border border-white/5 font-mono uppercase text-[9px]">
+                        <span className="absolute top-2 left-2 bg-app-surface-glass px-2 py-0.5 rounded-full border border-app-border-subtle font-mono uppercase text-[9px]">
                           {file.mediaType.split("/")[1] || "unknown"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="border-t border-white/5 mt-4 pt-3.5 flex items-center justify-between text-[10px] text-white/30 shrink-0">
+                    <div className="border-t border-app-border-subtle mt-4 pt-3.5 flex items-center justify-between text-[10px] text-app-text-muted shrink-0">
                       <div className="flex items-center gap-1">
                         <Calendar size={11} className="opacity-80" />
                         <span>{formattedDate}</span>
@@ -360,7 +360,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                       
                       <button
                         onClick={() => handleDownload(file.url, file.filename)}
-                        className="flex items-center gap-1 py-1 px-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:text-white transition-all font-medium text-white/70 cursor-pointer"
+                        className="flex items-center gap-1 py-1 px-2.5 rounded-full bg-app-surface-glass hover:bg-app-surface-glass-strong border border-app-border-subtle hover:text-app-text-primary transition-all font-medium text-app-text-soft cursor-pointer"
                         title="Download File"
                       >
                         <Download size={10} />
@@ -380,12 +380,12 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
       {/* COMPREHENSIVE LIGHTBOX OVERLAY */}
       {lightboxFile && (
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200 cursor-zoom-out"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-app-canvas/95 backdrop-blur-md animate-in fade-in duration-200 cursor-zoom-out"
           onClick={() => setLightboxFile(null)}
         >
           <button 
             type="button"
-            className="absolute top-6 right-6 size-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="absolute top-6 right-6 size-10 rounded-full bg-app-surface-glass-strong hover:bg-white/20 border border-app-border-default text-app-text-primary flex items-center justify-center transition-colors cursor-pointer"
             onClick={() => setLightboxFile(null)}
           >
             <X className="size-5" />
@@ -396,7 +396,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
               <img 
                 src={lightboxFile.url} 
                 alt={lightboxFile.filename} 
-                className="max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-white/5 animate-in zoom-in-95 duration-200"
+                className="max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-app-border-subtle animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : lightboxFile.mediaType?.startsWith("video/") ? (
@@ -404,17 +404,17 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                 src={lightboxFile.url} 
                 controls
                 autoPlay
-                className="max-h-[75vh] rounded-2xl shadow-2xl border border-white/5 animate-in zoom-in-95 duration-200"
+                className="max-h-[75vh] rounded-2xl shadow-2xl border border-app-border-subtle animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <iframe 
                 src={lightboxFile.url} 
-                className="w-[85vw] h-[80vh] rounded-2xl shadow-2xl bg-white/5 border border-white/5 animate-in zoom-in-95 duration-200"
+                className="w-[85vw] h-[80vh] rounded-2xl shadow-2xl bg-app-surface-glass border border-app-border-subtle animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
               />
             )}
-            <span className="text-white/60 text-xs px-4 py-1.5 rounded-full bg-white/5 border border-white/5 select-all" onClick={(e) => e.stopPropagation()}>
+            <span className="text-app-text-soft text-xs px-4 py-1.5 rounded-full bg-app-surface-glass border border-app-border-subtle select-all" onClick={(e) => e.stopPropagation()}>
               {lightboxFile.filename} ({formatBytes(lightboxFile.size)})
             </span>
           </div>

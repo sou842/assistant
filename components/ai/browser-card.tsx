@@ -38,11 +38,11 @@ export function BrowserCard({
 
   return (
     <div className={cn(
-      "w-full max-w-md rounded-2xl border bg-black/40 backdrop-blur-md p-4 transition-all duration-300 shadow-xl my-3",
+      "w-full max-w-md rounded-2xl border bg-app-canvas/40 backdrop-blur-md p-4 transition-all duration-300 shadow-xl my-3",
       status === "running" && "border-cyan-500/20 shadow-cyan-500/5",
       status === "success" && "border-emerald-500/20 shadow-emerald-500/5",
       status === "error" && "border-red-500/20 shadow-red-500/5",
-      status === "idle" && "border-white/5"
+      status === "idle" && "border-app-border-subtle"
     )}>
       <div className="flex items-center gap-3">
         <div className={cn(
@@ -50,7 +50,7 @@ export function BrowserCard({
           status === "running" && "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
           status === "success" && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
           status === "error" && "bg-red-500/10 border-red-500/20 text-red-400",
-          status === "idle" && "bg-white/5 border-white/10 text-white/40"
+          status === "idle" && "bg-app-surface-glass border-app-border-default text-app-text-muted"
         )}>
           {status === "running" ? (
             <Loader2 size={16} className="animate-spin" />
@@ -65,7 +65,7 @@ export function BrowserCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white/30">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-app-text-muted">
               Browser Control
             </span>
             <span className={cn(
@@ -73,12 +73,12 @@ export function BrowserCard({
               status === "running" && "bg-cyan-500/5 border-cyan-500/15 text-cyan-400/80",
               status === "success" && "bg-emerald-500/5 border-emerald-500/15 text-emerald-400/80",
               status === "error" && "bg-red-500/5 border-red-500/15 text-red-400/80",
-              status === "idle" && "bg-white/5 border-white/10 text-white/40"
+              status === "idle" && "bg-app-surface-glass border-app-border-default text-app-text-muted"
             )}>
               {getActionLabel(action)}
             </span>
           </div>
-          <h4 className="text-sm font-medium text-white/80 mt-1 truncate">
+          <h4 className="text-sm font-medium text-app-text-secondary mt-1 truncate">
             {description}
           </h4>
         </div>
@@ -86,13 +86,13 @@ export function BrowserCard({
 
       {/* Details Area */}
       {status === "running" && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
-          <span className="text-xs text-white/40 font-light">Sending command to browser companion...</span>
+        <div className="mt-3 pt-3 border-t border-app-border-subtle flex items-center gap-2">
+          <span className="text-xs text-app-text-muted font-light">Sending command to browser companion...</span>
         </div>
       )}
 
       {status === "success" && (
-        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-white/50 flex flex-col gap-1">
+        <div className="mt-3 pt-3 border-t border-app-border-subtle text-xs text-app-text-soft flex flex-col gap-1">
           <span className="text-emerald-400/80 font-medium">✓ Command executed successfully</span>
           {result?.url && (
             <a 
@@ -106,13 +106,13 @@ export function BrowserCard({
             </a>
           )}
           {result?.title && (
-            <span className="text-[10px] text-white/40 italic truncate">Tab title: "{result.title}"</span>
+            <span className="text-[10px] text-app-text-muted italic truncate">Tab title: "{result.title}"</span>
           )}
         </div>
       )}
 
       {status === "error" && (
-        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-red-400/90 font-light">
+        <div className="mt-3 pt-3 border-t border-app-border-subtle text-xs text-red-400/90 font-light">
           <p className="font-semibold text-[11px] mb-1">Execution Failed</p>
           <p className="opacity-80 break-words">{error || "Connection to browser extension lost or action failed."}</p>
         </div>

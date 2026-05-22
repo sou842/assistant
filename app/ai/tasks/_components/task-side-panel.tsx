@@ -114,13 +114,13 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-lg bg-black/90 backdrop-blur-3xl border-white/10 text-white p-0 flex flex-col">
-        <div className="p-4 border-b border-white/5">
+      <SheetContent className="sm:max-w-lg bg-app-canvas/90 backdrop-blur-3xl border-app-border-default text-app-text-primary p-0 flex flex-col">
+        <div className="p-4 border-b border-app-border-subtle">
           <SheetHeader className="p-0 gap-1">
-            <SheetTitle className="text-xl font-semibold text-white">
+            <SheetTitle className="text-xl font-semibold text-app-text-primary">
               {task?._id ? "Edit Task" : "Add Task"}
             </SheetTitle>
-            <SheetDescription className="text-white/40">
+            <SheetDescription className="text-app-text-muted">
               {task?._id ? "Update the details of your task." : "Create a new task to track your progress."}
             </SheetDescription>
           </SheetHeader>
@@ -134,11 +134,11 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/60">Title</FormLabel>
+                    <FormLabel className="text-app-text-soft">Title</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="What needs to be done?"
-                        className="h-12 rounded bg-white/5 border-white/10 focus:border-white/20 text-white text-base"
+                        className="h-12 rounded bg-app-surface-glass border-app-border-default focus:border-app-border-strong text-app-text-primary text-base"
                         {...field}
                       />
                     </FormControl>
@@ -152,11 +152,11 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white/60">Description</FormLabel>
+                    <FormLabel className="text-app-text-soft">Description</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Add more context to this task..."
-                        className="bg-white/5 border-white/10 focus:border-white/20 min-h-[140px] text-base resize-none rounded-lg"
+                        className="bg-app-surface-glass border-app-border-default focus:border-app-border-strong min-h-[140px] text-base resize-none rounded-lg"
                         {...field}
                       />
                     </FormControl>
@@ -171,14 +171,14 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/60">Status</FormLabel>
+                      <FormLabel className="text-app-text-soft">Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 focus:border-white/20 rounded-lg">
+                          <SelectTrigger className="w-full h-11 bg-app-surface-glass border-app-border-default focus:border-app-border-strong rounded-lg">
                             <SelectValue placeholder="Status" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary">
                           <SelectItem value="backlog">Backlog</SelectItem>
                           <SelectItem value="todo">To Do</SelectItem>
                           <SelectItem value="in-progress">In Progress</SelectItem>
@@ -195,14 +195,14 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/60">Priority</FormLabel>
+                      <FormLabel className="text-app-text-soft">Priority</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 focus:border-white/20 rounded-lg">
+                          <SelectTrigger className="w-full h-11 bg-app-surface-glass border-app-border-default focus:border-app-border-strong rounded-lg">
                             <SelectValue placeholder="Priority" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary">
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>
@@ -220,14 +220,14 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-white/60">Due Date</FormLabel>
+                    <FormLabel className="text-app-text-soft">Due Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "w-full h-11 pl-3 text-left font-normal bg-white/5 border-white/10 hover:bg-white/10 hover:text-white rounded-lg",
+                              "w-full h-11 pl-3 text-left font-normal bg-app-surface-glass border-app-border-default hover:bg-app-surface-glass-strong hover:text-app-text-primary rounded-lg",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -240,7 +240,7 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-zinc-950 border-white/10" align="start">
+                      <PopoverContent className="w-auto p-0 bg-zinc-950 border-app-border-default" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -260,12 +260,12 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
           </Form>
         </div>
 
-        <div className="p-4 border-t border-white/5 bg-white/2 flex flex-col-reverse items-center justify-between gap-4">
+        <div className="p-4 border-t border-app-border-subtle bg-white/2 flex flex-col-reverse items-center justify-between gap-4">
           {task?._id && (
             <Button
               type="button"
               variant="ghost"
-              className="w-full h-12 px-6 rounded-full text-gray-500 bg-transparent border border-white/10 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              className="w-full h-12 px-6 rounded-full text-gray-500 bg-transparent border border-app-border-default hover:text-red-400 hover:bg-red-500/10 transition-colors"
               onClick={handleDelete}
               disabled={isSubmitting}
             >

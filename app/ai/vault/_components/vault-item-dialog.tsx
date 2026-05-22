@@ -77,19 +77,19 @@ export function VaultItemDialog({ isOpen, onClose, itemId, type }: VaultItemDial
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-12">
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-app-canvas/60 backdrop-blur-sm"
         onClick={onClose}
       />
       
-      <div className="relative w-full h-full max-w-6xl bg-[#0F0F0F] border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full h-full max-w-6xl bg-app-surface-elevated border border-app-border-default rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* HEADER */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0F0F0F] shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-app-border-default bg-app-surface-elevated shrink-0">
           <div className="flex-1 flex items-center gap-3">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-transparent border-none text-lg font-semibold text-white outline-none w-full max-w-md placeholder:text-white/20"
+              className="bg-transparent border-none text-lg font-semibold text-app-text-primary outline-none w-full max-w-md placeholder:text-app-text-faint"
               placeholder="Enter title..."
             />
           </div>
@@ -105,7 +105,7 @@ export function VaultItemDialog({ isOpen, onClose, itemId, type }: VaultItemDial
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              className="p-2 rounded-xl text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass-strong transition cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -116,7 +116,7 @@ export function VaultItemDialog({ isOpen, onClose, itemId, type }: VaultItemDial
         <div className="flex-1 overflow-y-auto bg-[#070707] relative">
           {(isLoading && !isNew) || (!isNew && content === null) ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="size-8 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+              <div className="size-8 rounded-full border-2 border-app-border-default border-t-white animate-spin" />
             </div>
           ) : error ? (
             <div className="absolute inset-0 flex items-center justify-center text-red-400">

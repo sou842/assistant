@@ -75,16 +75,16 @@ export function GallerySidePanel({
   }, [galleryItems, searchQuery, filterType]);
 
   return (
-    <div className="flex flex-col h-full backdrop-blur-xl border-l border-white/5 w-full">
+    <div className="flex flex-col h-full backdrop-blur-xl border-l border-app-border-subtle w-full">
       {/* Panel Header */}
-      <div className="h-16 px-3 border-b border-white/6 flex items-center justify-between bg-black">
+      <div className="h-16 px-3 border-b border-white/6 flex items-center justify-between bg-app-canvas">
         {/* Category Tabs Filter */}
-        <div className="flex items-center bg-white/3 p-0.5 pl-1 pr-0.5 rounded-full border border-white/5">
+        <div className="flex items-center bg-white/3 p-0.5 pl-1 pr-0.5 rounded-full border border-app-border-subtle">
           <button
             onClick={() => setFilterType("all")}
             className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all cursor-pointer ${filterType === "all"
-              ? "bg-white/10 text-white"
-              : "text-white/40 hover:text-white"
+              ? "bg-app-surface-glass-strong text-app-text-primary"
+              : "text-app-text-muted hover:text-app-text-primary"
               }`}
           >
             ALL
@@ -92,8 +92,8 @@ export function GallerySidePanel({
           <button
             onClick={() => setFilterType("image")}
             className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all cursor-pointer ${filterType === "image"
-              ? "bg-white/10 text-white"
-              : "text-white/40 hover:text-white"
+              ? "bg-app-surface-glass-strong text-app-text-primary"
+              : "text-app-text-muted hover:text-app-text-primary"
               }`}
           >
             IMAGES
@@ -101,8 +101,8 @@ export function GallerySidePanel({
           <button
             onClick={() => setFilterType("file")}
             className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all cursor-pointer ${filterType === "file"
-              ? "bg-white/10 text-white"
-              : "text-white/40 hover:text-white"
+              ? "bg-app-surface-glass-strong text-app-text-primary"
+              : "text-app-text-muted hover:text-app-text-primary"
               }`}
           >
             FILES
@@ -114,7 +114,7 @@ export function GallerySidePanel({
             variant="outline"
             disabled={isRefreshing || isLoading}
             onClick={() => fetchGalleryItems(true)}
-            className="size-8 border border-white/5 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50 cursor-pointer"
+            className="size-8 border border-app-border-subtle rounded-full flex items-center justify-center text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin text-blue-400" : ""}`} />
           </Button>
@@ -126,7 +126,7 @@ export function GallerySidePanel({
           title="Close"
           variant="outline"
           onClick={onClose}
-          className="size-8 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+          className="size-8 rounded-full flex items-center justify-center text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass transition-all cursor-pointer"
         >
           <X className="size-4" />
         </Button>
@@ -136,14 +136,14 @@ export function GallerySidePanel({
       <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="size-8 rounded-full border-2 border-white/5 border-t-purple-400 animate-spin" />
-            <span className="text-xs text-white/30 font-medium">Loading your gallery...</span>
+            <div className="size-8 rounded-full border-2 border-app-border-subtle border-t-purple-400 animate-spin" />
+            <span className="text-xs text-app-text-muted font-medium">Loading your gallery...</span>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-            <AlertCircle className="size-8 text-white/10 mb-3" />
-            <p className="text-xs font-semibold text-white/50">No Assets Found</p>
-            <p className="text-[10px] text-white/20 max-w-[200px] mt-1">
+            <AlertCircle className="size-8 text-app-text-ghost mb-3" />
+            <p className="text-xs font-semibold text-app-text-soft">No Assets Found</p>
+            <p className="text-[10px] text-app-text-faint max-w-[200px] mt-1">
               {searchQuery ? `No files matched "${searchQuery}"` : "Your Vault Gallery is currently empty."}
             </p>
           </div>
@@ -158,17 +158,17 @@ export function GallerySidePanel({
                 <button
                   key={file.id}
                   onClick={() => onSelectFile(file)}
-                  className="break-inside-avoid mb-3 flex flex-col rounded-xl overflow-hidden bg-white/1 border border-white/5 hover:border-purple-500/30 hover:bg-white/2 transition-all text-left duration-300 group active:scale-[0.98] w-full cursor-pointer"
+                  className="break-inside-avoid mb-3 flex flex-col rounded-xl overflow-hidden bg-white/1 border border-app-border-subtle hover:border-purple-500/30 hover:bg-white/2 transition-all text-left duration-300 group active:scale-[0.98] w-full cursor-pointer"
                 >
                   {/* Gallery Visual Preview Area */}
                   {isImage ? (
-                    <div title={file?.filename} className="w-full overflow-hidden relative bg-black/40 flex items-center justify-center shrink-0 cursor-pointer">
+                    <div title={file?.filename} className="w-full overflow-hidden relative bg-app-canvas/40 flex items-center justify-center shrink-0 cursor-pointer">
                       <a
                         href={file?.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-2 left-2 p-1.5 rounded-full bg-black/60 hover:bg-purple-500/80 border border-white/10 text-white hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+                        className="absolute top-2 left-2 p-1.5 rounded-full bg-app-canvas/60 hover:bg-purple-500/80 border border-app-border-default text-app-text-primary hover:text-app-text-primary transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
                         title="View Full Image"
                       >
                         <ExternalLink className="size-3" />
@@ -182,13 +182,13 @@ export function GallerySidePanel({
                     </div>
                   ) : (
                     <>
-                      <div className="relative flex flex-col items-center justify-center gap-2 w-full pt-6 pb-2 bg-purple-500/2 group-hover:bg-purple-500/4 transition-colors border-b border-white/5 shrink-0">
+                      <div className="relative flex flex-col items-center justify-center gap-2 w-full pt-6 pb-2 bg-purple-500/2 group-hover:bg-purple-500/4 transition-colors border-b border-app-border-subtle shrink-0">
                         <a
                           href={file?.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute top-1 left-1 p-1 rounded-full bg-black/60 hover:bg-purple-500/80 border border-white/10 text-white hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+                          className="absolute top-1 left-1 p-1 rounded-full bg-app-canvas/60 hover:bg-purple-500/80 border border-app-border-default text-app-text-primary hover:text-app-text-primary transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
                           title="Open/View File"
                         >
                           <ExternalLink className="size-3" />
@@ -199,10 +199,10 @@ export function GallerySidePanel({
                         </span>
 
                         <div className="flex flex-col w-full px-2.5 py-1">
-                          <span title={file?.filename} className="text-[10px] font-medium text-white/90 truncate group-hover:text-purple-300 transition-colors leading-normal">
+                          <span title={file?.filename} className="text-[10px] font-medium text-app-text-secondary truncate group-hover:text-purple-300 transition-colors leading-normal">
                             {file?.filename}
                           </span>
-                          <span title={formatBytes(file?.size)} className="text-[8px] text-white/30 font-mono mt-0.5">
+                          <span title={formatBytes(file?.size)} className="text-[8px] text-app-text-muted font-mono mt-0.5">
                             {formatBytes(file?.size)}
                           </span>
                         </div>
@@ -217,15 +217,15 @@ export function GallerySidePanel({
       </div>
 
       {/* Panel Footer / Quick Tips */}
-      <div className="p-3 border-t border-white/5 bg-white/[0.01] text-center">
+      <div className="p-3 border-t border-app-border-subtle bg-white/[0.01] text-center">
         <div className="relative flex items-center">
-          <Search className="absolute left-3 size-3.5 text-white/30" />
+          <Search className="absolute left-3 size-3.5 text-app-text-muted" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search gallery assets..."
-            className="w-full pl-9 pr-4 py-2 bg-white/[0.02] border border-white/5 rounded-full text-xs text-white placeholder:text-white/20 outline-none focus:border-purple-500/30 focus:bg-white/[0.04] transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-app-surface-glass-soft border border-app-border-subtle rounded-full text-xs text-app-text-primary placeholder:text-app-text-faint outline-none focus:border-purple-500/30 focus:bg-white/[0.04] transition-all"
           />
         </div>
       </div>

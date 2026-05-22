@@ -52,18 +52,18 @@ export function EmptyState({ input, setInput, sendMessage, selectedModel }: Empt
   };
 
   return (
-    <div className="h-fit mt-64 bg-black flex flex-col items-center justify-center px-4 text-white">
+    <div className="h-fit mt-64 bg-app-canvas flex flex-col items-center justify-center px-4 text-app-text-primary">
       {/* Heading */}
-      <h1 className="text-2xl sm:text-3xl font-medium tracking-[-0.02em] text-white/95 mb-10">
+      <h1 className="text-2xl sm:text-3xl font-medium tracking-[-0.02em] bg-gradient-to-r from-app-text-primary to-app-text-muted bg-clip-text text-transparent mb-10">
         What&apos;s on your mind today?
       </h1>
 
       {/* Main Area */}
       <div className="w-full max-w-[860px]">
         {/* Input Container */}
-        <div className="h-[64px] rounded-[32px] bg-white/5 border border-white/6 flex items-center px-4 shadow-sm focus-within:border-white/20 transition-colors">
+        <div className="h-[64px] rounded-[32px] bg-app-surface-glass border border-app-border-subtle flex items-center px-4 shadow-sm focus-within:border-app-border-strong transition-colors">
           {/* Left */}
-          <button className="text-white/70 hover:text-white transition p-2">
+          <button className="text-app-text-soft hover:text-app-text-primary transition p-2">
             <Plus size={20} strokeWidth={2.2} />
           </button>
 
@@ -75,12 +75,12 @@ export function EmptyState({ input, setInput, sendMessage, selectedModel }: Empt
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything"
-            className="flex-1 bg-transparent border-none outline-none px-2 text-base text-white placeholder:text-white/45 font-normal"
+            className="flex-1 bg-transparent border-none outline-none px-2 text-base text-app-text-primary placeholder:text-app-text-muted font-normal"
           />
 
           {/* Right */}
           <div className="flex items-center gap-3">
-            <button className="text-white/70 hover:text-white transition p-2">
+            <button className="text-app-text-soft hover:text-app-text-primary transition p-2">
               <Mic size={18} strokeWidth={2} />
             </button>
 
@@ -88,8 +88,8 @@ export function EmptyState({ input, setInput, sendMessage, selectedModel }: Empt
               onClick={handleSend}
               disabled={!input.trim()}
               className={`h-10 w-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${input.trim()
-                ? "bg-white text-black hover:scale-105 active:scale-95"
-                : "bg-white/10 text-white/20 cursor-not-allowed"
+                ? "bg-app-primary text-app-primary-foreground shadow-md hover:scale-105 active:scale-95"
+                : "bg-app-surface-glass-strong text-app-text-faint cursor-not-allowed"
                 }`}
             >
               {input.trim() ? (
@@ -138,13 +138,13 @@ function QuickActionButton({
   return (
     <button
       onClick={onClick}
-      className="group flex items-center gap-2.5 px-5 h-[42px] rounded-full border border-white/10 bg-transparent hover:bg-white/3 hover:border-white/16 transition-all duration-200 cursor-pointer"
+      className="group flex items-center gap-2.5 px-5 h-[42px] rounded-full border border-app-border-default bg-transparent hover:bg-app-surface-glass-strong hover:scale-[1.02] active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
     >
-      <span className="text-white/70 group-hover:text-white transition">
+      <span className="text-app-text-soft group-hover:text-app-text-primary transition">
         {icon}
       </span>
 
-      <span className="text-[15px] font-normal text-white/85">
+      <span className="text-[15px] font-normal text-app-text-secondary">
         {label}
       </span>
     </button>
