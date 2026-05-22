@@ -39,7 +39,7 @@
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: oklch(0.4 0.015 90);
 
-  --brand-primary: #eca8d6;
+  --brand-primary: #4286f5;
   --brand-secondary: #a78bfa;
   --brand-tertiary: #67e8f9;
   --brand-quaternary: #fbbf24;
@@ -120,7 +120,7 @@
   --sidebar-border: oklch(0.18 0.008 260);
   --sidebar-ring: oklch(0.55 0.015 90);
 
-  --brand-primary: #eca8d6;
+  --brand-primary: #3b82f6;
   --brand-secondary: #a78bfa;
   --brand-tertiary: #67e8f9;
   --brand-quaternary: #fbbf24;

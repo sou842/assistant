@@ -225,8 +225,8 @@ export function ChatInput({
 
   const handleInputChange = (value: string) => {
     setInput(value);
-    const contactMatch = value.match(/@w:(\w*)$/);
-    const galleryMatch = value.match(/@g:(\w*)$/);
+    const contactMatch = value?.match(/@w:(\w*)$/);
+    const galleryMatch = value?.match(/@g:(\w*)$/);
 
     if (contactMatch) {
       if (!showContactSelector) mutateContacts();
@@ -377,7 +377,7 @@ export function ChatInput({
             )}
 
             <PromptInputTextarea
-              className="w-full bg-transparent border-none focus:ring-0 outline-none resize-none pt-5 pb-3 px-6 max-h-56 min-h-[60px] text-[15px] font-normal tracking-tight placeholder:text-app-text-muted scrollbar-hide text-app-text-primary text-left"
+              className="w-full bg-transparent border-none focus:ring-0 outline-none  pt-5 pb-3 px-6 max-h-[300px] h-auto min-h-[80px] text-sm font-normal tracking-tight placeholder:text-app-text-muted scrollbar-hide text-app-text-primary text-left"
               onChange={(event) => handleInputChange(event.currentTarget.value)}
               placeholder="What would you like to know?"
               value={input}
@@ -415,7 +415,7 @@ export function ChatInput({
                     <ModelSelectorEmpty className="text-xs text-app-text-faint py-8 text-center">No models found.</ModelSelectorEmpty>
                     <ModelSelectorGroup heading="Available Models" className="px-2 py-3">
                       <div className="space-y-1 mt-2">
-                        {mistralModels.map((model) => (
+                        {mistralModels?.map((model) => (
                           <ModelItem key={model.id} m={model} onSelect={(id) => setSelectedModel(id)} selectedModel={selectedModel} />
                         ))}
                       </div>
@@ -426,7 +426,7 @@ export function ChatInput({
             </PromptInputTools>
             <PromptInputSubmit
               className={`transition-all duration-200 rounded-lg size-8 flex items-center justify-center ${input?.trim() || isLoading || selectedContact
-                ? "bg-[#007AFF] text-app-text-primary shadow-lg shadow-blue-500/20"
+                ? "bg-brand-primary text-app-text-primary shadow-lg shadow-brand-primary/20"
                 : "bg-app-surface-glass text-app-text-faint"
                 }`}
               status={isLoading ? "streaming" : undefined}

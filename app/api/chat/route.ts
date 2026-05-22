@@ -871,13 +871,13 @@ const tools = {
   }),
 
   getVaultNoteGuidelines: tool({
-    description: "Get detailed technical guidelines for formatting Vault 'note' items (Editor.js JSON blocks). Call this if you need to create or update a note and are unsure about the block structures.",
+    description: "Get detailed technical guidelines for formatting Vault 'note' items (Editor.js JSON blocks). You MUST call this before creating or updating a note.",
     inputSchema: z.object({}),
     execute: async () => ({ guidelines: VAULT_GUIDELINES.VAULT_NOTE_GUIDELINES }),
   }),
 
   getVaultSheetGuidelines: tool({
-    description: "Get detailed technical guidelines for formatting Vault 'spreadsheet' items (array of objects). Call this if you need to create or update a spreadsheet and are unsure about the structure.",
+    description: "Get detailed technical guidelines for formatting Vault 'spreadsheet' items (array of objects). You MUST call this before creating or updating a spreadsheet.",
     inputSchema: z.object({}),
     execute: async () => ({ guidelines: VAULT_GUIDELINES.VAULT_SHEET_GUIDELINES }),
   }),
@@ -929,7 +929,7 @@ const tools = {
   }),
 
   createVaultItem: tool({
-    description: "Create a new item in the Vault (spreadsheet, note, gallery, or album). Use type='album' or type='gallery' to create an album of images or files.",
+    description: "Create a new item in the Vault (spreadsheet, note, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
     inputSchema: z.object({
       title: z.string().min(1).max(100).describe('Title of the vault item'),
       type: vaultItemTypeSchema.describe('Type: spreadsheet, note, gallery, or album'),
@@ -951,7 +951,7 @@ const tools = {
   }),
 
   updateVaultItem: tool({
-    description: "Update an existing Vault item (spreadsheet, note, gallery, or album).",
+    description: "Update an existing Vault item (spreadsheet, note, gallery, or album). Use 'getVaultItem' first to get the current content, then send the FULL updated content array/object here. IMPORTANT: Before updating a 'note', you MUST call 'getVaultNoteGuidelines'. Before updating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Vault item to update'),
       title: z.string().optional().describe('New title'),
@@ -1346,7 +1346,7 @@ export async function POST(req: Request) {
       "6. For Gmail: You can access the user's emails. Use 'gmailListMessages' to see their inbox or search for emails, and 'gmailGetMessage' to read the full content of an email. You can help the user summarize threads, find specific info, or keep track of their correspondence.",
       "7. For WhatsApp: You can send messages via Green API. Use 'whatsappSendMessage' to text the user or others from their personal account. Always verify the phone number format (country code + number, e.g., 919903149299). You can also manage contacts using 'saveContact', 'listContacts', and 'deleteContact'.",
       "8. For WhatsApp Contact Selection: If you see a tag like '@WhatsApp:Name (Phone)' at the start of a message, it is a RECIPIENT OVERRIDE. You MUST call 'whatsappSendMessage' using that phone number for the user's message. Do not mention or include this tag in your final response to the user.",
-      "9. For Vault (Data Storage): The Vault stores spreadsheets (structured data), notes (unstructured data), and media galleries / albums. Use 'listVaultItems' to browse and 'getVaultItem' to read content. For creating/updating items, use 'getVaultNoteGuidelines' for notes or 'getVaultSheetGuidelines' for spreadsheets if you are unsure about the format. Always save spreadsheets, lists, notes, or media galleries / albums in the Vault when asked. To create a media gallery/album, call 'createVaultItem' with type='gallery' or type='album' and content=array of media objects (each having: id, filename, url, mediaType, size).",
+      "9. For Vault (Data Storage): The Vault stores spreadsheets (structured data), notes (unstructured data), and media galleries / albums. Use 'listVaultItems' to browse and 'getVaultItem' to read content. For creating/updating items, you MUST call 'getVaultNoteGuidelines' for notes OR 'getVaultSheetGuidelines' for spreadsheets beforehand to get the exact format. Do not use both at the same time. Always save spreadsheets, lists, notes, or media galleries / albums in the Vault when asked. To create a media gallery/album, call 'createVaultItem' with type='gallery' or type='album' and content=array of media objects (each having: id, filename, url, mediaType, size).",
       "10. For calling arbitrary APIs: Use 'callApi' when the user asks you to call, fetch, or request an external API or webhook. If they provide headers or a token (e.g. 'token: Bearer ...' or 'Authorization: ...'), make sure to pass them in the 'headers' object of the tool input. For token authentication, construct the appropriate 'Authorization' header. If they don't specify the HTTP method, default to 'GET'.",
       "11. For Google Meet/Google Calendar: You can manage meetings and schedule video calls via Google Meet. Use 'googleMeetSchedule' to book a new meeting and generate a video link (always specify the title, start time, end time, and attendees if mentioned). Use 'googleMeetListMeetings' to list upcoming meetings, 'googleMeetUpdate' to reschedule or edit details, and 'googleMeetCancel' to cancel a meeting.",
       "12. For Browser Control: Use 'browserControl' to automate browser tasks like opening tabs/websites, searching on Google/YouTube, clicking links/buttons, or running scripts. Since this is executed in real-time on the client side, you can run multiple actions sequentially across several steps to complete a task. If the user asks to 'open a website and open the first video', do NOT try to do it all at once; first call 'open_tab' with the website URL, wait for the result to return loaded, and then call 'click_element' or 'execute_script' to open the first video. For YouTube video elements, common selectors include 'ytd-rich-grid-media a#video-title-link, ytd-video-renderer a#video-title, #video-title, a[href*=\"/watch\"]'. If unsure of selectors, run an 'execute_script' query to inspect or search the DOM.",
@@ -1360,7 +1360,7 @@ export async function POST(req: Request) {
       ? `${systemPrompt}\n\nAdditional Context:\n${clientSystemPrompt}`
       : systemPrompt;
 
-    // console.log(finalSystemPrompt, 'real prompt')
+    console.log(finalSystemPrompt, 'real prompt')
 
     // console.log(clientSystemPrompt, finalSystemPrompt, "tara")
 
