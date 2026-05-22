@@ -432,14 +432,14 @@ function AIPageContent() {
         updatedAt: Date.now(),
         messages: []
       };
-      
+
       setChats(prev => {
         if (prev.some(c => c.id === activeChatId)) return prev;
         return [newStoredChat as any, ...prev];
       });
-      
+
       window.history.replaceState(null, '', `/ai?q=${activeChatId}`);
-      
+
       // Persist the shell of the new chat immediately so it isn't lost if stream fails
       saveStoredChat(newStoredChat as any).catch(e => console.error("Failed to save new chat", e));
     }
@@ -503,8 +503,6 @@ function AIPageContent() {
       });
   }, [openCompanion]);
 
-  console.log(renderMessages, "tara renderMessages", activeChatId)
-
   return (
     <div className="flex-1 flex flex-row min-h-0 overflow-hidden relative w-full h-full">
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
@@ -558,7 +556,7 @@ function AIPageContent() {
         </div>
 
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-app-canvas via-app-canvas/80 to-transparent" />
-        
+
         {!!renderMessages.length && (
           <ChatInput
             input={input}
