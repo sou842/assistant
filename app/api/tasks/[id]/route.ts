@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Task from '@/lib/models/Task';
+import { auth } from '@/auth';
 
 export async function PATCH(
   request: Request,
@@ -8,9 +9,12 @@ export async function PATCH(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
     const body = await request.json();
-    const task = await Task.findByIdAndUpdate(id, body, {
+    const task = await Task.findOneAndUpdate({ _id: id, userId: session.user.id }, body, {
       new: true,
       runValidators: true,
     });
@@ -29,8 +33,11 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
-    const deletedTask = await Task.deleteOne({ _id: id });
+    const deletedTask = await Task.deleteOne({ _id: id, userId: session.user.id });
     if (!deletedTask) {
       return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 });
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ScheduleTask from '@/lib/models/ScheduleTask';
 import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
+import { auth } from '@/auth';
 
 export async function PATCH(
   request: Request,
@@ -9,6 +10,9 @@ export async function PATCH(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
     const body = await request.json();
 
@@ -16,7 +20,7 @@ export async function PATCH(
       body.payload.phone = cleanPhone(String(body.payload.phone));
     }
 
-    const existing = await ScheduleTask.findById(id);
+    const existing = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Schedule task not found' }, { status: 404 });
     }
@@ -29,7 +33,7 @@ export async function PATCH(
       merged.nextRunAt = computeNextRunAt(merged);
     }
 
-    const task = await ScheduleTask.findByIdAndUpdate(id, merged, {
+    const task = await ScheduleTask.findOneAndUpdate({ _id: id, userId: session.user.id }, merged, {
       new: true,
       runValidators: true,
     });
@@ -46,8 +50,11 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
-    const deletedTask = await ScheduleTask.findByIdAndDelete(id);
+    const deletedTask = await ScheduleTask.findOneAndDelete({ _id: id, userId: session.user.id });
     if (!deletedTask) {
       return NextResponse.json({ success: false, error: 'Schedule task not found' }, { status: 404 });
     }
