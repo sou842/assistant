@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password?: string; // Optional if using OAuth in the future
   role: 'user' | 'admin';
+  githubAccessToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String }, // Hashed password
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    githubAccessToken: { type: String },
   },
   { timestamps: true }
 );
