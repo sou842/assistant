@@ -29,7 +29,7 @@ export default function Home() {
       <div className="relative z-10">
         {/* Hero Section */}
         <div className="bg-[url('/images/hero.png')] bg-cover bg-center bg-no-repeat border-b border-app-border-default">
-          <div className="w-full max-w-300 min-h-[calc(100vh-0rem)] mx-auto text-center flex flex-col items-center justify-center relative">
+          <div className="w-full max-w-300 min-h-dvh mx-auto text-center flex flex-col items-center justify-center relative">
             <div className="w-full max-w-200 pt-16 pb-20 md:pt-20 md:pb-28 px-4 relative z-20">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
