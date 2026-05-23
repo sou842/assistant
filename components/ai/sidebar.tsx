@@ -38,6 +38,7 @@ interface SidebarProps {
   removeChat: (id: string) => void;
   onSelectChat: (id: string) => void;
   onRenameChat: (id: string, title: string) => void;
+  isSyncing?: boolean;
 }
 
 export function Sidebar({
@@ -52,6 +53,7 @@ export function Sidebar({
   removeChat,
   onSelectChat,
   onRenameChat,
+  isSyncing,
 }: SidebarProps) {
   const isCollapsed = !sidebarOpen;
   const searchParams = useSearchParams();
@@ -198,10 +200,18 @@ export function Sidebar({
             <div className="space-y-1">
               <div className="px-3 py-2 text-xs font-medium text-app-text-faint">Recents</div>
               <div className="space-y-0.5">
-                {chats
-                  .slice()
-                  .sort((a, b) => b.updatedAt - a.updatedAt)
-                  .map((chat) => (
+                {isSyncing ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2">
+                      <div className="w-[18px] h-[18px] rounded-md bg-app-surface-glass shrink-0 animate-pulse" />
+                      <div className="h-4 bg-app-surface-glass rounded-md flex-1 animate-pulse" />
+                    </div>
+                  ))
+                ) : (
+                  chats
+                    .slice()
+                    .sort((a, b) => b.updatedAt - a.updatedAt)
+                    .map((chat) => (
                     <div
                       className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
                         }`}
@@ -271,7 +281,8 @@ export function Sidebar({
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
               </div>
             </div>
           )}

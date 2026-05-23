@@ -18,6 +18,7 @@ export function AIShell({ children }: { children: React.ReactNode }) {
     sidebarOpen,
     sidebarWidth,
     startResize,
+    isSyncing,
   } = useAI();
 
   const [mounted, setMounted] = useState(false);
@@ -47,6 +48,7 @@ export function AIShell({ children }: { children: React.ReactNode }) {
           setSidebarOpen={setSidebarOpen}
           sidebarOpen={sidebarOpen}
           sidebarWidth={sidebarWidth}
+          isSyncing={isSyncing}
         />
 
         {sidebarOpen && (
