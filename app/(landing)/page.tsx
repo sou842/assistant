@@ -64,7 +64,7 @@ export default function Home() {
                 </Link>
                 <a
                   href="#features"
-                  className="flex w-full items-center justify-center gap-2 rounded-full border border-app-border-strong bg-transparent px-6 py-2.5 font-medium text-app-text-primary transition-all duration-200 hover:bg-app-surface-glass sm:w-auto"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-black/20 px-6 py-2.5 font-medium text-app-text-primary transition-all duration-200 hover:bg-app-surface-glass sm:w-auto"
                 >
                   View Features
                 </a>
