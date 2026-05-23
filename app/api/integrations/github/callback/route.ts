@@ -44,7 +44,11 @@ export async function GET(req: NextRequest) {
     await dbConnect();
     await User.findOneAndUpdate(
       { email: session.user.email },
-      { $set: { githubAccessToken: accessToken } }
+      { 
+        $set: { githubAccessToken: accessToken },
+        $setOnInsert: { name: session.user.name || session.user.email || "User" }
+      },
+      { upsert: true, new: true }
     );
 
     return NextResponse.redirect(new URL("/ai/integrations?success=true", req.url));

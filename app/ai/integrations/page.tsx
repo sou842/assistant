@@ -22,6 +22,8 @@ function IntegrationStatus() {
   useEffect(() => {
     const success = searchParams.get("success");
     const error = searchParams.get("error");
+    const googleSuccess = searchParams.get("google") === "success";
+    const googleError = searchParams.get("google") === "error";
 
     if (success) {
       toast.success("GitHub connected successfully!");
@@ -32,6 +34,16 @@ function IntegrationStatus() {
       toast.error("Failed to connect GitHub. Please try again.");
       router.replace("/ai/integrations");
     }
+
+    if (googleSuccess) {
+      toast.success("Google connected successfully!");
+      router.replace("/ai/integrations");
+    }
+
+    if (googleError) {
+      toast.error("Failed to connect Google. Please try again.");
+      router.replace("/ai/integrations");
+    }
   }, [searchParams, router]);
 
   return null;
@@ -40,24 +52,38 @@ function IntegrationStatus() {
 function IntegrationCard({
   item,
   githubConnected,
+  googleConnected,
   onGithubConnect,
   onGithubDisconnect,
+  onGoogleConnect,
+  onGoogleDisconnect,
 }: {
   item: Integration;
   githubConnected: boolean;
+  googleConnected: boolean;
   onGithubConnect: () => void;
   onGithubDisconnect: () => void;
+  onGoogleConnect: () => void;
+  onGoogleDisconnect: () => void;
 }) {
   const isGithub = item.id === "github";
-  const isConnected = isGithub ? githubConnected : item.connected;
+  const isGoogle = item.id === "google";
+  
+  let isConnected = item.connected;
+  if (isGithub) isConnected = githubConnected;
+  if (isGoogle) isConnected = googleConnected;
 
   const handleCardClick = () => {
     if (item.comingSoon) return;
 
     if (isGithub && !githubConnected) {
       onGithubConnect();
+    } else if (isGoogle && !googleConnected) {
+      onGoogleConnect();
     }
   };
+
+  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected);
 
   return (
     <div
@@ -65,13 +91,13 @@ function IntegrationCard({
       className={`relative flex items-center justify-between border-r border-b border-app-border-subtle p-8 transition-all duration-300 ${item.comingSoon
         ? "group opacity-40 grayscale hover:bg-app-surface-glass-faint hover:grayscale-0 hover:opacity-100"
         : "group hover:bg-app-surface-glass-soft"
-        } ${(isGithub && !githubConnected) ? "cursor-pointer" : ""}`}
+        } ${isInteractive ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-center gap-6">
         <div
           className={`flex size-14 items-center justify-center rounded-2xl border shadow-2xl transition-all duration-300 group-hover:border-app-border-strong ${item.comingSoon
             ? "border-app-border-subtle bg-app-surface-glass-faint"
-            : isGithub && githubConnected
+            : isConnected
               ? "border-app-success-border/50 bg-app-success-soft/20"
               : "border-app-border-default bg-app-surface-glass-soft group-hover:bg-app-surface-glass"
             }`}
@@ -106,21 +132,23 @@ function IntegrationCard({
         </div>
       </div>
 
-      {isGithub && (
+      {(isGithub || isGoogle) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
 
-            if (githubConnected) {
-              onGithubDisconnect();
-            } else {
-              onGithubConnect();
+            if (isGithub) {
+              if (githubConnected) onGithubDisconnect();
+              else onGithubConnect();
+            } else if (isGoogle) {
+              if (googleConnected) onGoogleDisconnect();
+              else onGoogleConnect();
             }
           }}
-          title={githubConnected ? "Disconnect GitHub" : "Connect GitHub"}
+          title={isConnected ? `Disconnect ${item.name}` : `Connect ${item.name}`}
           className="absolute top-2 right-4 -mr-2 rounded-full p-2 transition-colors hover:bg-app-surface-glass cursor-pointer"
         >
-          {githubConnected && (
+          {isConnected && (
             <Radio className="size-5 text-app-success-foreground transition-colors hover:text-app-danger-foreground" />
           )}
         </button>
@@ -133,20 +161,31 @@ export default function IntegrationsPage() {
   const { setMobileSidebarOpen } = useAI();
 
   const [githubConnected, setGithubConnected] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
 
   useEffect(() => {
     const fetchGithubStatus = async () => {
       try {
         const response = await fetch("/api/integrations/github/status");
         const data = await response.json();
-
         setGithubConnected(data.connected);
       } catch (error) {
         console.error("Failed to fetch GitHub status:", error);
       }
     };
 
+    const fetchGoogleStatus = async () => {
+      try {
+        const response = await fetch("/api/integrations/google/status");
+        const data = await response.json();
+        setGoogleConnected(data.connected);
+      } catch (error) {
+        console.error("Failed to fetch Google status:", error);
+      }
+    };
+
     fetchGithubStatus();
+    fetchGoogleStatus();
   }, []);
 
   const connectGithub = () => {
@@ -155,15 +194,27 @@ export default function IntegrationsPage() {
 
   const disconnectGithub = async () => {
     try {
-      await fetch("/api/integrations/github/disconnect", {
-        method: "POST",
-      });
-
+      await fetch("/api/integrations/github/disconnect", { method: "POST" });
       setGithubConnected(false);
       toast.success("GitHub disconnected");
     } catch (error) {
       console.error(error);
       toast.error("Failed to disconnect GitHub");
+    }
+  };
+
+  const connectGoogle = () => {
+    window.location.href = "/api/integrations/google/connect";
+  };
+
+  const disconnectGoogle = async () => {
+    try {
+      await fetch("/api/integrations/google/disconnect", { method: "POST" });
+      setGoogleConnected(false);
+      toast.success("Google disconnected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to disconnect Google");
     }
   };
 
@@ -183,14 +234,13 @@ export default function IntegrationsPage() {
         ),
       },
       {
-        id: "gmail",
-        name: "Gmail",
-        connected: true,
+        id: "google",
+        name: "Google Workspace",
         icon: (
           <img
             src="https://www.google.com/favicon.ico"
             className="size-6 object-contain"
-            alt="Gmail"
+            alt="Google Workspace"
           />
         ),
       },
@@ -203,18 +253,6 @@ export default function IntegrationsPage() {
             src="https://cdn-icons-png.flaticon.com/128/4423/4423697.png"
             className="size-6 object-contain"
             alt="WhatsApp"
-          />
-        ),
-      },
-      {
-        id: "google-calendar",
-        name: "Google Calendar / Meet",
-        connected: true,
-        icon: (
-          <img
-            src="https://meet.google.com/favicon.ico"
-            className="size-6 object-contain"
-            alt="Google Calendar / Meet"
           />
         ),
       },
@@ -348,8 +386,11 @@ export default function IntegrationsPage() {
               key={item.id}
               item={item}
               githubConnected={githubConnected}
+              googleConnected={googleConnected}
               onGithubConnect={connectGithub}
               onGithubDisconnect={disconnectGithub}
+              onGoogleConnect={connectGoogle}
+              onGoogleDisconnect={disconnectGoogle}
             />
           ))}
         </div>

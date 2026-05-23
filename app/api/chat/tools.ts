@@ -11,12 +11,18 @@ import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
 import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
 
 async function getGoogleAccessToken() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.googleRefreshToken) throw new Error("Google account not connected. Please connect it in the Integrations page.");
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  const refreshToken = user.googleRefreshToken;
 
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Missing Google OAuth credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or GOOGLE_REFRESH_TOKEN)");
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing Google OAuth credentials (GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET)");
   }
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -672,6 +678,72 @@ export const tools = {
         }
 
         return { id, subject, from, date, body, snippet: data.snippet };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  gmailSendMessage: tool({
+    description: "Send an email using Gmail.",
+    inputSchema: z.object({
+      to: z.string().describe("The recipient's email address"),
+      subject: z.string().describe("The subject of the email"),
+      body: z.string().describe("The body content of the email (plain text or HTML)"),
+    }),
+    execute: async ({ to, subject, body }) => {
+      try {
+        const token = await getGoogleAccessToken();
+        const emailLines = [];
+        emailLines.push(`To: ${to}`);
+        emailLines.push('Content-type: text/html;charset=iso-8859-1');
+        emailLines.push('MIME-Version: 1.0');
+        emailLines.push(`Subject: ${subject}`);
+        emailLines.push('');
+        emailLines.push(body);
+        const email = emailLines.join('\r\n').trim();
+        const base64EncodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ raw: base64EncodedEmail }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return { error: `Gmail API error: ${res.statusText}. ${JSON.stringify(errData)}` };
+        }
+
+        const data = await res.json();
+        return { success: true, messageId: data.id, threadId: data.threadId };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  gmailDeleteMessage: tool({
+    description: "Move a specific Gmail message to the trash using its ID.",
+    inputSchema: z.object({
+      id: z.string().describe("The Gmail message ID to delete."),
+    }),
+    execute: async ({ id }) => {
+      try {
+        const token = await getGoogleAccessToken();
+        const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return { error: `Gmail API error: ${res.statusText}. ${JSON.stringify(errData)}` };
+        }
+        return { success: true, message: "Email moved to trash successfully" };
       } catch (error: any) {
         return { error: error.message };
       }
