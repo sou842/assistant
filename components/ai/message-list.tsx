@@ -469,7 +469,7 @@ const MessageRow = React.memo(function MessageRow({
             "mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
             message.role === 'user' && "justify-end"
           )}>
-            <MessageActions className="bg-[#080808] p-1 rounded-full border border-app-border-subtle shadow-xl">
+            <MessageActions className="bg-white dark:bg-[#080808] p-1 rounded-full border border-app-border-subtle shadow-xl">
               <MessageAction tooltip="Copy message" onClick={() => copyToClipboard(text)} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
                 <Copy size={13} />
               </MessageAction>

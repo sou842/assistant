@@ -22,7 +22,7 @@ import {
   Calendar
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import type { StoredChat } from "@/lib/chat-storage";
 
@@ -54,11 +54,13 @@ export function Sidebar({
   onRenameChat,
 }: SidebarProps) {
   const isCollapsed = !sidebarOpen;
+  const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingTitle, setEditingTitle] = React.useState("");
+
 
   const userName = session?.user?.name || "User";
   const userEmail = session?.user?.email || "";
@@ -71,7 +73,7 @@ export function Sidebar({
 
   const handleNewChat = () => {
     createNewChat();
-    if (pathname !== "/ai") {
+    if (pathname !== "/ai" || searchParams.size > 0) {
       router.push("/ai");
     }
   };
