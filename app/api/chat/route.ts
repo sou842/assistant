@@ -2,21 +2,13 @@ import { auth } from '@/auth';
 import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, stepCountIs, tool, type UIMessage } from 'ai';
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 'ai';
+import { formatMemoriesForPrompt } from '@/lib/memory-storage';
+import { getMessageText } from '@/lib/ai/message-utils';
+import { tools } from './tools';
+import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Chat from '@/lib/models/Chat';
-import { formatMemoriesForPrompt } from '@/lib/memory-storage';
-import mongoose from 'mongoose';
-import { z } from 'zod';
-import Task from '@/lib/models/Task';
-import User from '@/lib/models/User';
-import Contact from '@/lib/models/Contact';
-import VaultItem from '@/lib/models/VaultItem';
-import ScheduleTask from '@/lib/models/ScheduleTask';
-import { getMessageText } from '@/lib/ai/message-utils';
-import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
-import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
-import { tools } from './tools';
 
 
 // Allow streaming responses up to 40 seconds
@@ -47,12 +39,6 @@ const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<
 const mistral = createMistral({
   apiKey: process.env.MISTRAL_API_KEY,
   baseURL: process.env.MISTRAL_BASE_URL,
-  fetch: customFetch,
-});
-
-const deepseek = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com',
   fetch: customFetch,
 });
 
@@ -94,7 +80,6 @@ const ALLOWED_MODELS = new Set([
   'mistral-large-latest',
   'gemini-2.5-flash',
   'codestral-latest',
-  'deepseek-reasoner',
   'gpt-4o-mini',
 ]);
 
@@ -120,13 +105,11 @@ export async function POST(req: Request) {
       ? requestedModel
       : 'mistral-large-latest';
 
-    const provider = model === 'deepseek-reasoner'
-      ? deepseek
-      : model === 'gpt-4o-mini'
-        ? openai
-        : model === 'gemini-2.5-flash'
-          ? google
-          : mistral;
+    const provider = model === 'gpt-4o-mini'
+      ? openai
+      : model === 'gemini-2.5-flash'
+        ? google
+        : mistral;
 
     let canPersist = false;
     try {
@@ -187,7 +170,7 @@ export async function POST(req: Request) {
       ? `${systemPrompt}\n\nAdditional Context:\n${clientSystemPrompt}`
       : systemPrompt;
 
-    console.log(finalSystemPrompt, 'real prompt')
+    // console.log(finalSystemPrompt, 'real prompt')
 
     // console.log(clientSystemPrompt, finalSystemPrompt, "tara")
 
@@ -202,7 +185,14 @@ export async function POST(req: Request) {
       messages: modelMessages.length > 0 ? modelMessages : [{ role: 'user', content: ' ' }],
       system: finalSystemPrompt,
       tools,
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(20),
+      onStepFinish: (step) => {
+        console.log('\n--- Step Finished ---', step);
+        // if (step.text) console.log('Step Text (Reasoning/Response):', step.text);
+        // if (step.toolCalls && step.toolCalls.length > 0) {
+        //   console.log('Tool Calls Made:', JSON.stringify(step.toolCalls.map(tc => ({ name: tc.toolName, args: tc.args })), null, 2));
+        // }
+      },
       onFinish: async ({ text, toolResults }) => {
         if (!canPersist) {
           return;

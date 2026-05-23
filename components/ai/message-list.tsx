@@ -340,13 +340,13 @@ const MessageRow = React.memo(function MessageRow({
                           </div>
 
                           {/* Tool Details (Args/Result) */}
-                          <div className="text-[10px] opacity-40 ml-4 font-mono truncate max-w-md">
+                          <div className="text-[10px] opacity-70 ml-4 font-mono max-w-[600px] overflow-x-auto rounded bg-white/5 p-2 mt-1">
                             {ti.state === 'call' ? (
-                              <span>args: {JSON.stringify(ti.args)}</span>
+                              <pre className="whitespace-pre-wrap break-words">args: {JSON.stringify(ti.args, null, 2)}</pre>
                             ) : (
-                              <span className="text-green-500/60">
-                                {ti.result?.error ? `Error: ${ti.result.error}` : 'Success'}
-                              </span>
+                              <pre className={`whitespace-pre-wrap break-words ${ti.result?.error ? 'text-red-400' : 'text-green-500/80'}`}>
+                                {ti.result?.error ? `Error: ${ti.result.error}` : `Result: ${JSON.stringify(ti.result, null, 2)}`}
+                              </pre>
                             )}
                           </div>
                         </div>

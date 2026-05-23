@@ -78,7 +78,6 @@ function AIPageContent() {
     maxSteps: 20,
     experimental_throttle: STREAM_RENDER_THROTTLE_MS,
     async onToolCall({ toolCall }) {
-      console.log("[Jarvis AI] Tool Call Received from AI Model:", toolCall);
       if (toolCall.toolName === "browserControl") {
         const { action, url, selector, query, script, description } = toolCall.input as any;
         console.log("[Jarvis AI] Executing Browser Control command:", { action, url, selector, query, script, description });
