@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   googleUrl.searchParams.set("redirect_uri", `${origin}/api/integrations/google/callback`);
   googleUrl.searchParams.set("response_type", "code");
-  googleUrl.searchParams.set("scope", "https://mail.google.com/ https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
+  googleUrl.searchParams.set("scope", "https://mail.google.com/ https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/youtube.readonly");
   googleUrl.searchParams.set("access_type", "offline");
   googleUrl.searchParams.set("prompt", "consent");
   googleUrl.searchParams.set("state", session.user.id);

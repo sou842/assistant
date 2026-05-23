@@ -505,9 +505,6 @@ const MessageRow = React.memo(function MessageRow({
                   <MessageAction tooltip="Negative feedback" className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
                     <ThumbsDown size={13} />
                   </MessageAction>
-                  <MessageAction tooltip="Delete message" onClick={() => setDeletingMessageId(message.id)} className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
-                    <Trash2 size={13} />
-                  </MessageAction>
                 </>
               )}
             </MessageActions>

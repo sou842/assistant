@@ -1258,5 +1258,115 @@ export const tools = {
         .describe("User-friendly explanation of what this browser command is doing (e.g., 'Opening YouTube')"),
     }),
   }),
+
+  youtubeSearch: tool({
+    description: "Search for videos on YouTube.",
+    inputSchema: z.object({
+      query: z.string().describe("The search query"),
+      maxResults: z.number().max(50).default(5),
+    }),
+    execute: async ({ query, maxResults }) => {
+      try {
+        const token = await getGoogleAccessToken();
+        const res = await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&q=${encodeURIComponent(query)}&type=video`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return { error: `YouTube API error: ${res.statusText}. ${JSON.stringify(errData)}` };
+        }
+        const data = await res.json();
+        return {
+          items: data.items.map((item: any) => ({
+            videoId: item.id.videoId,
+            title: item.snippet.title,
+            description: item.snippet.description,
+            channelTitle: item.snippet.channelTitle,
+            publishedAt: item.snippet.publishedAt,
+            url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+          }))
+        };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  youtubeGetVideo: tool({
+    description: "Get detailed information about a specific YouTube video.",
+    inputSchema: z.object({
+      videoId: z.string().describe("The ID of the YouTube video"),
+    }),
+    execute: async ({ videoId }) => {
+      try {
+        const token = await getGoogleAccessToken();
+        const res = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return { error: `YouTube API error: ${res.statusText}. ${JSON.stringify(errData)}` };
+        }
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+           return { error: "Video not found" };
+        }
+        const item = data.items[0];
+        return {
+          id: item.id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          channelTitle: item.snippet.channelTitle,
+          tags: item.snippet.tags,
+          viewCount: item.statistics.viewCount,
+          likeCount: item.statistics.likeCount,
+          commentCount: item.statistics.commentCount,
+          duration: item.contentDetails.duration,
+          url: `https://www.youtube.com/watch?v=${item.id}`
+        };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  youtubeGetChannel: tool({
+    description: "Get detailed information about a specific YouTube channel.",
+    inputSchema: z.object({
+      channelId: z.string().describe("The ID of the YouTube channel"),
+    }),
+    execute: async ({ channelId }) => {
+      try {
+        const token = await getGoogleAccessToken();
+        const res = await fetch(`https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return { error: `YouTube API error: ${res.statusText}. ${JSON.stringify(errData)}` };
+        }
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+           return { error: "Channel not found" };
+        }
+        const item = data.items[0];
+        return {
+          id: item.id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          customUrl: item.snippet.customUrl,
+          viewCount: item.statistics.viewCount,
+          subscriberCount: item.statistics.subscriberCount,
+          videoCount: item.statistics.videoCount,
+          url: `https://www.youtube.com/channel/${item.id}`
+        };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
 };
 
