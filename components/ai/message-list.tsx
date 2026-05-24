@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { WeatherCard } from "@/components/ai/weather-card";
 import { BrowserCard } from "@/components/ai/browser-card";
+import { YouTubeCard } from "@/components/ai/youtube-card";
 import { Shimmer } from "../ai-elements/shimmer";
 
 interface MessageListProps {
@@ -234,6 +235,16 @@ type MessageRowProps = {
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
 };
 
+function extractYouTubeVideoIds(text: string): string[] {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/gi;
+  const ids = new Set<string>();
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    ids.add(match[1]);
+  }
+  return Array.from(ids);
+}
+
 const MessageRow = React.memo(function MessageRow({
   message,
   isLastStreaming,
@@ -273,11 +284,16 @@ const MessageRow = React.memo(function MessageRow({
     (ti: any) => ti.state === 'result' && ti.toolName === 'getWeather' && ti.result && !('error' in ti.result)
   );
 
+  const youtubeInvocations = (message as any)?.toolInvocations?.filter(
+    (ti: any) => ti.state === 'result' && ['youtubeSearch', 'youtubeGetVideo'].includes(ti.toolName) && ti.result && !('error' in ti.result)
+  );
+
   const browserInvocations = (message as any)?.toolInvocations?.filter(
     (ti: any) => ti.toolName === 'browserControl'
   );
 
   const toolInvocations = (message as any)?.toolInvocations;
+  const textVideoIds = React.useMemo(() => extractYouTubeVideoIds(text), [text]);
 
   const getToolLabel = (toolName: string, state: string) => {
     const labels: Record<string, string> = {
@@ -300,6 +316,9 @@ const MessageRow = React.memo(function MessageRow({
       saveContact: "Saving contact",
       listContacts: "Fetching contacts",
       browserControl: "Controlling browser",
+      youtubeSearch: "Searching YouTube",
+      youtubeGetVideo: "Fetching video",
+      youtubeGetChannel: "Fetching channel",
     };
     return labels[toolName] || `Executing ${toolName}`;
   };
@@ -413,6 +432,14 @@ const MessageRow = React.memo(function MessageRow({
             {!isEditing && weatherInvocations?.map((invocation: any) => (
               <WeatherCard key={invocation.toolCallId} data={invocation.result as any} />
             ))}
+
+            {!isEditing && youtubeInvocations?.map((invocation: any) => (
+              <YouTubeCard key={invocation.toolCallId} data={invocation.result as any} />
+            ))}
+
+            {!isEditing && textVideoIds.length > 0 && (
+               <YouTubeCard data={{ videos: textVideoIds.map(id => ({ videoId: id })) }} />
+            )}
 
             {!isEditing && browserInvocations?.map((invocation: any) => {
               const commandState = browserCommandStates?.[invocation.toolCallId] || {
