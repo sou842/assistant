@@ -19,7 +19,7 @@ export function PageHeader({ icon, title, subtitle, children, actions, backHref 
   const { setMobileSidebarOpen } = useAI();
 
   return (
-    <header className="sticky top-0 z-30 h-16 w-full shrink-0 border-b border-app-border-subtle bg-app-canvas/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 h-16 w-full shrink-0 border-b border-app-border-default bg-app-canvas/70 backdrop-blur-xl">
       <div className="mx-auto max-w-8xl px-5 h-full">
         <div className="flex items-center justify-between gap-4 h-full">
           <div className="flex items-center gap-3 min-w-0 flex-1">

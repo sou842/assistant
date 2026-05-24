@@ -5,21 +5,15 @@ import {
   Bot,
   Brain,
   Database,
-  FileText,
   MessageCircle,
-  Palette,
   PanelLeftClose,
-  PenTool,
-  Settings2,
-  SquarePlus,
   Trash2,
   Pencil,
-  Check,
-  X,
   Ellipsis,
   BookOpenCheck,
   Layers,
-  Calendar
+  Calendar,
+  MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -155,7 +149,7 @@ export function Sidebar({
                 : "w-full gap-3 px-3 py-2.5 rounded-xl text-app-text-primary font-medium text-sm hover:bg-app-surface-glass-strong"
                 }`}
             >
-              <SquarePlus size={16} className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0" />
+              <MessageSquare size={16} className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0" />
               {!isCollapsed && <span>New Chat</span>}
             </button>
             <SidebarNavItem
@@ -166,18 +160,25 @@ export function Sidebar({
               label="Tasks"
             />
             <SidebarNavItem
-              active={pathname === "/ai/memory"}
+              href="/ai/vault"
+              icon={<Database size={16} />}
+              label="Vault"
+              active={pathname.startsWith("/ai/vault")}
+              isCollapsed={isCollapsed}
+            />
+            {/* <SidebarNavItem
+              href="/ai/playground"
+              icon={<Blocks size={16} />}
+              label="Playground"
+              active={pathname.startsWith("/ai/playground")}
+              isCollapsed={isCollapsed}
+            /> */}
+            <SidebarNavItem
               href="/ai/memory"
               icon={<Brain size={16} />}
-              isCollapsed={isCollapsed}
               label="Memory"
-            />
-            <SidebarNavItem
-              active={pathname === "/ai/integrations"}
-              href="/ai/integrations"
-              icon={<Layers size={16} />}
+              active={pathname.startsWith("/ai/memory")}
               isCollapsed={isCollapsed}
-              label="Integrations"
             />
             <SidebarNavItem
               active={pathname?.startsWith("/ai/schedule")}
@@ -187,11 +188,11 @@ export function Sidebar({
               label="Schedule"
             />
             <SidebarNavItem
-              active={pathname === "/ai/vault"}
-              href="/ai/vault"
-              icon={<Database size={16} />}
+              active={pathname === "/ai/integrations"}
+              href="/ai/integrations"
+              icon={<Layers size={16} />}
               isCollapsed={isCollapsed}
-              label="Vault"
+              label="Integrations"
             />
           </div>
 
@@ -212,76 +213,76 @@ export function Sidebar({
                     .slice()
                     .sort((a, b) => b.updatedAt - a.updatedAt)
                     .map((chat) => (
-                    <div
-                      className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
-                        }`}
-                      key={chat.id}
-                      onClick={() => onSelectChat(chat.id)}
-                    >
-                      <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-40 group-hover:opacity-70"}`} />
+                      <div
+                        className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
+                          }`}
+                        key={chat.id}
+                        onClick={() => onSelectChat(chat.id)}
+                      >
+                        <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-40 group-hover:opacity-70"}`} />
 
-                      {editingId === chat.id ? (
-                        <input
-                          autoFocus
-                          className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-brand-primary"
-                          onBlur={handleRename}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          value={editingTitle}
-                        />
-                      ) : (
-                        <span className="flex-1 truncate text-sm font-medium tracking-tight">{chat.title}</span>
-                      )}
+                        {editingId === chat.id ? (
+                          <input
+                            autoFocus
+                            className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-brand-primary"
+                            onBlur={handleRename}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            value={editingTitle}
+                          />
+                        ) : (
+                          <span className="flex-1 truncate text-sm font-medium tracking-tight">{chat.title}</span>
+                        )}
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        <div className="dropdown dropdown-left" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className="rounded-lg p-1 hover:bg-app-surface-glass hover:text-app-text-primary"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                            tabIndex={0}
-                            type="button"
-                          >
-                            <Ellipsis size={14} />
-                          </button>
-                          <ul
-                            className="dropdown-content z-[30] menu p-2 shadow-2xl bg-app-surface-elevated border border-app-border-default rounded-xl w-32 mt-2"
-                            onClick={(e) => e.stopPropagation()}
-                            tabIndex={0}
-                          >
-                            <li>
-                              <button
-                                className="flex items-center gap-2 py-2 text-xs hover:bg-app-surface-glass"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  startEditing(e, chat);
-                                }}
-                              >
-                                <Pencil size={12} />
-                                Edit
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                className="flex items-center gap-2 py-2 text-xs text-app-danger-strong hover:bg-app-danger-soft"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removeChat(chat.id);
-                                }}
-                              >
-                                <Trash2 size={12} />
-                                Delete
-                              </button>
-                            </li>
-                          </ul>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <div className="dropdown dropdown-left" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              className="rounded-lg p-1 hover:bg-app-surface-glass hover:text-app-text-primary"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              tabIndex={0}
+                              type="button"
+                            >
+                              <Ellipsis size={14} />
+                            </button>
+                            <ul
+                              className="dropdown-content z-[30] menu p-2 shadow-2xl bg-app-surface-elevated border border-app-border-default rounded-xl w-32 mt-2"
+                              onClick={(e) => e.stopPropagation()}
+                              tabIndex={0}
+                            >
+                              <li>
+                                <button
+                                  className="flex items-center gap-2 py-2 text-xs hover:bg-app-surface-glass"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    startEditing(e, chat);
+                                  }}
+                                >
+                                  <Pencil size={12} />
+                                  Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button
+                                  className="flex items-center gap-2 py-2 text-xs text-app-danger-strong hover:bg-app-danger-soft"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeChat(chat.id);
+                                  }}
+                                >
+                                  <Trash2 size={12} />
+                                  Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
             </div>
@@ -336,7 +337,7 @@ function SidebarNavItem({
   href?: string;
 }) {
   const content = (
-    <div className={`flex items-center transition-all cursor-pointer group ${isCollapsed ? "w-6 h-6 justify-center rounded-xl" : "w-full gap-3 px-3 py-2 rounded-xl"
+    <div className={`flex items-center transition-all cursor-pointer group text-sm ${isCollapsed ? "w-6 h-6 justify-center rounded-xl" : "w-full gap-3 px-3 py-2 rounded-xl"
       } ${active ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
       }`}>
       <span className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0">{icon}</span>
