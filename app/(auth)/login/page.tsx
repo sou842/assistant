@@ -6,6 +6,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import { Bot } from "lucide-react";
+import Footer from "@/components/Footer";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -142,6 +143,8 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </main>
   );
 }
