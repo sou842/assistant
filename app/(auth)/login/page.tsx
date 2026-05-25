@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import { Bot } from "lucide-react";
 import Footer from "@/components/Footer";
+import BackgroundGrid from '@/components/BackgroundGrid';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,11 +42,7 @@ export default function LoginPage() {
 
   return (
     <main className="app-page-shell app-selection">
-      {/* Background Gradients & Grid */}
-      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-        <div className="app-hero-glow absolute top-0 left-1/2 h-125 w-full max-w-200 -translate-x-1/2 rounded-full blur-[120px]" />
-        <div className="app-grid-overlay absolute inset-0" />
-      </div>
+      <BackgroundGrid />
 
       <Link href="/" className="fixed top-4 left-6 z-50 text-center flex items-center gap-2 cursor-pointer">
         <Bot className="size-5 text-app-text-primary" />

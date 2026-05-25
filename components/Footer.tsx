@@ -43,8 +43,8 @@ export default function Footer({ showCTA = false }: { showCTA?: boolean }) {
             <span className="font-medium">Jarvis AI</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="transition-colors hover:text-app-text-secondary">Privacy Policy</a>
-            <a href="#" className="transition-colors hover:text-app-text-secondary">Terms of Service</a>
+            <Link href="/privacy" className="transition-colors hover:text-app-text-secondary">Privacy Policy</Link>
+            <Link href="/terms" className="transition-colors hover:text-app-text-secondary">Terms of Service</Link>
             <span>© {new Date().getFullYear()}</span>
           </div>
         </div>

@@ -7,6 +7,7 @@ import FaqAccordion from '@/components/FaqAccordion';
 import { motion } from 'framer-motion';
 import { Bot, ArrowUpRight, MessageCircleDashed } from 'lucide-react';
 import Footer from '@/components/Footer';
+import BackgroundGrid from '@/components/BackgroundGrid';
 
 const features = [
   {
@@ -62,10 +63,7 @@ export default function Home() {
     <main className="app-page-shell app-selection">
       <ClickSpark sparkColor="#ffffff" sparkSize={10} sparkRadius={20} sparkCount={10} duration={500} bindToWindow={true} />
       {/* Background Gradients & Grid */}
-      {/* <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-        <div className="app-hero-glow absolute top-0 left-1/2 h-125 w-full max-w-200 -translate-x-1/2 rounded-full blur-[120px] transform-gpu will-change-transform" />
-        <div className="app-grid-overlay absolute inset-0" />
-      </div> */}
+      {/* <BackgroundGrid /> */}
 
       {/* Navigation */}
       <Navbar />
