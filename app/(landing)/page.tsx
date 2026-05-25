@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import ClickSpark from '@/components/ClickSpark';
 import FaqAccordion from '@/components/FaqAccordion';
 import { motion } from 'framer-motion';
-import { Bot, ArrowUpRight, ChevronsLeftRight, Badge, CircleDashed } from 'lucide-react';
+import { Bot, ArrowUpRight, MessageCircleDashed } from 'lucide-react';
 
 const features = [
   {
@@ -164,7 +164,7 @@ export default function Home() {
                           className="flex items-center gap-3 text-app-text-secondary"
                         >
                           <div className="flex items-center justify-center">
-                            <CircleDashed className="size-5 text-app-text-muted" />
+                            <MessageCircleDashed className="size-5 text-app-text-muted" />
                           </div>
 
                           {item}
