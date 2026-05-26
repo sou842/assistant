@@ -75,6 +75,7 @@ const chatRequestSchema = z.object({
     url: z.string().optional(),
     size: z.any().optional(),
   })).optional(),
+  browserExtensionConnected: z.boolean().optional(),
 });
 
 const ALLOWED_MODELS = new Set([
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
       return new Response('Invalid request payload', { status: 400 });
     }
 
-    const { messages, chatId, memories = [], model: requestedModel, systemPrompt: clientSystemPrompt } = parsed.data;
+    const { messages, chatId, memories = [], model: requestedModel, systemPrompt: clientSystemPrompt, browserExtensionConnected } = parsed.data;
 
     const validChatId = chatId;
 
@@ -161,7 +162,10 @@ export async function POST(req: Request) {
       "9. For Vault (Data Storage): The Vault stores spreadsheets (structured data), notes (unstructured data), and media galleries / albums. Use 'listVaultItems' to browse and 'getVaultItem' to read content. For creating/updating items, you MUST call 'getVaultNoteGuidelines' for notes OR 'getVaultSheetGuidelines' for spreadsheets beforehand to get the exact format. Do not use both at the same time. Always save spreadsheets, lists, notes, or media galleries / albums in the Vault when asked. To create a media gallery/album, call 'createVaultItem' with type='gallery' or type='album' and content=array of media objects (each having: id, filename, url, mediaType, size).",
       "10. For calling arbitrary APIs: Use 'callApi' when the user asks you to call, fetch, or request an external API or webhook. If they provide headers or a token (e.g. 'token: Bearer ...' or 'Authorization: ...'), make sure to pass them in the 'headers' object of the tool input. For token authentication, construct the appropriate 'Authorization' header. If they don't specify the HTTP method, default to 'GET'.",
       "11. For Google Meet/Google Calendar: You can manage meetings and schedule video calls via Google Meet. Use 'googleMeetSchedule' to book a new meeting and generate a video link (always specify the title, start time, end time, and attendees if mentioned). Use 'googleMeetListMeetings' to list upcoming meetings, 'googleMeetUpdate' to reschedule or edit details, and 'googleMeetCancel' to cancel a meeting.",
-      "12. For Browser Control: Use 'browserControl' to automate browser tasks like opening tabs/websites, searching on Google/YouTube, clicking links/buttons, or running scripts. Since this is executed in real-time on the client side, you can run multiple actions sequentially across several steps to complete a task. If the user asks to 'open a website and open the first video', do NOT try to do it all at once; first call 'open_tab' with the website URL, wait for the result to return loaded, and then call 'click_element' or 'execute_script' to open the first video. For YouTube video elements, common selectors include 'ytd-rich-grid-media a#video-title-link, ytd-video-renderer a#video-title, #video-title, a[href*=\"/watch\"]'. If unsure of selectors, run an 'execute_script' query to inspect or search the DOM.",
+      `12. For Browser Control: Use 'browserControl' to automate browser tasks like opening tabs/websites, searching on Google/YouTube, clicking links/buttons, or running scripts. Since this is executed in real-time on the client side, you can run multiple actions sequentially across several steps to complete a task. If the user asks to 'open a website and open the first video', do NOT try to do it all at once; first call 'open_tab' with the website URL, wait for the result to return loaded, and then call 'click_element' or 'execute_script' to open the first video. For YouTube video elements, common selectors include 'ytd-rich-grid-media a#video-title-link, ytd-video-renderer a#video-title, #video-title, a[href*="\\/watch\\"]'. If unsure of selectors, run an 'execute_script' query to inspect or search the DOM.\n` +
+      (browserExtensionConnected
+        ? "The browser extension is currently CONNECTED. You can perform browser control tasks normally."
+        : "CRITICAL: The browser extension is currently NOT connected. Do NOT attempt to use 'browserControl'. Instead, immediately inform the user that the browser extension is not connected and that they must make sure the browser extension is installed and the companion sidepanel is active before they can use this feature."),
       memoryContext
         ? `Use these saved user memories when relevant. Do not mention them unless it helps the answer.\n${memoryContext}`
         : "",

@@ -397,6 +397,7 @@ function AIPageContent() {
         body: {
           memories: enabledMemories,
           chatId: activeChatId,
+          browserExtensionConnected: extensionConnected,
         }
       };
 
@@ -454,6 +455,7 @@ function AIPageContent() {
         ...options?.body,
         memories: enabledMemories,
         chatId: activeChatId,
+        browserExtensionConnected: extensionConnected,
       },
     });
   };
@@ -470,6 +472,7 @@ function AIPageContent() {
         ...options?.body,
         memories: enabledMemories,
         chatId: activeChatId,
+        browserExtensionConnected: extensionConnected,
       },
     });
   };
