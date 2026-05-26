@@ -69,9 +69,6 @@ export function Sidebar({
 
   const handleNewChat = () => {
     createNewChat();
-    if (pathname !== "/ai" || searchParams.size > 0) {
-      router.push("/ai");
-    }
   };
 
   const startEditing = (e: React.MouseEvent, chat: StoredChat) => {
@@ -173,13 +170,7 @@ export function Sidebar({
               active={pathname.startsWith("/ai/playground")}
               isCollapsed={isCollapsed}
             /> */}
-            <SidebarNavItem
-              href="/ai/memory"
-              icon={<Brain size={16} />}
-              label="Memory"
-              active={pathname.startsWith("/ai/memory")}
-              isCollapsed={isCollapsed}
-            />
+
             <SidebarNavItem
               active={pathname?.startsWith("/ai/schedule")}
               href="/ai/schedule"
