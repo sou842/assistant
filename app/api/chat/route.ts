@@ -9,6 +9,8 @@ import { tools } from './tools';
 import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Chat from '@/lib/models/Chat';
+import LlmCall from '@/lib/models/LlmCall';
+import mongoose from 'mongoose';
 
 
 // Allow streaming responses up to 40 seconds
@@ -180,6 +182,8 @@ export async function POST(req: Request) {
     }));
     const modelMessages = await convertToModelMessages(normalizedMessages);
 
+    const stepsLogged: any[] = [];
+
     const result = streamText({
       model: provider(model),
       messages: modelMessages.length > 0 ? modelMessages : [{ role: 'user', content: ' ' }],
@@ -188,12 +192,9 @@ export async function POST(req: Request) {
       stopWhen: stepCountIs(20),
       onStepFinish: (step) => {
         console.log('\n--- Step Finished ---', step);
-        // if (step.text) console.log('Step Text (Reasoning/Response):', step.text);
-        // if (step.toolCalls && step.toolCalls.length > 0) {
-        //   console.log('Tool Calls Made:', JSON.stringify(step.toolCalls.map(tc => ({ name: tc.toolName, args: tc.args })), null, 2));
-        // }
+        stepsLogged.push(step);
       },
-      onFinish: async ({ text, toolResults }) => {
+      onFinish: async ({ text, toolResults, usage }) => {
         if (!canPersist) {
           return;
         }
@@ -231,8 +232,27 @@ export async function POST(req: Request) {
               ...(session?.user?.id ? { userId: session.user.id } : {})
             });
           }
+
+          // Save LLM Call Log
+          const userId = session?.user?.id && mongoose.Types.ObjectId.isValid(session.user.id)
+            ? new mongoose.Types.ObjectId(session.user.id)
+            : undefined;
+
+          await LlmCall.create({
+            userId,
+            userName,
+            userEmail,
+            chatId: validChatId,
+            modelName: model,
+            systemPrompt: finalSystemPrompt,
+            messagesCount: messages?.length || 0,
+            steps: stepsLogged,
+            promptTokens: usage?.inputTokens || 0,
+            completionTokens: usage?.outputTokens || 0,
+            totalTokens: usage?.totalTokens || 0,
+          });
         } catch (dbError) {
-          console.error('Failed to persist chat to MongoDB:', dbError);
+          console.error('Failed to persist chat or LLM call to MongoDB:', dbError);
           // We don't throw here as the stream response is already being handled
         }
       },
