@@ -53,7 +53,8 @@ export function AIShell({ children }: { children: React.ReactNode }) {
 
         {sidebarOpen && (
           <button
-            className="relative z-20 hidden w-px cursor-col-resize bg-app-border-default transition hover:bg-app-border-strong md:block"
+            className="relative z-20 hidden w-px cursor-col-resize md:block"
+            // style={{ width: 0.8 }}
             onMouseDown={startResize}
             type="button"
           />
