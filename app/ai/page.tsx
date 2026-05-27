@@ -460,6 +460,24 @@ function AIPageContent() {
     });
   };
 
+  // Listen for prompt commands from the browser extension
+  useEffect(() => {
+    const handleExtensionPrompt = (event: MessageEvent) => {
+      if (event.source !== window) return;
+      const data = event.data;
+      if (data && data.source === "jarvis-extension-event" && data.event === "send_prompt") {
+        const prompt = data.payload?.prompt;
+        if (prompt && prompt.trim()) {
+          setInput(prompt);
+          sendMessageWithMemory(prompt);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleExtensionPrompt);
+    return () => window.removeEventListener("message", handleExtensionPrompt);
+  }, [sendMessageWithMemory]);
+
   const regenerateWithMemory = (options?: Parameters<typeof regenerate>[0]) => {
     const enabledMemories = memories
       .filter((m) => m.enabled && m.content.trim())

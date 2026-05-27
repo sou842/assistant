@@ -10,7 +10,7 @@
   <style>
     :root {
       --bg: #030303;
-      --panel-bg: rgba(10, 10, 10, 0.7);
+      --panel-bg: rgba(15, 15, 15, 0.75);
       --border: rgba(255, 255, 255, 0.08);
       --primary: #00d2ff;
       --secondary: #9d4edd;
@@ -53,14 +53,14 @@
       top: -30px;
       right: -30px;
       background: var(--primary);
-      opacity: 0.2;
+      opacity: 0.15;
     }
 
     .light-2 {
       bottom: -30px;
       left: -30px;
       background: var(--secondary);
-      opacity: 0.15;
+      opacity: 0.12;
     }
 
     /* Main Container */
@@ -68,8 +68,8 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px;
-      gap: 20px;
+      padding: 16px;
+      gap: 12px;
       overflow: hidden;
       position: relative;
     }
@@ -80,7 +80,7 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 15px;
+      padding-bottom: 12px;
     }
 
     .logo-area {
@@ -134,76 +134,239 @@
       box-shadow: 0 0 8px var(--success);
     }
 
-    /* Stats / Info Panel */
-    .info-panel {
-      background: var(--panel-bg);
+    /* Active Tab Banner */
+    .active-tab-banner {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 15px;
-      backdrop-filter: blur(10px);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .panel-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .tab-info {
-      font-size: 13px;
-      line-height: 1.5;
+      padding: 8px 12px;
+      border-radius: 10px;
       color: #94a3b8;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* Console / Logs Section */
-    .console-section {
+    .active-tab-banner svg {
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    /* Chat Area */
+    .chat-area {
       flex: 1;
       display: flex;
       flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+    }
+
+    /* Chat Bubbles */
+    .chat-bubble {
+      max-width: 85%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      position: relative;
+      animation: fadeIn 0.25s ease-out forwards;
+      word-break: break-word;
+    }
+
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--secondary) 0%, rgba(157, 78, 221, 0.7) 100%);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 12px rgba(157, 78, 221, 0.15);
+    }
+
+    .chat-bubble.agent {
+      align-self: flex-start;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-bubble .timestamp {
+      display: block;
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    .chat-bubble.user .timestamp {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Formatter styles inside bubble */
+    .chat-bubble p {
+      margin-bottom: 8px;
+    }
+    .chat-bubble p:last-child {
+      margin-bottom: 0;
+    }
+    .chat-bubble code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* Chat Input Bar */
+    .chat-input-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      height: 40px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      outline: none;
+      resize: none;
+      min-height: 40px;
+      max-height: 120px;
+    }
+
+    /* Action Buttons */
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 6px;
+    }
+
+    .left-actions, .right-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, var(--primary) 0%, rgba(0, 210, 255, 0.7) 100%);
+      color: #030303;
+      border: none;
+      font-weight: 600;
+      padding: 6px 14px;
+    }
+
+    .btn-send:hover {
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+      opacity: 0.95;
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      border: none;
+      font-weight: 600;
+      padding: 6px 14px;
+    }
+
+    .btn-stop:hover {
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+      opacity: 0.95;
+    }
+
+    /* Execution Log Overlay/Drawer */
+    .console-section {
       background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
       backdrop-filter: blur(10px);
+      display: none; /* Toggled */
+      flex-direction: column;
+      max-height: 200px;
       overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .console-section.visible {
+      display: flex;
     }
 
     .console-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 15px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.2);
     }
 
     .console-body {
       flex: 1;
-      padding: 15px;
+      padding: 12px;
       overflow-y: auto;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 11.5px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     }
 
-    /* Log Entry styling */
+    /* Log Item */
     .log-entry {
       border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .log-header {
@@ -215,19 +378,23 @@
     .log-action {
       font-weight: 500;
       text-transform: uppercase;
-      font-size: 10px;
-      padding: 2px 6px;
+      font-size: 9px;
+      padding: 2px 5px;
       border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
     }
 
-    .log-action.open_tab { background: rgba(0, 210, 255, 0.15); color: #00d2ff; }
-    .log-action.click_element { background: rgba(157, 78, 221, 0.15); color: #c8b6ff; }
-    .log-action.search { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .log-action.execute_script { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
-    .log-action.get_active_tab { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .log-action.agent { background: rgba(0, 210, 255, 0.15); color: #00d2ff; }
+    .log-action.agent_reasoning { background: rgba(157, 78, 221, 0.15); color: #c8b6ff; }
+    .log-action.agent_decision { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .log-action.agent_action { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+    .log-action.dom_extraction { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .log-action.api_call { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .log-action.api_response { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
 
     .log-time {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-muted);
     }
 
@@ -239,96 +406,22 @@
     .log-status {
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 10px;
+      gap: 4px;
+      font-size: 9px;
     }
 
     .status-running { color: var(--primary); }
     .status-success { color: var(--success); }
     .status-error { color: var(--error); }
 
-    /* Button Action styling */
-    .button-group {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    button {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 16px;
-      border-radius: 12px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    button:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, rgba(0, 210, 255, 0.6) 100%);
-      color: #030303;
-      border: none;
-      font-weight: 600;
-    }
-
-    .btn-primary:hover {
-      box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
-      opacity: 0.95;
-    }
-
-    /* Manual Command Panel */
-    .test-panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 15px;
-      backdrop-filter: blur(10px);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .input-wrapper {
-      display: flex;
-      gap: 8px;
-    }
-
-    input {
-      flex: 1;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      padding: 8px 12px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 13px;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: var(--primary);
-    }
-
     @keyframes pulse {
       0%, 100% { opacity: 0.6; }
       50% { opacity: 1; filter: blur(2px) drop-shadow(0 0 4px var(--primary)); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -340,43 +433,98 @@
     <!-- Header -->
     <header>
       <div class="logo-area">
-        <div class="logo-glow"></div>
-        <h1>Jarvis AI</h1>
+        <div class="logo-glow" id="statusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); transition: all 0.3s ease;"></div>
+        <h1>Jarvis Agent</h1>
       </div>
-      <div class="status-badge" id="statusBadge">
-        <div class="status-dot"></div>
-        <span id="statusText">Awaiting Webpage</span>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span id="tokenUsage" style="display: none; padding: 4px 8px; font-size: 10px; border-radius: 6px; border: 1px solid rgba(157, 78, 221, 0.2); background: rgba(157, 78, 221, 0.05); color: #c8b6ff; font-weight: 500;">0 tokens</span>
+        <button id="btnNewChat" title="New Chat" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); display: flex; align-items: center; gap: 4px;">
+          + New
+        </button>
+        <button id="btnToggleHistory" title="Chat History" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); display: flex; align-items: center; gap: 4px;">
+          History
+        </button>
       </div>
     </header>
 
+    <!-- History Panel Overlay -->
+    <div class="history-panel" id="historyPanel" style="display: none; position: absolute; top: 56px; right: 16px; left: 16px; bottom: 84px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(15px); z-index: 50; flex-direction: column; overflow: hidden; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Conversations</span>
+        <button id="btnCloseHistory" style="padding: 2px 6px; font-size: 9px; border-radius: 4px;">Close</button>
+      </div>
+      <div id="historyList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin;">
+        <div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 12.5px;">No saved conversations yet.</div>
+      </div>
+    </div>
+
     <!-- Active Tab Info -->
-    <div class="info-panel">
-      <div class="panel-title">Active Browser Tab</div>
-      <div class="tab-info" id="activeTabInfo">Loading active tab details...</div>
+    <div class="active-tab-banner" id="activeTabBanner">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span id="activeTabInfo">Detecting tab...</span>
     </div>
 
-    <!-- AI Status & Plan -->
-    <div class="info-panel" id="aiStatusPanel" style="display: none; border-color: rgba(0, 210, 255, 0.2); background: rgba(0, 210, 255, 0.02); transition: all 0.3s ease;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-        <div class="panel-title" style="color: var(--primary);">Jarvis AI Brain</div>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500;">
-          <span id="aiStateIndicator" class="status-running">⚡ Thinking</span>
-        </div>
-      </div>
-      <div id="aiThoughtDetails" style="font-size: 12px; line-height: 1.5; color: #cbd5e1; max-height: 80px; overflow-y: auto; font-style: italic;">
-        Jarvis is deciding on the next step...
+    <!-- Chat Messages Area -->
+    <div class="chat-area" id="chatArea">
+      <!-- Chat bubbles dynamically loaded here -->
+      <div class="chat-bubble agent">
+        Hello! I am your Jarvis Browser Agent. Type any command below (e.g. "search Google for cat pictures") to control this browser tab.
+        <span class="timestamp">System</span>
       </div>
     </div>
 
-    <!-- Live Console logs -->
-    <div class="console-section">
+    <!-- Live Console logs (Toggleable) -->
+    <div class="console-section" id="consoleLogsSection">
       <div class="console-header">
-        <span class="panel-title">Execution Log</span>
-        <button id="btnClearLogs" style="padding: 4px 8px; font-size: 10px; border-radius: 6px;">Clear</button>
+        <span class="panel-title" style="font-size: 11px; font-weight:600; color: var(--text-muted);">Console Logs</span>
+        <button id="btnClearLogs" style="padding: 2px 6px; font-size: 9px; border-radius: 4px;">Clear</button>
       </div>
       <div class="console-body" id="consoleLogs">
-        <!-- Logs dynamically added here -->
-        <div style="color: var(--text-muted); text-align: center; margin-top: 20px;">No browser commands recorded yet.</div>
+        <div style="color: var(--text-muted); text-align: center; margin-top: 10px;">No logs recorded yet.</div>
+      </div>
+    </div>
+
+    <!-- Chat Input container -->
+    <div class="chat-input-container">
+      <div class="input-row">
+        <textarea id="cmdInput" placeholder="Type a message or browser command..."></textarea>
+      </div>
+      <div class="action-row">
+        <div class="left-actions">
+          <button id="btnToggleLog" title="Toggle Execution Log">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="21" x2="18" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Logs
+          </button>
+          <button id="btnRunScript" title="Run as JS Script">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Run Script
+          </button>
+          <select id="modelSelect" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 8px; font-family: 'Outfit', sans-serif; font-size: 11.5px; outline: none; cursor: pointer; transition: all 0.2s ease;" title="Select LLM Model">
+            <optgroup label="Gemini" style="background: #0f0f0f; color: var(--text);">
+              <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </optgroup>
+            <optgroup label="OpenAI" style="background: #0f0f0f; color: var(--text);">
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+            </optgroup>
+            <optgroup label="Mistral" style="background: #0f0f0f; color: var(--text);">
+              <option value="mistral-large-latest">Mistral Large</option>
+              <option value="mistral-small-latest">Mistral Small</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="right-actions">
+          <button id="btnSend" class="btn-send">
+            Send
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+          <button id="btnStop" class="btn-stop" style="display: none;">
+            Stop
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
