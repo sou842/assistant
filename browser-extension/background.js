@@ -692,8 +692,17 @@ CRITICAL RULES:
   }
 
   const resJson = await response.json();
+  let text = resJson.text || "";
+  text = text.trim();
+  if (text.startsWith("```")) {
+    const match = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (match && match[1]) {
+      text = match[1].trim();
+    }
+  }
+
   return {
-    text: resJson.text,
+    text: text,
     promptTokens: resJson.promptTokens || 0,
     completionTokens: resJson.completionTokens || 0,
     totalTokens: resJson.totalTokens || 0

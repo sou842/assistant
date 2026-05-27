@@ -51,8 +51,16 @@ export async function POST(req: Request) {
       } : {}),
     });
 
+    let cleanedText = text.trim();
+    if (cleanedText.startsWith("```")) {
+      const match = cleanedText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+      if (match && match[1]) {
+        cleanedText = match[1].trim();
+      }
+    }
+
     return NextResponse.json({
-      text,
+      text: cleanedText,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       totalTokens: usage.totalTokens,
