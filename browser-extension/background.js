@@ -331,6 +331,21 @@ async function handleBrowserCommand(command, sender) {
 
       case "run_agent": {
         if (!prompt) throw new Error("Agent prompt is required");
+        // Append user prompt to chat history so it shows in companion panel
+        try {
+          const data = await chrome.storage.local.get({ chatHistory: [] });
+          const chatHistory = data.chatHistory;
+          chatHistory.push({
+            role: "user",
+            text: prompt,
+            timestamp: Date.now()
+          });
+          if (chatHistory.length > 50) chatHistory.shift();
+          await chrome.storage.local.set({ chatHistory });
+        } catch (err) {
+          console.error("Failed to append run_agent message to chat history:", err);
+        }
+
         // Start agent loop asynchronously so it doesn't block the response
         runAgentLoop(prompt, model || "gemini-2.5-flash").catch(err => {
           console.error("Agent error:", err);
@@ -378,15 +393,15 @@ async function runAgentLoop(prompt, model) {
     let totalTokens = usageData.currentTokenUsage?.total || 0;
 
     let targetTabId = lastInteractedTabId;
-  if (!targetTabId) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab) {
-      await logAction("agent", "error", "No active tab detected to start agent on.");
-      await addAgentChatMessage("❌ No active tab detected to interact with.");
-      return;
+    if (!targetTabId) {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) {
+        await logAction("agent", "error", "No active tab detected to start agent on.");
+        await addAgentChatMessage("❌ No active tab detected to interact with.");
+        return;
+      }
+      targetTabId = tab.id;
     }
-    targetTabId = tab.id;
-  }
 
     const maxSteps = 15;
     for (let step = 1; step <= maxSteps; step++) {
@@ -399,232 +414,280 @@ async function runAgentLoop(prompt, model) {
       }
 
       try {
-        // 1. Extract DOM
-      const domResult = await chrome.scripting.executeScript({
-        target: { tabId: targetTabId },
-        func: () => {
-          document.querySelectorAll('[data-agent-id]').forEach(el => el.removeAttribute('data-agent-id'));
-          const interactiveSelectors = [
-            'a', 'button', 'input', 'textarea', 'select',
-            '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
-            '[onclick]', '[cursor="pointer"]'
-          ];
-          const elements = [];
-          let idx = 0;
-          const candidates = document.querySelectorAll(interactiveSelectors.join(','));
-          candidates.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            const style = window.getComputedStyle(el);
-            if (rect.width === 0 || rect.height === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-              return;
-            }
-            el.setAttribute('data-agent-id', String(idx));
-            elements.push({
-              index: idx,
-              tag: el.tagName.toLowerCase(),
-              type: el.getAttribute('type') || null,
-              name: el.getAttribute('name') || null,
-              id: el.getAttribute('id') || null,
-              placeholder: el.getAttribute('placeholder') || null,
-              text: el.innerText.trim().substring(0, 80),
-              value: el.value ? el.value.substring(0, 100) : null
-            });
-            idx++;
-          });
-          return {
-            url: window.location.href,
-            title: document.title,
-            elements: elements
+        // Get tab details to check for restricted URLs
+        const tab = await chrome.tabs.get(targetTabId);
+        const tabUrl = tab.url || "";
+        const isRestricted = tabUrl.startsWith("chrome://") ||
+          tabUrl.startsWith("chrome-extension://") ||
+          tabUrl.startsWith("edge://") ||
+          tabUrl.startsWith("about:");
+
+        let pageData;
+
+        if (isRestricted) {
+          pageData = {
+            url: tabUrl,
+            title: tab.title || "System Page",
+            elements: []
           };
+        } else {
+          // 1. Extract DOM
+          const domResult = await chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            func: () => {
+              document.querySelectorAll('[data-agent-id]').forEach(el => el.removeAttribute('data-agent-id'));
+              const interactiveSelectors = [
+                'a', 'button', 'input', 'textarea', 'select',
+                '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
+                '[onclick]', '[cursor="pointer"]'
+              ];
+              const elements = [];
+              let idx = 0;
+              const candidates = document.querySelectorAll(interactiveSelectors.join(','));
+              candidates.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                if (rect.width === 0 || rect.height === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                  return;
+                }
+                el.setAttribute('data-agent-id', String(idx));
+                elements.push({
+                  index: idx,
+                  tag: el.tagName.toLowerCase(),
+                  type: el.getAttribute('type') || null,
+                  name: el.getAttribute('name') || null,
+                  id: el.getAttribute('id') || null,
+                  placeholder: el.getAttribute('placeholder') || null,
+                  text: el.innerText.trim().substring(0, 80),
+                  value: el.value ? el.value.substring(0, 100) : null
+                });
+                idx++;
+              });
+              return {
+                url: window.location.href,
+                title: document.title,
+                elements: elements
+              };
+            }
+          });
+          pageData = domResult[0]?.result;
         }
-      });
 
-      const pageData = domResult[0]?.result;
-      if (!pageData) {
-        throw new Error("Failed to extract page elements");
-      }
-
-      await logAction("dom_extraction", "success", JSON.stringify(pageData));
-      await logAction("agent_reasoning", "running", `Step ${step}/${maxSteps}: Analyzing page and deciding next step...`);
-      await addAgentChatMessage(`⚡ Step ${step}/${maxSteps}: Reading elements on the page...`);
-
-      // 2. Query Gemini/OpenAI/Mistral API via queryLLM router
-      const requestPayload = {
-        prompt: prompt,
-        model: model,
-        step: step,
-        maxSteps: maxSteps,
-        url: pageData.url,
-        title: pageData.title,
-        elementsCount: pageData.elements.length
-      };
-      await logAction("api_call", "running", JSON.stringify(requestPayload));
-
-      const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData);
-      const rawText = llmResult.text;
-
-      promptTokens += llmResult.promptTokens;
-      completionTokens += llmResult.completionTokens;
-      totalTokens += llmResult.totalTokens;
-
-      await chrome.storage.local.set({
-        currentTokenUsage: {
-          prompt: promptTokens,
-          completion: completionTokens,
-          total: totalTokens,
-          model: model
+        if (!pageData) {
+          throw new Error("Failed to extract page elements");
         }
-      });
 
-      await logAction("api_response", "success", rawText);
+        await logAction("dom_extraction", "success", JSON.stringify(pageData));
+        await logAction("agent_reasoning", "running", `Step ${step}/${maxSteps}: Analyzing page and deciding next step...`);
+        await addAgentChatMessage(`⚡ Step ${step}/${maxSteps}: Reading elements on the page...`);
 
-      const decision = JSON.parse(rawText);
-      await logAction("agent_decision", "running", `Thought: ${decision.thought}`);
-      await addAgentChatMessage(`💡 *Thinking:* ${decision.thought}`);
+        // 2. Query Gemini/OpenAI/Mistral API via queryLLM router
+        const requestPayload = {
+          prompt: prompt,
+          model: model,
+          step: step,
+          maxSteps: maxSteps,
+          url: pageData.url,
+          title: pageData.title,
+          elementsCount: pageData.elements.length
+        };
+        await logAction("api_call", "running", JSON.stringify(requestPayload));
 
-      if (decision.action === "finish") {
-        await logAction("agent", "success", `Agent complete! Answer: ${decision.answer}`);
-        await addAgentChatMessage(`✅ **Completed successfully!** ${decision.answer}`);
+        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData);
+        const rawText = llmResult.text;
+
+        promptTokens += llmResult.promptTokens;
+        completionTokens += llmResult.completionTokens;
+        totalTokens += llmResult.totalTokens;
+
+        await chrome.storage.local.set({
+          currentTokenUsage: {
+            prompt: promptTokens,
+            completion: completionTokens,
+            total: totalTokens,
+            model: model
+          }
+        });
+
+        await logAction("api_response", "success", rawText);
+
+        const decision = JSON.parse(rawText);
+        await logAction("agent_decision", "running", `Thought: ${decision.thought}`);
+        await addAgentChatMessage(`💡 *Thinking:* ${decision.thought}`);
+
+        if (decision.action === "finish") {
+          await logAction("agent", "success", `Agent complete! Answer: ${decision.answer}`);
+          await addAgentChatMessage(`✅ **Completed successfully!** ${decision.answer}`);
+          break;
+        }
+
+        // 3. Execute Action
+        if (decision.action === "click") {
+          const clickSelector = decision.selector;
+          // Find element details in local dom copy to make log message user friendly
+          const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === clickSelector);
+          const detailStr = targetEl ? `"${targetEl.text || targetEl.placeholder || targetEl.tag}"` : clickSelector;
+
+          await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
+          await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
+
+          const clickResult = await chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            func: async (sel) => {
+              const el = document.querySelector(sel);
+              if (el) {
+                el.scrollIntoView({ block: "center" });
+
+                // Apply cyan highlight glow
+                const origOutline = el.style.outline;
+                const origShadow = el.style.boxShadow;
+                const origTransition = el.style.transition;
+
+                el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
+                el.style.outline = "3px solid #00d2ff";
+                el.style.boxShadow = "0 0 15px #00d2ff";
+
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Restore styles
+                el.style.outline = origOutline;
+                el.style.boxShadow = origShadow;
+                el.style.transition = origTransition;
+
+                el.click();
+                return { success: true };
+              }
+              return { success: false, error: `Element '${sel}' not found` };
+            },
+            args: [clickSelector]
+          });
+
+          if (!clickResult[0]?.result?.success) {
+            throw new Error(clickResult[0]?.result?.error || "Click failed");
+          }
+          await logAction("agent_action", "success", "Clicked element successfully");
+
+        } else if (decision.action === "type") {
+          const typeSelector = decision.selector;
+          const textVal = decision.text || "";
+          const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === typeSelector);
+          const detailStr = targetEl ? `"${targetEl.placeholder || targetEl.name || targetEl.tag}"` : typeSelector;
+
+          await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
+          await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
+
+          const typeResult = await chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            func: async (sel, val) => {
+              const el = document.querySelector(sel);
+              if (el) {
+                el.scrollIntoView({ block: "center" });
+
+                // Apply purple highlight glow
+                const origOutline = el.style.outline;
+                const origShadow = el.style.boxShadow;
+                const origTransition = el.style.transition;
+
+                el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
+                el.style.outline = "3px solid #9d4edd";
+                el.style.boxShadow = "0 0 15px #9d4edd";
+
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                // Restore styles
+                el.style.outline = origOutline;
+                el.style.boxShadow = origShadow;
+                el.style.transition = origTransition;
+
+                el.focus();
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                const enterEvent = new KeyboardEvent('keydown', {
+                  key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
+                });
+                el.dispatchEvent(enterEvent);
+                return { success: true };
+              }
+              return { success: false, error: `Element '${sel}' not found` };
+            },
+            args: [typeSelector, textVal]
+          });
+
+          if (!typeResult[0]?.result?.success) {
+            throw new Error(typeResult[0]?.result?.error || "Typing failed");
+          }
+          await logAction("agent_action", "success", "Typed and submitted text successfully");
+
+        } else if (decision.action === "scroll") {
+          const direction = decision.text === "up" ? -500 : 500;
+          await logAction("agent_action", "running", `Action: Scrolling ${decision.text || 'down'}`);
+          await addAgentChatMessage(`📜 Scrolling the page ${decision.text || 'down'}...`);
+
+          await chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            func: (y) => window.scrollBy(0, y),
+            args: [direction]
+          });
+          await logAction("agent_action", "success", "Scrolled successfully");
+
+        } else if (decision.action === "navigate") {
+          const destUrl = decision.url;
+          let currentUrl = "";
+          try {
+            const curTab = await chrome.tabs.get(targetTabId);
+            currentUrl = curTab.url || "";
+          } catch (e) {
+            // ignore
+          }
+
+          const getDomain = (u) => {
+            try { return new URL(u).hostname.replace('www.', ''); } catch (e) { return ''; }
+          };
+
+          const currentDomain = getDomain(currentUrl);
+          const destDomain = getDomain(destUrl);
+
+          const isJarvisPage = currentUrl.includes("localhost:3000") ||
+            currentUrl.includes("127.0.0.1") ||
+            currentUrl.includes("sou842.github.io") ||
+            currentUrl.includes("vercel.app");
+
+          const shouldOpenNewTab = isJarvisPage || !currentDomain || currentDomain !== destDomain;
+
+          if (shouldOpenNewTab) {
+            await logAction("agent_action", "running", `Action: Opening new tab for ${destUrl}`);
+            await addAgentChatMessage(`🌐 Opening new tab for: ${destUrl}`);
+            const newTab = await chrome.tabs.create({ url: destUrl });
+            targetTabId = newTab.id;
+            lastInteractedTabId = newTab.id;
+          } else {
+            await logAction("agent_action", "running", `Action: Navigating current tab to ${destUrl}`);
+            await addAgentChatMessage(`🌐 Navigating current tab to: ${destUrl}`);
+            await chrome.tabs.update(targetTabId, { url: destUrl });
+          }
+
+          await waitTabLoaded(targetTabId);
+          await logAction("agent_action", "success", `Navigation completed`);
+
+        } else if (decision.action === "wait") {
+          const ms = decision.milliseconds || 1000;
+          await logAction("agent_action", "running", `Action: Waiting for ${ms}ms`);
+          await addAgentChatMessage(`⏳ Waiting for ${ms / 1000}s for page to update...`);
+
+          await new Promise(resolve => setTimeout(resolve, ms));
+          await logAction("agent_action", "success", "Wait finished");
+        }
+
+        // Add a small delay between steps
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+      } catch (err) {
+        await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
+        await addAgentChatMessage(`❌ **Failed at step ${step}:** ${err.message}`);
         break;
       }
-
-      // 3. Execute Action
-      if (decision.action === "click") {
-        const clickSelector = decision.selector;
-        // Find element details in local dom copy to make log message user friendly
-        const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === clickSelector);
-        const detailStr = targetEl ? `"${targetEl.text || targetEl.placeholder || targetEl.tag}"` : clickSelector;
-
-        await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
-        await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
-
-        const clickResult = await chrome.scripting.executeScript({
-          target: { tabId: targetTabId },
-          func: async (sel) => {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.scrollIntoView({ block: "center" });
-
-              // Apply cyan highlight glow
-              const origOutline = el.style.outline;
-              const origShadow = el.style.boxShadow;
-              const origTransition = el.style.transition;
-
-              el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
-              el.style.outline = "3px solid #00d2ff";
-              el.style.boxShadow = "0 0 15px #00d2ff";
-
-              await new Promise(resolve => setTimeout(resolve, 800));
-
-              // Restore styles
-              el.style.outline = origOutline;
-              el.style.boxShadow = origShadow;
-              el.style.transition = origTransition;
-
-              el.click();
-              return { success: true };
-            }
-            return { success: false, error: `Element '${sel}' not found` };
-          },
-          args: [clickSelector]
-        });
-
-        if (!clickResult[0]?.result?.success) {
-          throw new Error(clickResult[0]?.result?.error || "Click failed");
-        }
-        await logAction("agent_action", "success", "Clicked element successfully");
-
-      } else if (decision.action === "type") {
-        const typeSelector = decision.selector;
-        const textVal = decision.text || "";
-        const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === typeSelector);
-        const detailStr = targetEl ? `"${targetEl.placeholder || targetEl.name || targetEl.tag}"` : typeSelector;
-
-        await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
-        await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
-
-        const typeResult = await chrome.scripting.executeScript({
-          target: { tabId: targetTabId },
-          func: async (sel, val) => {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.scrollIntoView({ block: "center" });
-
-              // Apply purple highlight glow
-              const origOutline = el.style.outline;
-              const origShadow = el.style.boxShadow;
-              const origTransition = el.style.transition;
-
-              el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
-              el.style.outline = "3px solid #9d4edd";
-              el.style.boxShadow = "0 0 15px #9d4edd";
-
-              await new Promise(resolve => setTimeout(resolve, 800));
-
-              // Restore styles
-              el.style.outline = origOutline;
-              el.style.boxShadow = origShadow;
-              el.style.transition = origTransition;
-
-              el.focus();
-              el.value = val;
-              el.dispatchEvent(new Event('input', { bubbles: true }));
-              el.dispatchEvent(new Event('change', { bubbles: true }));
-              const enterEvent = new KeyboardEvent('keydown', {
-                key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
-              });
-              el.dispatchEvent(enterEvent);
-              return { success: true };
-            }
-            return { success: false, error: `Element '${sel}' not found` };
-          },
-          args: [typeSelector, textVal]
-        });
-
-        if (!typeResult[0]?.result?.success) {
-          throw new Error(typeResult[0]?.result?.error || "Typing failed");
-        }
-        await logAction("agent_action", "success", "Typed and submitted text successfully");
-
-      } else if (decision.action === "scroll") {
-        const direction = decision.text === "up" ? -500 : 500;
-        await logAction("agent_action", "running", `Action: Scrolling ${decision.text || 'down'}`);
-        await addAgentChatMessage(`📜 Scrolling the page ${decision.text || 'down'}...`);
-
-        await chrome.scripting.executeScript({
-          target: { tabId: targetTabId },
-          func: (y) => window.scrollBy(0, y),
-          args: [direction]
-        });
-        await logAction("agent_action", "success", "Scrolled successfully");
-
-      } else if (decision.action === "navigate") {
-        const destUrl = decision.url;
-        await logAction("agent_action", "running", `Action: Navigating to ${destUrl}`);
-        await addAgentChatMessage(`🌐 Navigating browser to: ${destUrl}`);
-
-        await chrome.tabs.update(targetTabId, { url: destUrl });
-        await waitTabLoaded(targetTabId);
-        await logAction("agent_action", "success", `Navigated to ${destUrl}`);
-
-      } else if (decision.action === "wait") {
-        const ms = decision.milliseconds || 1000;
-        await logAction("agent_action", "running", `Action: Waiting for ${ms}ms`);
-        await addAgentChatMessage(`⏳ Waiting for ${ms / 1000}s for page to update...`);
-
-        await new Promise(resolve => setTimeout(resolve, ms));
-        await logAction("agent_action", "success", "Wait finished");
-      }
-
-      // Add a small delay between steps
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-    } catch (err) {
-      await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
-      await addAgentChatMessage(`❌ **Failed at step ${step}:** ${err.message}`);
-      break;
     }
-  }
   } finally {
     await chrome.storage.local.set({ isAgentRunning: false });
   }

@@ -87,13 +87,17 @@ export function BrowserCard({
       {/* Details Area */}
       {status === "running" && (
         <div className="mt-3 pt-3 border-t border-app-border-subtle flex items-center gap-2">
-          <span className="text-xs text-app-text-muted font-light">Sending command to browser companion...</span>
+          <Loader2 size={12} className="animate-spin text-cyan-400 shrink-0" />
+          <span className="text-xs text-cyan-400/90 font-medium">This task has been forwarded to the extension to execute...</span>
         </div>
       )}
 
       {status === "success" && (
-        <div className="mt-3 pt-3 border-t border-app-border-subtle text-xs text-app-text-soft flex flex-col gap-1">
-          <span className="text-emerald-400/80 font-medium">✓ Command executed successfully</span>
+        <div className="mt-3 pt-3 border-t border-app-border-subtle text-xs text-app-text-soft flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+            <span className="text-emerald-400 font-medium">This task has been forwarded to the extension to execute.</span>
+          </div>
           {result?.url && (
             <a 
               href={result.url} 
@@ -113,7 +117,7 @@ export function BrowserCard({
 
       {status === "error" && (
         <div className="mt-3 pt-3 border-t border-app-border-subtle text-xs text-red-400/90 font-light">
-          <p className="font-semibold text-[11px] mb-1">Execution Failed</p>
+          <p className="font-semibold text-[11px] mb-1">Forwarding Failed</p>
           <p className="opacity-80 break-words">{error || "Connection to browser extension lost or action failed."}</p>
         </div>
       )}

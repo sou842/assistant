@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { nanoid } from "nanoid";
 
 export interface BrowserCommand {
-  action: "open_tab" | "search" | "click_element" | "execute_script" | "get_active_tab" | "open_companion";
+  action: "open_tab" | "search" | "click_element" | "execute_script" | "get_active_tab" | "open_companion" | "run_agent";
   url?: string;
   selector?: string;
   query?: string;
   script?: string;
   description?: string;
+  prompt?: string;
+  model?: string;
 }
 
 export interface ExtensionLog {
