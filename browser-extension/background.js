@@ -423,6 +423,7 @@ async function runAgentLoop(prompt, model) {
           tabUrl.startsWith("about:");
 
         let pageData;
+        let frameMapping = {};
 
         if (isRestricted) {
           pageData = {
@@ -431,11 +432,10 @@ async function runAgentLoop(prompt, model) {
             elements: []
           };
         } else {
-          // 1. Extract DOM
-          const domResult = await chrome.scripting.executeScript({
-            target: { tabId: targetTabId },
+          // 1. Extract DOM from all frames
+          const domResults = await chrome.scripting.executeScript({
+            target: { tabId: targetTabId, allFrames: true },
             func: () => {
-              document.querySelectorAll('[data-agent-id]').forEach(el => el.removeAttribute('data-agent-id'));
               const interactiveSelectors = [
                 'a', 'button', 'input', 'textarea', 'select',
                 '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
@@ -443,26 +443,71 @@ async function runAgentLoop(prompt, model) {
               ];
               const elements = [];
               let idx = 0;
-              const candidates = document.querySelectorAll(interactiveSelectors.join(','));
-              candidates.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const style = window.getComputedStyle(el);
-                if (rect.width === 0 || rect.height === 0 || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                  return;
+
+              function traverse(root) {
+                if (!root) return;
+                if (root.nodeType === Node.ELEMENT_NODE) {
+                  const el = root;
+                  let isInteractive = false;
+                  try {
+                    isInteractive = el.matches(interactiveSelectors.join(','));
+                  } catch (e) { }
+
+                  if (isInteractive) {
+                    const rect = el.getBoundingClientRect();
+                    const style = window.getComputedStyle(el);
+                    const isVisible = rect.width > 0 && rect.height > 0 &&
+                      style.display !== 'none' &&
+                      style.visibility !== 'hidden' &&
+                      style.opacity !== '0';
+                    if (isVisible) {
+                      el.setAttribute('data-agent-id', String(idx));
+                      elements.push({
+                        index: idx,
+                        tag: el.tagName.toLowerCase(),
+                        type: el.getAttribute('type') || null,
+                        name: el.getAttribute('name') || null,
+                        id: el.getAttribute('id') || null,
+                        placeholder: el.getAttribute('placeholder') || null,
+                        text: el.innerText ? el.innerText.trim().substring(0, 80) : "",
+                        value: el.value ? el.value.substring(0, 100) : null
+                      });
+                      idx++;
+                    }
+                  }
+
+                  if (el.shadowRoot) {
+                    traverse(el.shadowRoot);
+                  }
                 }
-                el.setAttribute('data-agent-id', String(idx));
-                elements.push({
-                  index: idx,
-                  tag: el.tagName.toLowerCase(),
-                  type: el.getAttribute('type') || null,
-                  name: el.getAttribute('name') || null,
-                  id: el.getAttribute('id') || null,
-                  placeholder: el.getAttribute('placeholder') || null,
-                  text: el.innerText.trim().substring(0, 80),
-                  value: el.value ? el.value.substring(0, 100) : null
-                });
-                idx++;
-              });
+
+                let child = root.firstChild;
+                while (child) {
+                  traverse(child);
+                  child = child.nextSibling;
+                }
+              }
+
+              function clearAgentIds(root) {
+                if (!root) return;
+                if (root.nodeType === Node.ELEMENT_NODE) {
+                  root.removeAttribute('data-agent-id');
+                  if (root.shadowRoot) {
+                    clearAgentIds(root.shadowRoot);
+                  }
+                }
+                let child = root.firstChild;
+                while (child) {
+                  clearAgentIds(child);
+                  child = child.nextSibling;
+                }
+              }
+
+              if (document.body) {
+                clearAgentIds(document.body);
+                traverse(document.body);
+              }
+
               return {
                 url: window.location.href,
                 title: document.title,
@@ -470,7 +515,38 @@ async function runAgentLoop(prompt, model) {
               };
             }
           });
-          pageData = domResult[0]?.result;
+
+          const allElements = [];
+          frameMapping = {};
+          let globalIdx = 0;
+
+          if (domResults && domResults.length > 0) {
+            domResults.forEach(frameResult => {
+              const frameId = frameResult.frameId;
+              const framePageData = frameResult.result;
+              if (!framePageData || !framePageData.elements) return;
+
+              framePageData.elements.forEach(el => {
+                const localIndex = el.index;
+                const mappedElement = {
+                  ...el,
+                  index: globalIdx
+                };
+                allElements.push(mappedElement);
+                frameMapping[globalIdx] = { frameId, localIndex };
+                globalIdx++;
+              });
+            });
+
+            const topFrameResult = domResults.find(r => r.frameId === 0) || domResults[0];
+            pageData = {
+              url: topFrameResult?.result?.url || "",
+              title: topFrameResult?.result?.title || "",
+              elements: allElements
+            };
+          } else {
+            pageData = { url: "", title: "", elements: [] };
+          }
         }
 
         if (!pageData) {
@@ -537,10 +613,35 @@ async function runAgentLoop(prompt, model) {
             await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
             await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
 
+            const match = clickSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            const globalIndex = match ? parseInt(match[1], 10) : null;
+            const targetMapping = frameMapping[globalIndex];
+            const targetFrameId = targetMapping ? targetMapping.frameId : 0;
+            const localIndex = targetMapping ? targetMapping.localIndex : null;
+
             const clickResult = await chrome.scripting.executeScript({
-              target: { tabId: targetTabId },
-              func: async (sel) => {
-                const el = document.querySelector(sel);
+              target: { tabId: targetTabId, frameIds: [targetFrameId] },
+              func: async (localId) => {
+                const el = (() => {
+                  function search(root) {
+                    if (!root) return null;
+                    if (root.nodeType === Node.ELEMENT_NODE) {
+                      if (root.getAttribute('data-agent-id') === String(localId)) return root;
+                      if (root.shadowRoot) {
+                        const found = search(root.shadowRoot);
+                        if (found) return found;
+                      }
+                    }
+                    let child = root.firstChild;
+                    while (child) {
+                      const found = search(child);
+                      if (found) return found;
+                      child = child.nextSibling;
+                    }
+                    return null;
+                  }
+                  return search(document.body);
+                })();
 
                 if (el) {
                   el.scrollIntoView({ block: "center" });
@@ -568,10 +669,10 @@ async function runAgentLoop(prompt, model) {
 
                 return {
                   success: false,
-                  error: `Element '${sel}' not found`
+                  error: `Element with local agent id '${localId}' not found`
                 };
               },
-              args: [clickSelector]
+              args: [localIndex]
             });
 
             if (!clickResult[0]?.result?.success) {
@@ -601,10 +702,35 @@ async function runAgentLoop(prompt, model) {
 
             await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
 
+            const match = typeSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            const globalIndex = match ? parseInt(match[1], 10) : null;
+            const targetMapping = frameMapping[globalIndex];
+            const targetFrameId = targetMapping ? targetMapping.frameId : 0;
+            const localIndex = targetMapping ? targetMapping.localIndex : null;
+
             const typeResult = await chrome.scripting.executeScript({
-              target: { tabId: targetTabId },
-              func: async (sel, val) => {
-                const el = document.querySelector(sel);
+              target: { tabId: targetTabId, frameIds: [targetFrameId] },
+              func: async (localId, val) => {
+                const el = (() => {
+                  function search(root) {
+                    if (!root) return null;
+                    if (root.nodeType === Node.ELEMENT_NODE) {
+                      if (root.getAttribute('data-agent-id') === String(localId)) return root;
+                      if (root.shadowRoot) {
+                        const found = search(root.shadowRoot);
+                        if (found) return found;
+                      }
+                    }
+                    let child = root.firstChild;
+                    while (child) {
+                      const found = search(child);
+                      if (found) return found;
+                      child = child.nextSibling;
+                    }
+                    return null;
+                  }
+                  return search(document.body);
+                })();
 
                 if (el) {
                   el.scrollIntoView({ block: "center" });
@@ -647,10 +773,10 @@ async function runAgentLoop(prompt, model) {
 
                 return {
                   success: false,
-                  error: `Element '${sel}' not found`
+                  error: `Element with local agent id '${localId}' not found`
                 };
               },
-              args: [typeSelector, textVal]
+              args: [localIndex, textVal]
             });
 
             if (!typeResult[0]?.result?.success) {
