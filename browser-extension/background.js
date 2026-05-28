@@ -404,6 +404,7 @@ async function runAgentLoop(prompt, model) {
     }
 
     const maxSteps = 15;
+    const actionHistory = [];
     for (let step = 1; step <= maxSteps; step++) {
       // Check if stop requested
       const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
@@ -462,16 +463,19 @@ async function runAgentLoop(prompt, model) {
                       style.opacity !== '0';
                     if (isVisible) {
                       el.setAttribute('data-agent-id', String(idx));
-                      elements.push({
-                        index: idx,
-                        tag: el.tagName.toLowerCase(),
-                        type: el.getAttribute('type') || null,
-                        name: el.getAttribute('name') || null,
-                        id: el.getAttribute('id') || null,
-                        placeholder: el.getAttribute('placeholder') || null,
-                        text: el.innerText ? el.innerText.trim().substring(0, 80) : "",
-                        value: el.value ? el.value.substring(0, 100) : null
-                      });
+                      const elData = { index: idx, tag: el.tagName.toLowerCase() };
+                      const type = el.getAttribute('type'); if (type) elData.type = type;
+                      const name = el.getAttribute('name'); if (name) elData.name = name;
+                      const id = el.getAttribute('id'); if (id) elData.id = id;
+                      const placeholder = el.getAttribute('placeholder'); if (placeholder) elData.placeholder = placeholder;
+                      const ariaLabel = el.getAttribute('aria-label'); if (ariaLabel) elData.ariaLabel = ariaLabel;
+                      const title = el.getAttribute('title'); if (title) elData.title = title;
+                      const ariaPressed = el.getAttribute('aria-pressed'); if (ariaPressed !== null) elData.ariaPressed = ariaPressed;
+                      const ariaChecked = el.getAttribute('aria-checked'); if (ariaChecked !== null) elData.ariaChecked = ariaChecked;
+                      const ariaExpanded = el.getAttribute('aria-expanded'); if (ariaExpanded !== null) elData.ariaExpanded = ariaExpanded;
+                      const text = el.innerText ? el.innerText.trim().substring(0, 80) : ""; if (text) elData.text = text;
+                      const value = el.value ? el.value.substring(0, 100) : null; if (value) elData.value = value;
+                      elements.push(elData);
                       idx++;
                     }
                   }
@@ -569,7 +573,7 @@ async function runAgentLoop(prompt, model) {
         };
         await logAction("api_call", "running", JSON.stringify(requestPayload));
 
-        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData);
+        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData, actionHistory);
         const rawText = llmResult.text;
 
         promptTokens += llmResult.promptTokens;
@@ -599,25 +603,38 @@ async function runAgentLoop(prompt, model) {
 
         switch (decision.action) {
           case "click": {
-            const clickSelector = decision.selector;
+            const clickSelector = String(decision.selector);
+            let globalIndex = null;
+            const match = clickSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            if (match) globalIndex = parseInt(match[1], 10);
+            else {
+              const numMatch = clickSelector.match(/\d+/);
+              if (numMatch) globalIndex = parseInt(numMatch[0], 10);
+            }
 
             // Find element details in local dom copy to make log message user friendly
             const targetEl = pageData.elements.find(
-              e => `[data-agent-id="${e.index}"]` === clickSelector
+              e => e.index === globalIndex
             );
 
             const detailStr = targetEl
-              ? `"${targetEl.text || targetEl.placeholder || targetEl.tag}"`
+              ? `"${targetEl.text || targetEl.ariaLabel || targetEl.title || targetEl.placeholder || targetEl.tag}"`
               : clickSelector;
+
+            if (globalIndex === null) {
+              throw new Error(`Invalid selector "${clickSelector}". You must provide the numeric data-agent-id (e.g. "[data-agent-id='15']").`);
+            }
+
+            const targetMapping = frameMapping[globalIndex];
+            if (!targetMapping) {
+              throw new Error(`Element with data-agent-id '${globalIndex}' is no longer valid or visible on the page.`);
+            }
 
             await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
             await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
 
-            const match = clickSelector.match(/data-agent-id=["']?(\d+)["']?/);
-            const globalIndex = match ? parseInt(match[1], 10) : null;
-            const targetMapping = frameMapping[globalIndex];
-            const targetFrameId = targetMapping ? targetMapping.frameId : 0;
-            const localIndex = targetMapping ? targetMapping.localIndex : null;
+            const targetFrameId = targetMapping.frameId;
+            const localIndex = targetMapping.localIndex;
 
             const clickResult = await chrome.scripting.executeScript({
               target: { tabId: targetTabId, frameIds: [targetFrameId] },
@@ -687,26 +704,39 @@ async function runAgentLoop(prompt, model) {
           }
 
           case "type": {
-            const typeSelector = decision.selector;
+            const typeSelector = String(decision.selector);
             const textVal = decision.text || "";
+            
+            let globalIndex = null;
+            const match = typeSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            if (match) globalIndex = parseInt(match[1], 10);
+            else {
+              const numMatch = typeSelector.match(/\d+/);
+              if (numMatch) globalIndex = parseInt(numMatch[0], 10);
+            }
 
             const targetEl = pageData.elements.find(
-              e => `[data-agent-id="${e.index}"]` === typeSelector
+              e => e.index === globalIndex
             );
 
             const detailStr = targetEl
-              ? `"${targetEl.placeholder || targetEl.name || targetEl.tag}"`
+              ? `"${targetEl.placeholder || targetEl.ariaLabel || targetEl.title || targetEl.name || targetEl.tag}"`
               : typeSelector;
 
-            await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
+            if (globalIndex === null) {
+              throw new Error(`Invalid selector "${typeSelector}". You must provide the numeric data-agent-id (e.g. "[data-agent-id='15']").`);
+            }
 
+            const targetMapping = frameMapping[globalIndex];
+            if (!targetMapping) {
+              throw new Error(`Element with data-agent-id '${globalIndex}' is no longer valid or visible on the page.`);
+            }
+
+            await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
             await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
 
-            const match = typeSelector.match(/data-agent-id=["']?(\d+)["']?/);
-            const globalIndex = match ? parseInt(match[1], 10) : null;
-            const targetMapping = frameMapping[globalIndex];
-            const targetFrameId = targetMapping ? targetMapping.frameId : 0;
-            const localIndex = targetMapping ? targetMapping.localIndex : null;
+            const targetFrameId = targetMapping.frameId;
+            const localIndex = targetMapping.localIndex;
 
             const typeResult = await chrome.scripting.executeScript({
               target: { tabId: targetTabId, frameIds: [targetFrameId] },
@@ -882,13 +912,24 @@ async function runAgentLoop(prompt, model) {
           }
         }
 
+        if (decision.action !== "finish") {
+          actionHistory.push(`Step ${step}: ${decision.action} on ${decision.selector || decision.url || decision.text || ''}`);
+        }
+
         // Add a small delay between steps
         await new Promise(resolve => setTimeout(resolve, 1500));
 
       } catch (err) {
         await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
-        await addAgentChatMessage(`❌ **Failed at step ${step}:** ${err.message}`);
-        break;
+        
+        if (err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("key") || err.message.toLowerCase().includes("rate limit")) {
+          await addAgentChatMessage(`❌ **Failed at step ${step}:** ${err.message}`);
+          break;
+        }
+
+        await addAgentChatMessage(`⚠️ **Step ${step} error:** ${err.message}`);
+        actionHistory.push(`Step ${step} FAILED: ${err.message}`);
+        // Loop continues to allow AI to self-correct
       }
     }
   } finally {
@@ -905,14 +946,34 @@ async function getBackendBaseUrl() {
   }
 }
 
-async function queryLLM(model, prompt, step, maxSteps, pageData) {
+async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = []) {
+  const compactElements = pageData.elements.map(e => {
+    let s = `[data-agent-id="${e.index}"] ${e.tag}`;
+    if (e.id) s += ` id="${e.id}"`;
+    if (e.name) s += ` name="${e.name}"`;
+    if (e.type) s += ` type="${e.type}"`;
+    if (e.placeholder) s += ` placeholder="${e.placeholder}"`;
+    if (e.ariaLabel) s += ` aria-label="${e.ariaLabel}"`;
+    if (e.title) s += ` title="${e.title}"`;
+    if (e.ariaPressed) s += ` aria-pressed="${e.ariaPressed}"`;
+    if (e.ariaChecked) s += ` aria-checked="${e.ariaChecked}"`;
+    if (e.ariaExpanded) s += ` aria-expanded="${e.ariaExpanded}"`;
+    if (e.value) s += ` value="${e.value}"`;
+    if (e.text) s += ` text="${e.text}"`;
+    return s;
+  }).join('\n');
+
+  const historyText = actionHistory.length > 0 
+    ? `\nPrevious actions taken:\n${actionHistory.join('\n')}\n`
+    : "";
+
   const systemInstruction = `You are a browser control agent. Your goal is: "${prompt}"
 Step: ${step}/${maxSteps}
 Current page URL: ${pageData.url}
 Current page title: ${pageData.title}
-
+${historyText}
 Here is a list of interactive elements found on the page:
-${JSON.stringify(pageData.elements, null, 2)}
+${compactElements}
 
 Please decide the next step to achieve the goal. Respond ONLY with a JSON object in the following format:
 {
