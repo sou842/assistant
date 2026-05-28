@@ -521,162 +521,239 @@ async function runAgentLoop(prompt, model) {
           break;
         }
 
-        // 3. Execute Action
-        if (decision.action === "click") {
-          const clickSelector = decision.selector;
-          // Find element details in local dom copy to make log message user friendly
-          const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === clickSelector);
-          const detailStr = targetEl ? `"${targetEl.text || targetEl.placeholder || targetEl.tag}"` : clickSelector;
+        switch (decision.action) {
+          case "click": {
+            const clickSelector = decision.selector;
 
-          await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
-          await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
+            // Find element details in local dom copy to make log message user friendly
+            const targetEl = pageData.elements.find(
+              e => `[data-agent-id="${e.index}"]` === clickSelector
+            );
 
-          const clickResult = await chrome.scripting.executeScript({
-            target: { tabId: targetTabId },
-            func: async (sel) => {
-              const el = document.querySelector(sel);
-              if (el) {
-                el.scrollIntoView({ block: "center" });
+            const detailStr = targetEl
+              ? `"${targetEl.text || targetEl.placeholder || targetEl.tag}"`
+              : clickSelector;
 
-                // Apply cyan highlight glow
-                const origOutline = el.style.outline;
-                const origShadow = el.style.boxShadow;
-                const origTransition = el.style.transition;
+            await logAction("agent_action", "running", `Action: Clicking element matching ${clickSelector}`);
+            await addAgentChatMessage(`👉 Clicking the ${detailStr} button/link`);
 
-                el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
-                el.style.outline = "3px solid #00d2ff";
-                el.style.boxShadow = "0 0 15px #00d2ff";
+            const clickResult = await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              func: async (sel) => {
+                const el = document.querySelector(sel);
 
-                await new Promise(resolve => setTimeout(resolve, 800));
+                if (el) {
+                  el.scrollIntoView({ block: "center" });
 
-                // Restore styles
-                el.style.outline = origOutline;
-                el.style.boxShadow = origShadow;
-                el.style.transition = origTransition;
+                  // Apply cyan highlight glow
+                  const origOutline = el.style.outline;
+                  const origShadow = el.style.boxShadow;
+                  const origTransition = el.style.transition;
 
-                el.click();
-                return { success: true };
+                  el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
+                  el.style.outline = "3px solid #00d2ff";
+                  el.style.boxShadow = "0 0 15px #00d2ff";
+
+                  await new Promise(resolve => setTimeout(resolve, 800));
+
+                  // Restore styles
+                  el.style.outline = origOutline;
+                  el.style.boxShadow = origShadow;
+                  el.style.transition = origTransition;
+
+                  el.click();
+
+                  return { success: true };
+                }
+
+                return {
+                  success: false,
+                  error: `Element '${sel}' not found`
+                };
+              },
+              args: [clickSelector]
+            });
+
+            if (!clickResult[0]?.result?.success) {
+              throw new Error(
+                clickResult[0]?.result?.error || "Click failed"
+              );
+            }
+
+            await logAction("agent_action", "success", "Clicked element successfully");
+
+            break;
+          }
+
+          case "type": {
+            const typeSelector = decision.selector;
+            const textVal = decision.text || "";
+
+            const targetEl = pageData.elements.find(
+              e => `[data-agent-id="${e.index}"]` === typeSelector
+            );
+
+            const detailStr = targetEl
+              ? `"${targetEl.placeholder || targetEl.name || targetEl.tag}"`
+              : typeSelector;
+
+            await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
+
+            await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
+
+            const typeResult = await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              func: async (sel, val) => {
+                const el = document.querySelector(sel);
+
+                if (el) {
+                  el.scrollIntoView({ block: "center" });
+
+                  // Apply purple highlight glow
+                  const origOutline = el.style.outline;
+                  const origShadow = el.style.boxShadow;
+                  const origTransition = el.style.transition;
+
+                  el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
+
+                  el.style.outline = "3px solid #9d4edd";
+                  el.style.boxShadow = "0 0 15px #9d4edd";
+
+                  await new Promise(resolve => setTimeout(resolve, 800));
+
+                  // Restore styles
+                  el.style.outline = origOutline;
+                  el.style.boxShadow = origShadow;
+                  el.style.transition = origTransition;
+
+                  el.focus();
+                  el.value = val;
+
+                  el.dispatchEvent(new Event("input", { bubbles: true }));
+                  el.dispatchEvent(new Event("change", { bubbles: true }));
+
+                  const enterEvent = new KeyboardEvent("keydown", {
+                    key: "Enter",
+                    code: "Enter",
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true
+                  });
+
+                  el.dispatchEvent(enterEvent);
+
+                  return { success: true };
+                }
+
+                return {
+                  success: false,
+                  error: `Element '${sel}' not found`
+                };
+              },
+              args: [typeSelector, textVal]
+            });
+
+            if (!typeResult[0]?.result?.success) {
+              throw new Error(
+                typeResult[0]?.result?.error || "Typing failed"
+              );
+            }
+
+            await logAction("agent_action", "success", "Typed and submitted text successfully");
+
+            break;
+          }
+
+          case "scroll": {
+            const direction = decision.text === "up" ? -500 : 500;
+
+            await logAction("agent_action", "running", `Action: Scrolling ${decision.text || "down"}`);
+
+            await addAgentChatMessage(`📜 Scrolling the page ${decision.text || "down"}...`);
+
+            await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              func: (y) => window.scrollBy(0, y),
+              args: [direction]
+            });
+
+            await logAction("agent_action", "success", "Scrolled successfully");
+
+            break;
+          }
+
+          case "navigate": {
+            const destUrl = decision.url;
+            let currentUrl = "";
+
+            try {
+              const curTab = await chrome.tabs.get(targetTabId);
+              currentUrl = curTab.url || "";
+            } catch (e) {
+              // ignore
+            }
+
+            const getDomain = (u) => {
+              try {
+                return new URL(u).hostname.replace("www.", "");
+              } catch (e) {
+                return "";
               }
-              return { success: false, error: `Element '${sel}' not found` };
-            },
-            args: [clickSelector]
-          });
+            };
 
-          if (!clickResult[0]?.result?.success) {
-            throw new Error(clickResult[0]?.result?.error || "Click failed");
-          }
-          await logAction("agent_action", "success", "Clicked element successfully");
+            const currentDomain = getDomain(currentUrl);
+            const destDomain = getDomain(destUrl);
 
-        } else if (decision.action === "type") {
-          const typeSelector = decision.selector;
-          const textVal = decision.text || "";
-          const targetEl = pageData.elements.find(e => `[data-agent-id="${e.index}"]` === typeSelector);
-          const detailStr = targetEl ? `"${targetEl.placeholder || targetEl.name || targetEl.tag}"` : typeSelector;
+            const isJarvisPage =
+              currentUrl.includes("localhost:3000") ||
+              currentUrl.includes("127.0.0.1") ||
+              currentUrl.includes("sou842.github.io") ||
+              currentUrl.includes("vercel.app");
 
-          await logAction("agent_action", "running", `Action: Typing "${textVal}" into element matching ${typeSelector}`);
-          await addAgentChatMessage(`✏️ Typing "${textVal}" into ${detailStr} field`);
+            const shouldOpenNewTab =
+              isJarvisPage ||
+              !currentDomain ||
+              currentDomain !== destDomain;
 
-          const typeResult = await chrome.scripting.executeScript({
-            target: { tabId: targetTabId },
-            func: async (sel, val) => {
-              const el = document.querySelector(sel);
-              if (el) {
-                el.scrollIntoView({ block: "center" });
+            if (shouldOpenNewTab) {
+              await logAction("agent_action", "running", `Action: Opening new tab for ${destUrl}`);
 
-                // Apply purple highlight glow
-                const origOutline = el.style.outline;
-                const origShadow = el.style.boxShadow;
-                const origTransition = el.style.transition;
+              await addAgentChatMessage(`Opening new tab for: ${destUrl}`);
 
-                el.style.transition = "outline 0.2s ease, box-shadow 0.2s ease";
-                el.style.outline = "3px solid #9d4edd";
-                el.style.boxShadow = "0 0 15px #9d4edd";
+              const newTab = await chrome.tabs.create({
+                url: destUrl
+              });
 
-                await new Promise(resolve => setTimeout(resolve, 800));
+              targetTabId = newTab.id;
+              lastInteractedTabId = newTab.id;
+            } else {
+              await logAction("agent_action", "running", `Action: Navigating current tab to ${destUrl}`);
+              await addAgentChatMessage(`Navigating current tab to: ${destUrl}`);
+              await chrome.tabs.update(targetTabId, {
+                url: destUrl
+              });
+            }
 
-                // Restore styles
-                el.style.outline = origOutline;
-                el.style.boxShadow = origShadow;
-                el.style.transition = origTransition;
+            await waitTabLoaded(targetTabId);
+            await logAction("agent_action", "success", `Navigation completed`);
 
-                el.focus();
-                el.value = val;
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-                const enterEvent = new KeyboardEvent('keydown', {
-                  key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
-                });
-                el.dispatchEvent(enterEvent);
-                return { success: true };
-              }
-              return { success: false, error: `Element '${sel}' not found` };
-            },
-            args: [typeSelector, textVal]
-          });
-
-          if (!typeResult[0]?.result?.success) {
-            throw new Error(typeResult[0]?.result?.error || "Typing failed");
-          }
-          await logAction("agent_action", "success", "Typed and submitted text successfully");
-
-        } else if (decision.action === "scroll") {
-          const direction = decision.text === "up" ? -500 : 500;
-          await logAction("agent_action", "running", `Action: Scrolling ${decision.text || 'down'}`);
-          await addAgentChatMessage(`📜 Scrolling the page ${decision.text || 'down'}...`);
-
-          await chrome.scripting.executeScript({
-            target: { tabId: targetTabId },
-            func: (y) => window.scrollBy(0, y),
-            args: [direction]
-          });
-          await logAction("agent_action", "success", "Scrolled successfully");
-
-        } else if (decision.action === "navigate") {
-          const destUrl = decision.url;
-          let currentUrl = "";
-          try {
-            const curTab = await chrome.tabs.get(targetTabId);
-            currentUrl = curTab.url || "";
-          } catch (e) {
-            // ignore
+            break;
           }
 
-          const getDomain = (u) => {
-            try { return new URL(u).hostname.replace('www.', ''); } catch (e) { return ''; }
-          };
+          case "wait": {
+            const ms = decision.milliseconds || 1000;
 
-          const currentDomain = getDomain(currentUrl);
-          const destDomain = getDomain(destUrl);
+            await logAction("agent_action", "running", `Action: Waiting for ${ms}ms`);
+            await addAgentChatMessage(`Waiting for ${ms / 1000}s for page to update...`);
+            await new Promise(resolve => setTimeout(resolve, ms));
+            await logAction("agent_action", "success", "Wait finished");
 
-          const isJarvisPage = currentUrl.includes("localhost:3000") ||
-            currentUrl.includes("127.0.0.1") ||
-            currentUrl.includes("sou842.github.io") ||
-            currentUrl.includes("vercel.app");
-
-          const shouldOpenNewTab = isJarvisPage || !currentDomain || currentDomain !== destDomain;
-
-          if (shouldOpenNewTab) {
-            await logAction("agent_action", "running", `Action: Opening new tab for ${destUrl}`);
-            await addAgentChatMessage(`🌐 Opening new tab for: ${destUrl}`);
-            const newTab = await chrome.tabs.create({ url: destUrl });
-            targetTabId = newTab.id;
-            lastInteractedTabId = newTab.id;
-          } else {
-            await logAction("agent_action", "running", `Action: Navigating current tab to ${destUrl}`);
-            await addAgentChatMessage(`🌐 Navigating current tab to: ${destUrl}`);
-            await chrome.tabs.update(targetTabId, { url: destUrl });
+            break;
           }
 
-          await waitTabLoaded(targetTabId);
-          await logAction("agent_action", "success", `Navigation completed`);
-
-        } else if (decision.action === "wait") {
-          const ms = decision.milliseconds || 1000;
-          await logAction("agent_action", "running", `Action: Waiting for ${ms}ms`);
-          await addAgentChatMessage(`⏳ Waiting for ${ms / 1000}s for page to update...`);
-
-          await new Promise(resolve => setTimeout(resolve, ms));
-          await logAction("agent_action", "success", "Wait finished");
+          default: {
+            throw new Error(`Unknown action: ${decision.action}`);
+          }
         }
 
         // Add a small delay between steps
@@ -694,25 +771,12 @@ async function runAgentLoop(prompt, model) {
 }
 
 async function getBackendBaseUrl() {
-  const tabs = await chrome.tabs.query({});
-  const jarvisTab = tabs.find(tab =>
-    tab.url && (
-      tab.url.includes("localhost:3000") ||
-      tab.url.includes("127.0.0.1") ||
-      tab.url.includes("sou842.github.io") ||
-      tab.url.includes("assistant-nine-ecru.vercel.app") ||
-      tab.url.includes("sourav-samnta-fabg.vercel.app")
-    )
-  );
-  if (jarvisTab && jarvisTab.url) {
-    try {
-      const urlObj = new URL(jarvisTab.url);
-      return urlObj.origin;
-    } catch (e) {
-      // ignore
-    }
+  try {
+    await fetch("http://localhost:3000");
+    return "http://localhost:3000";
+  } catch (e) {
+    return "https://assistant-nine-ecru.vercel.app";
   }
-  return "http://localhost:3000";
 }
 
 async function queryLLM(model, prompt, step, maxSteps, pageData) {
