@@ -16,8 +16,19 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    if (body?.payload?.phone) {
-      body.payload.phone = cleanPhone(String(body.payload.phone));
+    if (body?.steps) {
+      body.steps = body.steps.map((s: any) => {
+        if (s.type === 'send_whatsapp' && s.config?.phone) {
+          return {
+            ...s,
+            config: {
+              ...s.config,
+              phone: cleanPhone(String(s.config.phone)),
+            }
+          };
+        }
+        return s;
+      });
     }
 
     const existing = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
@@ -26,7 +37,6 @@ export async function PATCH(
     }
 
     const merged = { ...existing.toObject(), ...body };
-    if (body.payload) merged.payload = { ...existing.payload, ...body.payload };
 
     const shouldRecompute = body.scheduleType || body.runAt || body.intervalMinutes;
     if (shouldRecompute) {

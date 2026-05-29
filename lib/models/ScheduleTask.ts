@@ -7,14 +7,9 @@ const ScheduleTaskSchema = new mongoose.Schema(
       required: [true, 'Please provide a title for this schedule task.'],
       maxlength: [140, 'Title cannot be more than 140 characters'],
     },
-    actionType: {
-      type: String,
-      enum: ['weather_report', 'reminder'],
-      required: true,
-    },
-    payload: {
-      type: Object,
-      default: {},
+    steps: {
+      type: Array,
+      default: [],
     },
     scheduleType: {
       type: String,
@@ -40,4 +35,8 @@ const ScheduleTaskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.ScheduleTask || mongoose.model('ScheduleTask', ScheduleTaskSchema);
+if (mongoose.models.ScheduleTask) {
+  delete mongoose.models.ScheduleTask;
+}
+
+export default mongoose.model('ScheduleTask', ScheduleTaskSchema);

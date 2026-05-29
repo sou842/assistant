@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ScheduleTask from '@/lib/models/ScheduleTask';
-import { executeScheduleTask } from '@/lib/schedule';
+import { executeScheduleTaskRun } from '@/lib/schedule';
+import ScheduleTaskRun from '@/lib/models/ScheduleTaskRun';
 
 export async function POST(
   request: Request,
@@ -21,7 +22,16 @@ export async function POST(
     }
 
     await ScheduleTask.findByIdAndUpdate(id, { isRunning: true, status: 'active' });
-    const result = await executeScheduleTask(task);
+    
+    const run = await ScheduleTaskRun.create({
+      taskId: task._id,
+      startedAt: new Date(),
+      status: 'running',
+      currentStepIndex: 0,
+      context: {},
+    });
+
+    const result = await executeScheduleTaskRun(task, run);
 
     return NextResponse.json({ success: result.success, data: result });
   } catch (error: any) {

@@ -61,8 +61,57 @@ const taskStatusSchema = z.enum(['todo', 'in-progress', 'done', 'backlog']);
 const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 const vaultItemTypeSchema = z.enum(['spreadsheet', 'note', 'gallery', 'album']);
 const scheduleStatusSchema = z.enum(['active', 'paused', 'completed', 'failed']);
-const scheduleActionTypeSchema = z.enum(['weather_report', 'reminder']);
 const scheduleTypeSchema = z.enum(['one_time', 'recurring']);
+
+const baseStepSchema = z.object({
+  id: z.string().describe("A unique string ID for this step, like 'step1' or 'fetch_weather'"),
+  condition: z.string().optional().describe("Optional JS expression. If it evaluates to false, the step is skipped. E.g. 'context.fetch_price.data.bitcoin.usd < 60000'"),
+});
+
+const stepSchema = z.discriminatedUnion('type', [
+  baseStepSchema.extend({
+    type: z.literal('fetch_weather'),
+    config: z.object({
+      city: z.string().describe("City name to fetch weather for"),
+    })
+  }),
+  baseStepSchema.extend({
+    type: z.literal('ai_prompt'),
+    config: z.object({
+      prompt: z.string().describe("The prompt to send to the AI. Use {{context.stepId.key}} to inject data."),
+    })
+  }),
+  baseStepSchema.extend({
+    type: z.literal('send_email'),
+    config: z.object({
+      to: z.string().describe("Recipient email address"),
+      subject: z.string().describe("Email subject line"),
+      bodyTemplate: z.string().describe("Email body content. ALWAYS use bodyTemplate, NEVER use body. Use {{context.stepId.key}} to inject data. fetch_weather provides keys: temperature, windspeed, time, weather.description, main.humidity."),
+    })
+  }),
+  baseStepSchema.extend({
+    type: z.literal('send_whatsapp'),
+    config: z.object({
+      phone: z.string().describe("Recipient phone number"),
+      messageTemplate: z.string().describe("Message content. Use {{context.stepId.key}} to inject data."),
+    })
+  }),
+  baseStepSchema.extend({
+    type: z.literal('http_request'),
+    config: z.object({
+      url: z.string().describe("URL to fetch. Can use {{context.stepId.key}}"),
+      method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).default('GET'),
+      headers: z.record(z.string()).optional().describe("Key-value pairs for HTTP headers"),
+      body: z.string().optional().describe("JSON string body for POST/PUT. Use templates like {{context.step1.key}}"),
+    })
+  }),
+  baseStepSchema.extend({
+    type: z.literal('run_script'),
+    config: z.object({
+      code: z.string().describe("JavaScript code to execute. IMPORTANT: You MUST use the 'return' keyword to output data. Example: `const price = context.step1.data; return { price };`")
+    })
+  }),
+]);
 
 export const tools = {
   saveMemory: tool({
@@ -330,16 +379,10 @@ export const tools = {
   }),
 
   createScheduleTask: tool({
-    description: "Create a schedule task (one-time or recurring). Use this for reminders, hourly checks, and automations.",
+    description: "Create a schedule task (one-time or recurring) containing multiple steps. Break down complex requests into steps. Use 'http_request' to hit external APIs, 'run_script' to parse their data, and 'send_email' to notify the user. IMPORTANT: Context variables are passed via {{context.stepId.key}}. You MUST use the 'condition' field on a step if you want to skip it dynamically. CRITICAL: DO NOT use setTimeout or artificial delays in scripts; timing is handled natively via 'intervalMinutes' or 'runAt'.",
     inputSchema: z.object({
       title: z.string().min(1).max(140),
-      actionType: scheduleActionTypeSchema,
-      payload: z.object({
-        phone: z.string(),
-        message: z.string().optional(),
-        city: z.string().optional(),
-        messagePrefix: z.string().optional(),
-      }),
+      steps: z.array(stepSchema).min(1),
       scheduleType: scheduleTypeSchema,
       runAt: z.string().optional(),
       intervalMinutes: z.number().int().positive().optional(),
@@ -352,12 +395,24 @@ export const tools = {
         if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
         await dbConnect();
+
+        // Normalize any phone numbers inside config of send_whatsapp steps
+        const normalizedSteps = data.steps.map(s => {
+          if (s.type === 'send_whatsapp' && s.config.phone) {
+            return {
+              ...s,
+              config: {
+                ...s.config,
+                phone: cleanPhone(String(s.config.phone)),
+              }
+            };
+          }
+          return s;
+        });
+
         const normalized = {
           ...data,
-          payload: {
-            ...data.payload,
-            phone: cleanPhone(String(data.payload.phone)),
-          },
+          steps: normalizedSteps,
           runAt: data.runAt ? new Date(data.runAt) : undefined,
         };
         const nextRunAt = computeNextRunAt(normalized as any);
@@ -374,13 +429,7 @@ export const tools = {
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the schedule task to update'),
       title: z.string().min(1).max(140).optional(),
-      actionType: scheduleActionTypeSchema.optional(),
-      payload: z.object({
-        phone: z.string().optional(),
-        message: z.string().optional(),
-        city: z.string().optional(),
-        messagePrefix: z.string().optional(),
-      }).optional(),
+      steps: z.array(stepSchema).optional(),
       scheduleType: scheduleTypeSchema.optional(),
       runAt: z.string().optional(),
       intervalMinutes: z.number().int().positive().optional(),
@@ -396,17 +445,26 @@ export const tools = {
         const existing = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
         if (!existing) return { success: false, error: "Schedule task not found" };
 
-        const normalizedPayload = updateData.payload
-          ? {
-            ...updateData.payload,
-            ...(updateData.payload.phone ? { phone: cleanPhone(String(updateData.payload.phone)) } : {}),
-          }
+        // Normalize any phone numbers inside config of send_whatsapp steps if provided
+        const normalizedSteps = updateData.steps
+          ? updateData.steps.map(s => {
+              if (s.type === 'send_whatsapp' && s.config.phone) {
+                return {
+                  ...s,
+                  config: {
+                    ...s.config,
+                    phone: cleanPhone(String(s.config.phone)),
+                  }
+                };
+              }
+              return s;
+            })
           : undefined;
 
         const merged: any = {
           ...existing.toObject(),
           ...updateData,
-          ...(normalizedPayload ? { payload: { ...existing.payload, ...normalizedPayload } } : {}),
+          ...(normalizedSteps ? { steps: normalizedSteps } : {}),
           ...(updateData.runAt !== undefined ? { runAt: updateData.runAt ? new Date(updateData.runAt) : undefined } : {}),
         };
 

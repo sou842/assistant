@@ -116,7 +116,7 @@ export default function SchedulePage() {
           title="Schedule"
           subtitle="Manage recurring and one-time automations"
           actions={
-            <Link href="/ai/schedule/calender">
+            <Link href="/ai/schedule/calendar">
               <Button variant="outline" className="rounded-full border-app-border-strong text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
                 <CalendarDays className="size-4" />
                 Calendar View
@@ -167,7 +167,16 @@ export default function SchedulePage() {
                   <div key={task._id} className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3">
                     <div className="col-span-4 min-w-0">
                       <p className="truncate text-sm text-app-text-primary">{task.title}</p>
-                      <p className="truncate text-xs text-app-text-faint">{task.actionType} • {task.payload?.phone || "-"}</p>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {task.steps?.map((step: any, idx: number) => (
+                          <React.Fragment key={step.id}>
+                            <Badge variant="outline" className="text-[10px] h-5 rounded bg-app-surface-glass border-app-border-subtle text-app-text-soft">
+                              {step.type}
+                            </Badge>
+                            {idx < task.steps.length - 1 && <span className="text-app-text-ghost text-[10px]">&rarr;</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </div>
                     <div className="col-span-2 text-xs text-app-text-soft">{task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}</div>
                     <div className="col-span-2 text-xs text-app-text-soft">{task.nextRunAt ? format(new Date(task.nextRunAt), "MMM d, HH:mm") : "-"}</div>

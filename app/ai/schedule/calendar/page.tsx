@@ -30,8 +30,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 type ScheduleTask = {
   _id: string;
   title: string;
-  actionType: "weather_report" | "reminder";
-  payload?: { phone?: string };
+  steps: any[];
   scheduleType: "one_time" | "recurring";
   runAt?: string;
   intervalMinutes?: number;

@@ -25,12 +25,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const payload = {
-      ...(body.payload || {}),
-      phone: body.payload?.phone ? cleanPhone(String(body.payload.phone)) : body.payload?.phone,
-    };
-
-    const data = { ...body, payload };
+    const data = { ...body };
     const nextRunAt = computeNextRunAt(data);
 
     const task = await ScheduleTask.create({
