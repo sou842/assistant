@@ -6,9 +6,10 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isApiAuthRoute = req.nextUrl.pathname.startsWith('/api/auth');
+  const isScheduleRoute = req.nextUrl.pathname.startsWith('/api/schedule');
   const isApiRoute = req.nextUrl.pathname.startsWith('/api');
   
-  if (isApiRoute && !isApiAuthRoute && !isLoggedIn) {
+  if (isApiRoute && !isApiAuthRoute && !isScheduleRoute && !isLoggedIn) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
