@@ -120,8 +120,8 @@ export default function TasksPage() {
         ...options?.body,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, assisting the user with their task manager. You have tools to list, create, update, and delete tasks. Help the user stay organized efficiently. ${selectedChatTask
-            ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
-            : ""
+          ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
+          : ""
           }`,
       },
     });
@@ -139,8 +139,8 @@ export default function TasksPage() {
         ...options?.body,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, assisting the user with their task manager. You have tools to list, create, update, and delete tasks. Help the user stay organized efficiently. ${selectedChatTask
-            ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
-            : ""
+          ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
+          : ""
           }`,
       },
     });
@@ -434,8 +434,8 @@ export default function TasksPage() {
                       tasks={tasks}
                       onEdit={openEditPanel}
                       onAddTask={openAddPanel}
-                      // onDelete={handleDeleteTask}
-                      // onStatusChange={handleStatusChange}
+                    // onDelete={handleDeleteTask}
+                    // onStatusChange={handleStatusChange}
                     />
                   ) : (
                     <TaskTable
@@ -506,7 +506,7 @@ export default function TasksPage() {
 
         <div className="absolute bottom-0 left-0 right-0 w-full pointer-events-none overflow-hidden h-[100vh] flex items-end">
           <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Upscaled%20Image%20%2810%29-UnDKstODkIENp5xqTYUEpt0Sm8tNOw.png"
+            src="/images/footer.png"
             alt="Decorative Background"
             className="w-full h-auto object-cover object-bottom opacity-70 mix-blend-lighten scale-110"
           />

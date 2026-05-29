@@ -3,7 +3,7 @@ import { Bot } from 'lucide-react';
 
 export default function Footer({ showCTA = false }: { showCTA?: boolean }) {
   return (
-    <div className="w-full bg-[url('/images/footer.png')] bg-cover bg-center ">
+    <div className="w-full bg-[url('/images/footer.png')] bg-cover bg-center">
       {showCTA && (
         <div className="w-full max-w-300 mx-auto px-4 py-20 md:px-8 md:py-32">
           <div className="mx-auto max-w-6xl relative overflow-hidden">
