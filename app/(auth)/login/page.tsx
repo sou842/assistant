@@ -7,7 +7,7 @@ import { signIn } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import { Bot } from "lucide-react";
 import Footer from "@/components/Footer";
-import BackgroundGrid from '@/components/BackgroundGrid';
+import BackgroundGrid from "@/components/BackgroundGrid";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +20,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const res = await signIn("credentials", {
         redirect: false,
@@ -44,9 +43,14 @@ export default function LoginPage() {
     <main className="app-page-shell app-selection">
       <BackgroundGrid />
 
-      <Link href="/" className="fixed top-4 left-6 z-50 text-center flex items-center gap-2 cursor-pointer">
+      <Link
+        href="/"
+        className="fixed top-4 left-6 z-50 text-center flex items-center gap-2 cursor-pointer"
+      >
         <Bot className="size-5 text-app-text-primary" />
-        <span className="text-lg font-medium tracking-tight text-app-text-primary">Jarvis</span>
+        <span className="text-lg font-medium tracking-tight text-app-text-primary">
+          Jarvis
+        </span>
       </Link>
 
       <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 pt-16">
@@ -60,7 +64,9 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-xl border border-app-danger-border bg-app-danger-soft p-3">
-                <p className="text-center text-sm text-app-danger-foreground">{error}</p>
+                <p className="text-center text-sm text-app-danger-foreground">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -99,6 +105,7 @@ export default function LoginPage() {
           <div className="mt-6 space-y-3">
             <button
               type="button"
+              onClick={() => signIn("google")}
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-sm font-medium text-app-text-primary transition-all hover:border-app-border-strong hover:bg-app-surface-hover focus:border-app-focus-accent focus:outline-none focus:ring-2 focus:ring-app-focus-accent focus:ring-offset-2 focus:ring-offset-app-canvas"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -123,6 +130,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
+              onClick={() => signIn("github")}
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-app-border-default bg-app-surface px-4 py-3 text-sm font-medium text-app-text-primary transition-all hover:border-app-border-strong hover:bg-app-surface-hover focus:outline-none focus:ring-2 focus:ring-app-text-primary focus:ring-offset-2 focus:ring-offset-app-canvas"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -134,7 +142,10 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center text-sm text-app-text-muted">
             Don't have an account?
-            <Link href="/register" className="inline ml-1.5 font-semibold text-app-text-primary transition-colors cursor-pointer hover:text-app-text-secondary">
+            <Link
+              href="/register"
+              className="inline ml-1.5 font-semibold text-app-text-primary transition-colors cursor-pointer hover:text-app-text-secondary"
+            >
               Sign up
             </Link>
           </div>
