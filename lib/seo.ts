@@ -1,6 +1,6 @@
 export const SITE_NAME = 'Jarvis'
 
-export const SITE_URL = new URL('https://sou842.github.io')
+export const SITE_URL = new URL('https://assistant-nine-ecru.vercel.app')
 
 export const DEFAULT_DESCRIPTION =
   'Jarvis is an intelligent personal assistant for AI scheduling, task automation, integrations, and persistent memory.'

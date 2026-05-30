@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
+  other: {
+    'og:logo': new URL('/icon.svg', SITE_URL).toString(),
+  },
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
