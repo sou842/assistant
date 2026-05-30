@@ -16,6 +16,9 @@ export default function Navbar() {
             <span className="text-base font-medium tracking-tight">Jarvis</span>
           </Link>
           <div className="flex items-center gap-6">
+            {/* <Link href="/articles" className="text-sm text-white/70 transition-colors hover:text-white hidden md:block">
+              Articles
+            </Link> */}
             {status === "loading" ? (
               <div className="h-8 w-32 animate-pulse rounded-full bg-app-surface-glass" />
             ) : session ? (
