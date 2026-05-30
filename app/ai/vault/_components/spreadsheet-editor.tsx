@@ -12,9 +12,10 @@ import { Plus, Trash2 } from "lucide-react";
 interface SpreadsheetEditorProps {
   initialData?: any[];
   onChange: (data: any[]) => void;
+  readOnly?: boolean;
 }
 
-export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorProps) {
+export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: SpreadsheetEditorProps) {
   const parsedInitialData = useMemo(() => {
     let parsed = initialData;
     if (typeof initialData === 'string' && initialData.trim() !== '') {
@@ -89,8 +90,16 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
         }, [initialValue]);
 
         const onBlur = () => {
-          updateData(row.index, column.id, value);
+          if (!readOnly) updateData(row.index, column.id, value);
         };
+
+        if (readOnly) {
+          return (
+            <div className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-2">
+              {value}
+            </div>
+          );
+        }
 
         return (
           <input
@@ -99,6 +108,7 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
             onBlur={onBlur}
             className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-2 focus:bg-app-surface-glass transition-colors"
             placeholder="..."
+            readOnly={readOnly}
           />
         );
       },
@@ -129,27 +139,29 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
 
   return (
     <div className="p-6 h-full flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          onClick={addRow}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
-        >
-          <Plus size={14} /> Add Row
-        </button>
-        <button
-          onClick={addColumn}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
-        >
-          <Plus size={14} /> Add Column
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={addRow}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
+          >
+            <Plus size={14} /> Add Row
+          </button>
+          <button
+            onClick={addColumn}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-app-surface-glass hover:bg-app-surface-glass-strong text-xs font-medium text-app-text-secondary transition"
+          >
+            <Plus size={14} /> Add Column
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto border border-app-border-default rounded-xl bg-app-canvas">
         <table className="w-full text-left border-collapse">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b border-app-border-default bg-app-surface-glass">
-                <th className="w-10 p-2 border-r border-app-border-default"></th>
+                {!readOnly && <th className="w-10 p-2 border-r border-app-border-default"></th>}
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
@@ -167,14 +179,16 @@ export function SpreadsheetEditor({ initialData, onChange }: SpreadsheetEditorPr
           <tbody>
             {table.getRowModel().rows.map((row, index) => (
               <tr key={row.id} className="border-b border-app-border-subtle hover:bg-app-surface-glass-soft">
-                <td className="w-10 p-2 border-r border-app-border-default text-center">
-                  <button
-                    onClick={() => removeRow(index)}
-                    className="p-1 text-app-text-faint hover:text-red-400 rounded transition opacity-50 hover:opacity-100"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </td>
+                {!readOnly && (
+                  <td className="w-10 p-2 border-r border-app-border-default text-center">
+                    <button
+                      onClick={() => removeRow(index)}
+                      className="p-1 text-app-text-faint hover:text-red-400 rounded transition opacity-50 hover:opacity-100"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </td>
+                )}
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="p-0 border-r border-app-border-default last:border-r-0">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -6,6 +6,7 @@ export interface IVaultItem extends Document {
   content: any; // Using any/Mixed to accommodate Editor.js blocks, Spreadsheet JSON, or Gallery/Album media arrays
   tags: string[];
   userId: mongoose.Types.ObjectId;
+  isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,10 @@ const vaultItemSchema = new Schema<IVaultItem>(
       ref: 'User', 
       required: true, 
       index: true 
+    },
+    isPublic: {
+      type: Boolean,
+      default: false,
     },
   },
   {

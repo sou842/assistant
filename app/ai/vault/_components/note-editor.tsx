@@ -2,16 +2,16 @@
 // @ts-nocheck
 
 import React, { useEffect, useRef, useState } from "react";
-import EditorJS, { OutputData } from "@editorjs/editorjs";
 import { compressImage } from "@/lib/utils";
 
 interface NoteEditorProps {
   initialData?: any;
   onChange: (data: any) => void;
+  readOnly?: boolean;
 }
 
-export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
-  const editorRef = useRef<EditorJS | null>(null);
+export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEditorProps) {
+  const editorRef = useRef<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -59,6 +59,9 @@ export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
         class CustomYouTubeEmbed {
           constructor({ data, config, api, readOnly }: any) {
             this.youTubeEmbed = new YouTubeEmbed.default({ data, config, api, readOnly });
+          }
+          static get isReadOnlySupported() {
+            return true;
           }
           static get toolbox() {
             const originalToolbox = YouTubeEmbed.default.toolbox;
@@ -158,10 +161,15 @@ export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
           });
         }
 
-        const editor = new EditorJS({
-          holder: containerRef.current!,
+        import('@editorjs/editorjs').then((EditorJSModule) => {
+          if (!isCurrent) return;
+          const EditorJS = EditorJSModule.default || EditorJSModule;
+
+          const editor = new EditorJS({
+            holder: containerRef.current!,
           data: parsedData,
           placeholder: 'Start writing your content...',
+          readOnly: readOnly,
           tools: {
             header: {
               class: Header.default || Header,
@@ -274,11 +282,12 @@ export function NoteEditor({ initialData, onChange }: NoteEditorProps) {
         });
 
         if (!editorRef.current) {
-          editorRef.current = editor;
+          editorRef.current = editor as any;
         } else {
           // If for some reason it already exists, destroy the new one
           editor.destroy();
         }
+        });
       });
     }
 

@@ -32,6 +32,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
+
     const item = await VaultItem.findOneAndUpdate({ _id: id, userId: session.user.id }, body, { new: true });
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ item });
