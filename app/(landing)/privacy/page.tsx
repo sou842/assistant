@@ -1,6 +1,39 @@
+import type { Metadata } from 'next'
+
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackgroundGrid from '@/components/BackgroundGrid';
+import { OG_IMAGE_URL, SITE_NAME } from '@/lib/seo'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description:
+    'Read how Jarvis collects, uses, and protects your data.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: 'Privacy Policy | Jarvis',
+    description: 'Read how Jarvis collects, uses, and protects your data.',
+    url: '/privacy',
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} preview image`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | Jarvis',
+    description: 'Read how Jarvis collects, uses, and protects your data.',
+    images: [OG_IMAGE_URL],
+  },
+}
 
 export default function PrivacyPolicy() {
   return (

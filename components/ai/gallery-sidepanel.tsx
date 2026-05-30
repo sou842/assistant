@@ -168,7 +168,7 @@ export function GallerySidePanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-2 left-2 p-1.5 rounded-full bg-app-canvas/60 hover:bg-purple-500/80 border border-app-border-default text-app-text-primary hover:text-app-text-primary transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+                        className="absolute top-2 left-2 p-1.5 rounded-full bg-app-canvas/60 hover:bg-brand-primary border border-app-border-default text-app-text-primary hover:text-app-text-primary transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
                         title="View Full Image"
                       >
                         <ExternalLink className="size-3" />

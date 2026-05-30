@@ -1,6 +1,40 @@
+import type { Metadata } from 'next'
+
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackgroundGrid from '@/components/BackgroundGrid';
+import { OG_IMAGE_URL, SITE_NAME } from '@/lib/seo'
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'Read the Jarvis terms that govern use of the site and platform.',
+  alternates: {
+    canonical: '/terms',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: 'Terms of Service | Jarvis',
+    description:
+      'Read the Jarvis terms that govern use of the site and platform.',
+    url: '/terms',
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} preview image`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of Service | Jarvis',
+    description:
+      'Read the Jarvis terms that govern use of the site and platform.',
+    images: [OG_IMAGE_URL],
+  },
+}
 
 export default function TermsOfService() {
   return (

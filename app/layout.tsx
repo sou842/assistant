@@ -4,17 +4,56 @@ import { Analytics } from '@vercel/analytics/next'
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import './globals.css'
+import {
+  DEFAULT_DESCRIPTION,
+  OG_IMAGE_URL,
+  SITE_NAME,
+  SITE_URL,
+} from '@/lib/seo'
 
 export const metadata: Metadata = {
+  metadataBase: SITE_URL,
   title: {
-    default: 'Jarvis',
-    template: '%s | Jarvis',
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: 'Your intelligent personal assistant.',
+  description: DEFAULT_DESCRIPTION,
   icons: {
     icon: '/icon.svg',
-    // shortcut: '/favicon-16x16.png',
-    // apple: '/apple-touch-icon.png',
+    shortcut: '/favicon-32x32.png',
+    apple: '/apple-touch-icon.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: DEFAULT_DESCRIPTION,
+    url: '/',
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} preview image`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_NAME,
+    description: DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE_URL],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
 }
 
