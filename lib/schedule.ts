@@ -27,17 +27,46 @@ export function computeNextRunAt(task: any, from = new Date()) {
   return null;
 }
 
+function getPathValue(obj: any, path: string): any {
+  const normalizedPath = path
+    .replace(/\["([^"]+)"\]/g, '.$1')
+    .replace(/\['([^']+)'\]/g, '.$1')
+    .replace(/\[(\d+)\]/g, '.$1')
+    .replace(/^\./, '');
+  
+  const parts = normalizedPath.split('.').filter(Boolean);
+  let current = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    current = current[part];
+  }
+  return current;
+}
+
 // Helpers
 function fillTemplate(template: string, context: any): string {
   if (!template) return '';
-  return template.replace(/{{context\.([^}]+)}}/g, (match, path) => {
-    const parts = path.split('.');
-    let current = context;
-    for (const part of parts) {
-      if (current === null || current === undefined) return '';
-      current = current[part];
+  return template.replace(/\{\{\s*(?:context\.)?([^}]+?)\s*\}\}/g, (match, path) => {
+    let val = getPathValue(context, path);
+    
+    // Heuristic 1: If path includes .data. but not found, try removing it
+    if (val === undefined && path.includes('.data.')) {
+      val = getPathValue(context, path.replace('.data.', '.'));
     }
-    return current !== undefined ? String(current) : match;
+    
+    // Heuristic 2: If path includes array access but property might be an object, try removing [0]
+    if (val === undefined && path.includes('[0]')) {
+      val = getPathValue(context, path.replace(/\[0\]/g, ''));
+    }
+    
+    // Heuristic 3: Both
+    if (val === undefined && path.includes('.data.') && path.includes('[0]')) {
+      val = getPathValue(context, path.replace('.data.', '.').replace(/\[0\]/g, ''));
+    }
+
+    return val !== undefined ? String(val) : match;
   });
 }
 
@@ -134,9 +163,9 @@ async function executeFetchWeather(config: any, context: any) {
       temp: current.temperature,
       humidity,
     },
-    weather: {
-      description,
-    },
+    weather: [
+      { description }
+    ],
     wind: {
       speed: current.windspeed,
     }
