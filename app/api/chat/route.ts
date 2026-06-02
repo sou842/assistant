@@ -14,7 +14,7 @@ import mongoose from 'mongoose';
 
 
 // Allow streaming responses up to 40 seconds
-export const maxDuration = 40;
+export const maxDuration = 260;
 
 const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   let attempts = 0;
