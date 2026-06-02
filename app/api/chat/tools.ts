@@ -78,7 +78,7 @@ const stepSchema = z.discriminatedUnion('type', [
   baseStepSchema.extend({
     type: z.literal('ai_prompt'),
     config: z.object({
-      prompt: z.string().describe("The prompt to send to the AI. Use {{context.stepId.key}} to inject data."),
+      prompt: z.string().describe("The prompt to send to the AI. Use {{context.stepId.key}} to inject data. The output is stored in both the 'data' and 'generatedText' fields."),
     })
   }),
   baseStepSchema.extend({

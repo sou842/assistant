@@ -152,7 +152,7 @@ async function executeAIPrompt(config: any, context: any) {
     prompt: `${prompt}\n\nContext Data:\n${contextString}`,
   });
   
-  return { generatedText: text };
+  return { generatedText: text, data: text };
 }
 
 async function executeSendEmail(config: any, context: any, task: any) {
