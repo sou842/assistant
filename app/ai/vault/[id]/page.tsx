@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "../_components/note-editor";
 import { SpreadsheetEditor } from "../_components/spreadsheet-editor";
 import { GalleryViewer } from "../_components/gallery-viewer";
@@ -39,6 +40,78 @@ export default function VaultItemPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [input, setInput] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
+  const [coverLinkUrl, setCoverLinkUrl] = useState("");
+
+  const handleLinkCover = async () => {
+    if (!coverLinkUrl.trim()) return;
+    try {
+      await fetch(`/api/vault/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverImage: coverLinkUrl.trim() }),
+      });
+      mutate();
+      toast.success("Cover image updated");
+      setIsCoverDialogOpen(false);
+      setCoverLinkUrl("");
+    } catch (err) {
+      toast.error("Failed to update cover image");
+    }
+  };
+
+  const handleUploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCover(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("isCover", "true");
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const result = await res.json();
+
+      if (result.success && result.url) {
+        await fetch(`/api/vault/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ coverImage: result.url }),
+        });
+        mutate();
+        toast.success("Cover image updated");
+        setIsCoverDialogOpen(false);
+      }
+    } catch (err) {
+      toast.error("Failed to upload cover image");
+    } finally {
+      setIsUploadingCover(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveCover = async () => {
+    try {
+      await fetch(`/api/vault/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverImage: null }),
+      });
+      mutate();
+      toast.success("Cover image removed");
+      setIsCoverDialogOpen(false);
+    } catch (err) {
+      toast.error("Failed to remove cover image");
+    }
+  };
   const { memories, selectedModel, setSelectedModel } = useAI();
 
   const chat = useChat({
@@ -235,10 +308,17 @@ ${itemContext}`,
                 onClick={handleSave}
                 disabled={isSaving}
                 size="sm"
-                className="rounded-full text-xs h-8"
+                className="rounded-full text-xs h-8 min-w-[64px]"
                 title="Save changes"
               >
-                {isSaving ? "Saving..." : "Save"}
+                {isSaving ? (
+                  <>
+                    <Loader2 size={12} className="mr-1.5 animate-spin" />
+                    Saving
+                  </>
+                ) : (
+                  "Save"
+                )}
               </Button>
 
               {/* More Options Dropdown */}
@@ -341,6 +421,113 @@ ${itemContext}`,
         {/* CONTENT AREA & CHAT */}
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <div className="relative flex-1 overflow-y-auto bg-app-canvas">
+
+            {/* COVER IMAGE */}
+            {item?.type === "note" && (
+              <div className="w-full relative group">
+                {item.coverImage ? (
+                  <div className="relative w-full h-48 sm:h-64 overflow-hidden border-b border-app-border-default bg-app-surface-glass">
+                    <img src={item.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => setIsCoverDialogOpen(true)} className="h-8 rounded-full">
+                        Edit Cover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-4xl mx-auto px-8 sm:px-12 pt-8 -mb-4 flex items-center">
+                    <Button variant="ghost" onClick={() => setIsCoverDialogOpen(true)} className="opacity-0 group-hover:opacity-100 transition-opacity text-app-text-muted hover:text-app-text-primary h-8 px-3 rounded-md">
+                      <ImageIcon size={14} className="mr-2" />
+                      Add Cover
+                    </Button>
+                  </div>
+                )}
+
+                {/* Cover Dialog */}
+                <Dialog open={isCoverDialogOpen} onOpenChange={setIsCoverDialogOpen}>
+                  <DialogContent className="sm:max-w-md bg-app-surface-elevated border-app-border-default shadow-2xl rounded-2xl p-6">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold tracking-tight text-app-text-primary">Cover Image</DialogTitle>
+                      <DialogDescription className="text-sm text-app-text-muted">
+                        Upload an image or paste a link to set the cover for this note.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <Tabs defaultValue="link" className="w-full mt-2">
+                      <TabsList className="grid w-full grid-cols-2 bg-app-surface-glass rounded-full p-0.5 h-auto">
+                        <TabsTrigger value="link" className="rounded-full py-1.5 text-sm font-medium data-[state=active]:bg-app-surface-elevated data-[state=active]:text-app-text-primary data-[state=active]:shadow-sm transition-all cursor-pointer">Link</TabsTrigger>
+                        <TabsTrigger value="upload" className="rounded-full py-1.5 text-sm font-medium data-[state=active]:bg-app-surface-elevated data-[state=active]:text-app-text-primary data-[state=active]:shadow-sm transition-all cursor-pointer">Upload</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="upload" className="mt-4 focus-visible:outline-none">
+                        <div
+                          onClick={() => !isUploadingCover && fileInputRef.current?.click()}
+                          className={`flex flex-col items-center justify-center border-2 border-dashed border-app-border-default rounded-xl p-8 transition-colors ${isUploadingCover ? 'opacity-50 cursor-not-allowed' : 'hover:bg-app-surface-glass hover:border-brand-primary/50 cursor-pointer'}`}
+                        >
+                          <ImageIcon size={32} className="text-app-text-ghost mb-3" />
+                          <p className="text-sm font-medium text-app-text-primary">{isUploadingCover ? "Uploading..." : "Click to select a file"}</p>
+                          <p className="text-xs text-app-text-muted mt-1">PNG, JPG, or WebP</p>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="link" className="mt-4 focus-visible:outline-none">
+                        <div className="flex flex-col gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-app-text-secondary pl-1 uppercase tracking-wider">Image URL</label>
+                            <div className="relative group">
+                              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <Link2 size={16} className="text-app-text-ghost group-focus-within:text-brand-primary/60 transition-colors" />
+                              </div>
+                              <input
+                                type="url"
+                                placeholder="Paste an image link here..."
+                                value={coverLinkUrl}
+                                onChange={(e) => setCoverLinkUrl(e.target.value)}
+                                className="w-full bg-app-surface-glass-strong border border-app-border-default hover:border-app-border-hover rounded-xl pl-10 pr-4 h-11 text-sm text-app-text-primary outline-none focus:bg-app-surface-elevated focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/10 transition-all shadow-sm placeholder:text-app-text-ghost"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleLinkCover();
+                                }}
+                              />
+                            </div>
+                          </div>
+                          {coverLinkUrl.trim() && <Button
+                            onClick={handleLinkCover}
+                            disabled={!coverLinkUrl.trim()}
+                            className="w-full h-11 rounded-xl bg-app-primary hover:text-app-text-primary hover:bg-brand-primary/90 transition-all shadow-sm font-medium hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                          >
+                            Save
+                          </Button>}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+
+                    {item?.coverImage && (
+                      <div className="mt-6 flex items-center justify-between bg-red-500/5 border border-red-500/10 rounded-xl p-3 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-2.5 pl-1">
+                          <div className="size-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                            <ImageIcon size={14} className="text-red-500/70" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-app-text-primary">Current Cover</span>
+                            <span className="text-xs text-app-text-muted">Will be removed instantly</span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleRemoveCover}
+                          className="rounded-xl text-red-500 hover:bg-red-500/50!"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+            <input type="file" ref={fileInputRef} onChange={handleUploadCover} accept="image/*" className="hidden" />
+
             {isLoading || content === null ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />

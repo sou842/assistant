@@ -5,6 +5,7 @@ export interface IVaultItem extends Document {
   type: 'spreadsheet' | 'note' | 'gallery' | 'album';
   content: any; // Using any/Mixed to accommodate Editor.js blocks, Spreadsheet JSON, or Gallery/Album media arrays
   tags: string[];
+  coverImage?: string;
   userId: mongoose.Types.ObjectId;
   isPublic: boolean;
   createdAt: Date;
@@ -32,6 +33,9 @@ const vaultItemSchema = new Schema<IVaultItem>(
       type: [String],
       default: [],
     },
+    coverImage: {
+      type: String,
+    },
     userId: { 
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'User', 
@@ -51,7 +55,10 @@ const vaultItemSchema = new Schema<IVaultItem>(
 // Add text index for search
 vaultItemSchema.index({ title: 'text', tags: 'text' });
 
-const VaultItem: Model<IVaultItem> =
-  mongoose.models.VaultItem || mongoose.model<IVaultItem>('VaultItem', vaultItemSchema);
+if (mongoose.models.VaultItem) {
+  delete mongoose.models.VaultItem;
+}
+
+const VaultItem: Model<IVaultItem> = mongoose.model<IVaultItem>('VaultItem', vaultItemSchema);
 
 export default VaultItem;

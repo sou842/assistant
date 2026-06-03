@@ -28,6 +28,7 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    const isCover = formData.get('isCover') === 'true';
 
     if (!file) {
       return NextResponse.json(
@@ -95,11 +96,12 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    // 3.5 Auto-persist file to Vault Gallery in MongoDB
+    // 3.5 Auto-persist file to Vault Gallery in MongoDB (unless it's a cover image)
     try {
-      const session = await auth();
-      if (session?.user?.id) {
-        await dbConnect();
+      if (!isCover) {
+        const session = await auth();
+        if (session?.user?.id) {
+          await dbConnect();
         
         let gallery = await VaultItem.findOne({ type: 'gallery', userId: session.user.id });
         if (!gallery) {
@@ -122,13 +124,14 @@ export async function POST(req: Request) {
           createdAt: new Date(),
         };
 
-        await VaultItem.updateOne(
-          { _id: gallery._id },
-          { 
-            $push: { content: mediaFile },
-            $set: { updatedAt: new Date() }
-          }
-        );
+          await VaultItem.updateOne(
+            { _id: gallery._id },
+            { 
+              $push: { content: mediaFile },
+              $set: { updatedAt: new Date() }
+            }
+          );
+        }
       }
     } catch (dbError: any) {
       console.error('Failed to auto-persist upload to Vault Gallery:', dbError.message);
