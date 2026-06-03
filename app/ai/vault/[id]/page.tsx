@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download } from "lucide-react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -45,6 +45,7 @@ export default function VaultItemPage() {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleLinkCover = async () => {
     if (!coverLinkUrl.trim()) return;
@@ -218,6 +219,7 @@ ${itemContext}`,
       if (res.ok) {
         toast.success("Item updated");
         mutate();
+        setIsEditing(false);
       } else {
         toast.error("Failed to save item");
       }
@@ -305,27 +307,40 @@ ${itemContext}`,
               onChange={(e) => setTitle(e.target.value)}
               className="w-full max-w-md border-none bg-transparent px-0 text-base font-medium text-app-text-primary outline-none placeholder:text-app-text-ghost"
               placeholder="Enter title..."
+              readOnly={!isEditing}
             />
           }
           subtitle={"Manage the files here"}
           actions={
             <div className="flex items-center gap-1.5">
-              {isEditorRequired && <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                size="sm"
-                className="rounded-full text-xs h-8 min-w-[64px]"
-                title="Save changes"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 size={12} className="mr-1.5 animate-spin" />
-                    Saving
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>}
+              {isEditorRequired && !isEditing && (
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  size="sm"
+                  className="rounded-full text-xs h-8 min-w-[64px]"
+                  title="Edit item"
+                >
+                  Edit
+                </Button>
+              )}
+              {isEditorRequired && isEditing && (
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  size="sm"
+                  className="rounded-full text-xs h-8 min-w-[64px]"
+                  title="Save changes"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 size={12} className="mr-1.5 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              )}
 
               {/* More Options Dropdown */}
               {isEditorRequired &&
@@ -447,20 +462,22 @@ ${itemContext}`,
                 {item.coverImage ? (
                   <div className="relative w-full h-48 sm:h-64 overflow-hidden border-b border-app-border-default bg-app-surface-glass">
                     <img src={item.coverImage} alt="Cover" className="w-full h-full object-cover" />
-                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => setIsCoverDialogOpen(true)} className="h-8 rounded-full">
-                        Edit Cover
-                      </Button>
-                    </div>
+                    {isEditing && (
+                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => setIsCoverDialogOpen(true)} className="h-8 rounded-full">
+                          Edit Cover
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="max-w-4xl mx-auto px-8 sm:px-12 pt-8 -mb-4 flex items-center">
+                ) : isEditing ? (
+                  <div className="max-w-4xl mx-auto px-8 sm:px-12 pt-8 -mb-4 flex justify-center items-center">
                     <Button variant="ghost" onClick={() => setIsCoverDialogOpen(true)} className="opacity-0 group-hover:opacity-100 transition-opacity text-app-text-muted hover:text-app-text-primary h-8 px-3 rounded-md">
-                      <ImageIcon size={14} className="mr-2" />
+                      <Plus size={14} className="mr-2" />
                       Add Cover
                     </Button>
                   </div>
-                )}
+                ) : null}
 
                 {/* Cover Dialog */}
                 <Dialog open={isCoverDialogOpen} onOpenChange={setIsCoverDialogOpen}>
@@ -558,12 +575,14 @@ ${itemContext}`,
                     key={`${id}-${data.item.updatedAt}`}
                     initialData={data.item.content}
                     onChange={setContent}
+                    readOnly={!isEditing}
                   />
                 ) : data.item.type === "spreadsheet" ? (
                   <SpreadsheetEditor
                     key={`${id}-${data.item.updatedAt}`}
                     initialData={data.item.content}
                     onChange={setContent}
+                    readOnly={!isEditing}
                   />
                 ) : (
                   <GalleryViewer

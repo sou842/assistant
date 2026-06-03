@@ -1,7 +1,7 @@
 "use client";
 // @ts-nocheck
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/utils";
 
 interface NoteEditorProps {
@@ -37,6 +37,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
         import('@editorjs/checklist'),
         import('@editorjs/delimiter'),
         import('editorjs-drag-drop'),
+        import('@editorjs/image'),
       ]).then(([
         Header,
         List,
@@ -51,7 +52,8 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
         Warning,
         Checklist,
         Delimiter,
-        DragDrop
+        DragDrop,
+        ImageTool
       ]) => {
         if (!isCurrent) return;
 
@@ -140,7 +142,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
             parsedData = initialData;
           }
         }
-        
+
         // Sanitize data before passing to EditorJS to prevent plugin crashes
         if (parsedData && Array.isArray(parsedData.blocks)) {
           parsedData.blocks = parsedData.blocks.map((block: any) => {
@@ -167,126 +169,170 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
 
           const editor = new EditorJS({
             holder: containerRef.current!,
-          data: parsedData,
-          placeholder: 'Start writing your content...',
-          readOnly: readOnly,
-          tools: {
-            header: {
-              class: Header.default || Header,
-              config: {
-                levels: [1, 2, 3, 4],
-                defaultLevel: 2,
+            data: parsedData,
+            placeholder: 'Start writing your content...',
+            readOnly: readOnly,
+            tools: {
+              header: {
+                class: Header.default || Header,
+                config: {
+                  levels: [1, 2, 3, 4],
+                  defaultLevel: 2,
+                },
+                inlineToolbar: true,
               },
-              inlineToolbar: true,
-            },
-            list: {
-              class: List.default || List,
-              inlineToolbar: true,
-            },
-            paragraph: {
-              class: Paragraph.default || Paragraph,
-              inlineToolbar: true,
-            },
-            code: Code.default || Code,
-            quote: {
-              class: Quote.default || Quote,
-              inlineToolbar: true,
-            },
-            table: {
-              class: Table.default || Table,
-              inlineToolbar: true,
-            },
-            inlineCode: InlineCode.default || InlineCode,
-            inlineImage: {
-              class: InlineImage.default || InlineImage,
-              inlineToolbar: true,
-              config: {
-                embed: { display: true },
-                uploader: {
-                  async uploadByFile(file: File) {
-                    try {
-                      const compressedFile = await compressImage(file);
-                      const formData = new FormData();
-                      formData.append("file", compressedFile);
+              list: {
+                class: List.default || List,
+                inlineToolbar: true,
+              },
+              paragraph: {
+                class: Paragraph.default || Paragraph,
+                inlineToolbar: true,
+              },
+              code: Code.default || Code,
+              quote: {
+                class: Quote.default || Quote,
+                inlineToolbar: true,
+              },
+              table: {
+                class: Table.default || Table,
+                inlineToolbar: true,
+              },
+              inlineCode: InlineCode.default || InlineCode,
+              image: {
+                class: ImageTool.default || ImageTool,
+                config: {
+                  uploader: {
+                    async uploadByFile(file: File) {
+                      try {
+                        const compressedFile = await compressImage(file);
+                        const formData = new FormData();
+                        formData.append("file", compressedFile);
 
-                      const res = await fetch("/api/upload", {
-                        method: "POST",
-                        body: formData,
-                      });
+                        const res = await fetch("/api/upload", {
+                          method: "POST",
+                          body: formData,
+                        });
 
-                      if (!res.ok) {
-                        throw new Error("Upload failed");
+                        if (!res.ok) {
+                          throw new Error("Upload failed");
+                        }
+
+                        const data = await res.json();
+                        return {
+                          success: 1,
+                          file: {
+                            url: data.url,
+                          },
+                        };
+                      } catch (error) {
+                        console.error("EditorJS image upload failed:", error);
+                        return {
+                          success: 0,
+                        };
                       }
-
-                      const data = await res.json();
+                    },
+                    async uploadByUrl(url: string) {
                       return {
                         success: 1,
                         file: {
-                          url: data.url,
+                          url: url,
                         },
                       };
-                    } catch (error) {
-                      console.error("EditorJS image upload failed:", error);
-                      return {
-                        success: 0,
-                      };
                     }
-                  },
-                  async uploadByUrl(url: string) {
-                    return {
-                      success: 1,
-                      file: {
-                        url: url,
-                      },
-                    };
                   }
                 }
               },
-            },
-            youtubeEmbed: {
-              class: CustomYouTubeEmbed,
-              config: {
-                placeholder: "Enter YouTube video link",
-              },
-            },
-            marker: {
-              class: Marker.default || Marker,
-              shortcut: "CMD+SHIFT+M",
-            },
-            warning: {
-              class: Warning.default || Warning,
-              config: {
-                titlePlaceholder: "Title",
-                messagePlaceholder: "Message",
-              },
-            },
-            checklist: {
-              class: Checklist.default || Checklist,
-              inlineToolbar: true,
-            },
-            delimiter: Delimiter.default || Delimiter,
-          },
-          onChange: async (api) => {
-            const data = await api.saver.save();
-            onChange(data);
-          },
-          onReady: () => {
-            setIsReady(true);
-            if (typeof DragDrop.default === 'function') {
-              new DragDrop.default(editor);
-            } else if (typeof DragDrop === 'function') {
-              new DragDrop(editor);
-            }
-          },
-          autofocus: true,
-        });
+              inlineImage: {
+                class: InlineImage.default || InlineImage,
+                inlineToolbar: true,
+                config: {
+                  embed: { display: true },
+                  uploader: {
+                    async uploadByFile(file: File) {
+                      try {
+                        const compressedFile = await compressImage(file);
+                        const formData = new FormData();
+                        formData.append("file", compressedFile);
 
-        if (!editorRef.current) {
-          editorRef.current = editor as any;
-        } else {
-          // If for some reason it already exists, destroy the new one
-          editor.destroy();
-        }
+                        const res = await fetch("/api/upload", {
+                          method: "POST",
+                          body: formData,
+                        });
+
+                        if (!res.ok) {
+                          throw new Error("Upload failed");
+                        }
+
+                        const data = await res.json();
+                        return {
+                          success: 1,
+                          file: {
+                            url: data.url,
+                          },
+                        };
+                      } catch (error) {
+                        console.error("EditorJS image upload failed:", error);
+                        return {
+                          success: 0,
+                        };
+                      }
+                    },
+                    async uploadByUrl(url: string) {
+                      return {
+                        success: 1,
+                        file: {
+                          url: url,
+                        },
+                      };
+                    }
+                  }
+                },
+              },
+              youtubeEmbed: {
+                class: CustomYouTubeEmbed,
+                config: {
+                  placeholder: "Enter YouTube video link",
+                },
+              },
+              marker: {
+                class: Marker.default || Marker,
+                shortcut: "CMD+SHIFT+M",
+              },
+              warning: {
+                class: Warning.default || Warning,
+                config: {
+                  titlePlaceholder: "Title",
+                  messagePlaceholder: "Message",
+                },
+              },
+              checklist: {
+                class: Checklist.default || Checklist,
+                inlineToolbar: true,
+              },
+              delimiter: Delimiter.default || Delimiter,
+            },
+            onChange: async (api) => {
+              const data = await api.saver.save();
+              onChange(data);
+            },
+            onReady: () => {
+              setIsReady(true);
+              if (typeof DragDrop.default === 'function') {
+                new DragDrop.default(editor);
+              } else if (typeof DragDrop === 'function') {
+                new DragDrop(editor);
+              }
+            },
+            autofocus: true,
+          });
+
+          if (!editorRef.current) {
+            editorRef.current = editor as any;
+          } else {
+            // If for some reason it already exists, destroy the new one
+            editor.destroy();
+          }
         });
       });
     }
@@ -305,6 +351,16 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
       }
     };
   }, []); // Run only once
+
+  useEffect(() => {
+    if (editorRef.current && isReady) {
+      try {
+        editorRef.current.readOnly.toggle(readOnly);
+      } catch (e) {
+        console.error("Failed to toggle readOnly state", e);
+      }
+    }
+  }, [readOnly, isReady]);
 
   return (
     <div className="w-full h-full p-8 max-w-6xl mx-auto pb-32">
@@ -441,6 +497,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
             background-color: rgba(255, 255, 255, 0.03) !important;
           }
 
+          .ce-block__content {
+            max-width: 760px !important;
+          }
+
           /* Code block */
           .ce-code__textarea {
             background-color: #0f0f0f !important;
@@ -501,6 +561,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
             background-color: transparent !important;
             border-radius: 100% !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          }
+
+          .image-tool__caption {
+            bottom: -36px !important;
           }
 
           /* Warning */

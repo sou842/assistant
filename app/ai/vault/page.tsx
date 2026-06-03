@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Menu, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon } from "lucide-react";
+import { Database, Menu, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,9 @@ export default function VaultPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ id?: string, type: "note" | "spreadsheet" | "gallery" | "album" } | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -62,6 +65,36 @@ export default function VaultPage() {
     }
   };
 
+  const handleRenameSubmit = async (e: React.FormEvent | React.FocusEvent, id: string, originalTitle: string) => {
+    e.preventDefault();
+    if (!editTitle.trim()) {
+      setEditingId(null);
+      return;
+    }
+
+    if (editTitle.trim() === originalTitle) {
+      setEditingId(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/vault/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle }),
+      });
+      if (res.ok) {
+        toast.success("Item renamed");
+        setEditingId(null);
+        mutate();
+      } else {
+        toast.error("Failed to rename item");
+      }
+    } catch (err) {
+      toast.error("An error occurred");
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* HEADER */}
@@ -90,7 +123,7 @@ export default function VaultPage() {
             </button>
             <ul tabIndex={0} className="dropdown-content z-[1] menu mt-2 w-48 rounded-xl border border-app-border-default bg-app-surface-elevated p-2 shadow-2xl">
               <li>
-                <button 
+                <button
                   onClick={() => setFilterType("all")}
                   className={cn("py-2 text-xs", filterType === "all" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
@@ -98,7 +131,7 @@ export default function VaultPage() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => setFilterType("note")}
                   className={cn("py-2 text-xs", filterType === "note" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
@@ -106,7 +139,7 @@ export default function VaultPage() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => setFilterType("spreadsheet")}
                   className={cn("py-2 text-xs", filterType === "spreadsheet" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
@@ -114,7 +147,7 @@ export default function VaultPage() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => setFilterType("gallery")}
                   className={cn("py-2 text-xs", filterType === "gallery" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
@@ -122,7 +155,7 @@ export default function VaultPage() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => setFilterType("album")}
                   className={cn("py-2 text-xs", filterType === "album" ? "bg-app-surface-glass-strong text-app-text-primary" : "text-app-text-faint hover:bg-app-surface-glass")}
                 >
@@ -171,19 +204,48 @@ export default function VaultPage() {
                         <ImageIcon size={24} className={item.type === 'album' ? "text-pink-400" : "text-purple-400"} />
                       )}
                     </div>
-                    <button
-                      onClick={(e) => handleDelete(e, item._id)}
-                      className="cursor-pointer rounded-full p-1.5 text-app-text-ghost opacity-0 transition-all hover:bg-app-danger-soft hover:text-app-danger-strong group-hover:opacity-100"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(item._id);
+                          setEditTitle(item.title);
+                        }}
+                        className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, item._id)}
+                        className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-danger-soft hover:text-app-danger-strong"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
-                  <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
+                  {editingId === item._id ? (
+                    <form
+                      onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
+                      className="mb-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        autoFocus
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
+                        className="w-full bg-app-surface-glass border border-app-border-strong rounded px-2 py-1 text-sm font-semibold text-app-text-primary outline-none"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </form>
+                  ) : (
+                    <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
+                  )}
                   <div className="mb-4 flex items-center gap-2 text-xs text-app-text-faint">
                     <span className="capitalize">{item.type}</span>
                     <span>•</span>
-                    <span>{format(new Date(item.updatedAt), 'MMM d, yyyy')}</span>
+                    <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
                   </div>
 
                   {item.tags && item.tags.length > 0 && (
@@ -229,12 +291,12 @@ export default function VaultPage() {
                 New Spreadsheet
               </button>
             </li>
-            <li>
+            {/* <li>
               <button onClick={() => handleCreate("album")} className="flex items-center gap-3 py-3 text-sm text-app-text-primary transition hover:bg-app-surface-glass">
                 <ImageIcon size={18} className="text-pink-400" />
                 New Album
               </button>
-            </li>
+            </li> */}
           </ul>
         </div>
       </div>

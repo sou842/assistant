@@ -113,7 +113,7 @@ export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: S
         );
       },
     }));
-  }, [columnsList, data]);
+  }, [columnsList, data, readOnly]);
 
   const table = useReactTable({
     data,
