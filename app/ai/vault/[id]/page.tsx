@@ -291,6 +291,7 @@ ${itemContext}`,
   }
 
   const item = data?.item;
+  const isEditorRequired = data?.item?.type === 'note' || data?.item?.type === 'spreadsheet'
 
   return (
     <div className="flex h-full flex-1 overflow-hidden bg-app-surface relative">
@@ -309,7 +310,7 @@ ${itemContext}`,
           subtitle={"Manage the files here"}
           actions={
             <div className="flex items-center gap-1.5">
-              <Button
+              {isEditorRequired && <Button
                 onClick={handleSave}
                 disabled={isSaving}
                 size="sm"
@@ -324,48 +325,51 @@ ${itemContext}`,
                 ) : (
                   "Save"
                 )}
-              </Button>
+              </Button>}
 
               {/* More Options Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="group flex items-center justify-center h-9 w-9 rounded-full text-app-text-secondary transition-all duration-200 hover:bg-app-surface-glass-strong hover:text-app-text-primary cursor-pointer"
-                    title="More actions"
-                  >
-                    <EllipsisVertical
-                      size={16}
-                      className="transition-transform duration-200 group-hover:scale-110"
-                    />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40 bg-app-surface-elevated border border-app-border-default shadow-xl rounded-xl p-1">
-                  <DropdownMenuItem
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
-                  >
-                    <Share2 size={14} />
-                    <span>Share Item</span>
-                  </DropdownMenuItem>
+              {isEditorRequired &&
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="group flex items-center justify-center h-9 w-9 rounded-full text-app-text-secondary transition-all duration-200 hover:bg-app-surface-glass-strong hover:text-app-text-primary cursor-pointer"
+                      title="More actions"
+                    >
+                      <EllipsisVertical
+                        size={16}
+                        className="transition-transform duration-200 group-hover:scale-110"
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 bg-app-surface-elevated border border-app-border-default shadow-xl rounded-xl p-1">
+                    {isEditorRequired && (
+                      <DropdownMenuItem
+                        onClick={handleDownload}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
+                      >
+                        <Download size={14} />
+                        <span>Download</span>
+                      </DropdownMenuItem>
+                    )}
 
-                  {(data?.item?.type === 'note' || data?.item?.type === 'spreadsheet') && (
                     <DropdownMenuItem
-                      onClick={handleDownload}
+                      onClick={() => setIsShareModalOpen(true)}
                       className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
                     >
-                      <Download size={14} />
-                      <span>Download</span>
+                      <Share2 size={14} />
+                      <span>Share</span>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <Trash2 size={14} className="text-red-300" />
-                    <span>Delete Item</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
+                    >
+                      <Trash2 size={14} className="text-red-300" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
 
               {/* Share Dialog without button trigger */}
               <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
