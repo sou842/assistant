@@ -157,6 +157,13 @@ export function Sidebar({
               label="Integrations"
             />
             <SidebarNavItem
+              active={pathname?.startsWith("/ai/schedule")}
+              href="/ai/schedule"
+              icon={<Calendar size={16} />}
+              isCollapsed={isCollapsed}
+              label="Schedule"
+            />
+            <SidebarNavItem
               active={pathname === "/ai/tasks"}
               href="/ai/tasks"
               icon={<BookOpenCheck size={16} />}
@@ -177,14 +184,6 @@ export function Sidebar({
               active={pathname.startsWith("/ai/playground")}
               isCollapsed={isCollapsed}
             /> */}
-
-            <SidebarNavItem
-              active={pathname?.startsWith("/ai/schedule")}
-              href="/ai/schedule"
-              icon={<Calendar size={16} />}
-              isCollapsed={isCollapsed}
-              label="Schedule"
-            />
           </div>
 
           {/* Recents Section */}
