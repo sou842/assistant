@@ -40,7 +40,7 @@ export function VaultChatSidePanel({
   const selectedModelData = mistralModels.find((m) => m.id === selectedModel);
 
   return (
-    <div 
+    <div
       className={cn(
         "flex flex-col h-full bg-zinc-950/50 backdrop-blur-3xl border-l border-app-border-default relative transition-all duration-300"
       )}
@@ -83,12 +83,12 @@ export function VaultChatSidePanel({
             </p>
           </div>
         ) : (
-          <div className="h-full overflow-y-auto scrollbar-hide p-4 pt-8 pb-32" ref={scrollContainerRef}>
-            <MessageList 
+          <div className="h-full overflow-y-auto scrollbar-hide p-4 pt-8 pb-72" ref={scrollContainerRef}>
+            <MessageList
               messages={messages}
               isLoading={isLoading}
               copyToClipboard={(text) => navigator.clipboard.writeText(text)}
-              onSaveMemory={() => {}}
+              onSaveMemory={() => { }}
               regenerate={regenerate}
               selectedModel={selectedModel}
               scrollContainerRef={scrollContainerRef}
@@ -108,9 +108,9 @@ export function VaultChatSidePanel({
           setSelectedModel={setSelectedModel}
           selectedModelData={selectedModelData}
           modelSelectorOpen={false}
-          setModelSelectorOpen={() => {}}
+          setModelSelectorOpen={() => { }}
           selectedTask={isFocused ? { title: itemTitle } : null}
-          setSelectedTask={(val) => setIsFocused(!!val)} 
+          setSelectedTask={(val) => setIsFocused(!!val)}
           space={2}
         />
       </div>

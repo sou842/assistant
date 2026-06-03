@@ -47,7 +47,7 @@ export function ChatSidePanel({
   const selectedModelData = mistralModels.find((m) => m.id === selectedModel);
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       className={cn(
         "flex flex-col h-full bg-zinc-950/50 backdrop-blur-3xl border-l border-app-border-default relative transition-all duration-300",
@@ -57,15 +57,15 @@ export function ChatSidePanel({
       {/* Header */}
       <div className="h-16 shrink-0 border-b border-app-border-subtle px-6 flex items-center justify-between bg-app-canvas/20">
 
-          <Button
-            variant="outline"
-            // size="icon"
-            onClick={onClearChat}
-            className="rounded-full transition-colors"
-            title="Clear Chat"
-          >
-            <MessageCircle size={14} /> Chat
-          </Button>
+        <Button
+          variant="outline"
+          // size="icon"
+          onClick={onClearChat}
+          className="rounded-full transition-colors"
+          title="Clear Chat"
+        >
+          <MessageCircle size={14} /> Chat
+        </Button>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -81,13 +81,13 @@ export function ChatSidePanel({
       {/* Drop Indicator Overlay */}
       <AnimatePresence>
         {isOver && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-50 bg-app-canvas/60 backdrop-blur-2xl flex items-center justify-center p-8 text-center"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="relative flex flex-col items-center gap-6"
@@ -119,12 +119,12 @@ export function ChatSidePanel({
             </p>
           </div>
         ) : (
-          <div className="h-full overflow-y-auto scrollbar-hide p-4 pt-8 pb-32" ref={scrollContainerRef}>
-            <MessageList 
+          <div className="h-full overflow-y-auto scrollbar-hide p-4 pt-8 pb-72" ref={scrollContainerRef}>
+            <MessageList
               messages={messages}
               isLoading={isLoading}
               copyToClipboard={(text) => navigator.clipboard.writeText(text)}
-              onSaveMemory={() => {}}
+              onSaveMemory={() => { }}
               regenerate={regenerate}
               selectedModel={selectedModel}
               scrollContainerRef={scrollContainerRef}
@@ -144,7 +144,7 @@ export function ChatSidePanel({
           setSelectedModel={setSelectedModel}
           selectedModelData={selectedModelData}
           modelSelectorOpen={false}
-          setModelSelectorOpen={() => {}}
+          setModelSelectorOpen={() => { }}
           selectedTask={selectedTask}
           setSelectedTask={setSelectedTask}
           space={2}

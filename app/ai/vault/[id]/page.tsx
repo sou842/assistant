@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle } from "lucide-react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -65,10 +65,11 @@ export default function VaultItemPage() {
 
     const itemContext = data?.item ? `
 CURRENT ITEM CONTEXT:
+ID: ${id}
 Type: ${data.item.type}
 Title: ${data.item.title}
 Tags: ${data.item.tags?.join(", ") || "None"}
-Content Summary: ${data.item.type === "note" ? "A document with multiple blocks." : `A spreadsheet with ${data.item.content?.length || 0} rows.`}
+Content: ${JSON.stringify(data.item.content, null, 2)}
 ` : "";
 
     await sendMessage(payload, {
@@ -76,12 +77,14 @@ Content Summary: ${data.item.type === "note" ? "A document with multiple blocks.
       body: {
         ...options?.body,
         memories: enabledMemories,
-        systemPrompt: `You are Jarvis, assisting the user with a specific item in their Vault. 
-Help them analyze, summarize, or edit this data. You have tools to update the vault item if needed.
+        systemPrompt: `You are Jarvis, an AI assistant integrated into a Vault item viewer. 
+The user is currently viewing and working on the item provided in the CURRENT ITEM CONTEXT below.
 
-${itemContext}
+CRITICAL INSTRUCTION: If the user asks to "update", "format", "edit", or refers to "this", "the note", "the file", or the content of the file, they are ALWAYS referring to THIS specific item.
+DO NOT ask them to clarify which file they are referring to. DO NOT offer to create a new note unless explicitly asked.
+Use the provided ID and content to perform the requested actions immediately using your tools.
 
-Prioritize actions and responses related to this item.`,
+${itemContext}`,
       },
     });
   };
@@ -94,10 +97,11 @@ Prioritize actions and responses related to this item.`,
 
     const itemContext = data?.item ? `
 CURRENT ITEM CONTEXT:
+ID: ${id}
 Type: ${data.item.type}
 Title: ${data.item.title}
 Tags: ${data.item.tags?.join(", ") || "None"}
-Content Summary: ${data.item.type === "note" ? "A document with multiple blocks." : `A spreadsheet with ${data.item.content?.length || 0} rows.`}
+Content: ${JSON.stringify(data.item.content, null, 2)}
 ` : "";
 
     regenerate({
@@ -105,12 +109,14 @@ Content Summary: ${data.item.type === "note" ? "A document with multiple blocks.
       body: {
         ...options?.body,
         memories: enabledMemories,
-        systemPrompt: `You are Jarvis, assisting the user with a specific item in their Vault. 
-Help them analyze, summarize, or edit this data. You have tools to update the vault item if needed.
+        systemPrompt: `You are Jarvis, an AI assistant integrated into a Vault item viewer. 
+The user is currently viewing and working on the item provided in the CURRENT ITEM CONTEXT below.
 
-${itemContext}
+CRITICAL INSTRUCTION: If the user asks to "update", "format", "edit", or refers to "this", "the note", "the file", or the content of the file, they are ALWAYS referring to THIS specific item.
+DO NOT ask them to clarify which file they are referring to. DO NOT offer to create a new note unless explicitly asked.
+Use the provided ID and content to perform the requested actions immediately using your tools.
 
-Prioritize actions and responses related to this item.`,
+${itemContext}`,
       },
     });
   };
@@ -209,189 +215,206 @@ Prioritize actions and responses related to this item.`,
   const item = data?.item;
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-app-surface">
-      <PageHeader
-        backHref="/ai/vault"
-        icon={item?.type === "note" ? <FileText /> : item?.type === "spreadsheet" ? <Table2 /> : <ImageIcon />}
-        title={
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full max-w-md border-none bg-transparent px-0 text-base font-medium text-app-text-primary outline-none placeholder:text-app-text-ghost"
-            placeholder="Enter title..."
-          />
-        }
-        subtitle={"Manage the files here"}
-        actions={
-          <div className="flex items-center gap-1.5">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              size="sm"
-              className="rounded-full text-xs"
-              title="Save changes"
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
+    <div className="flex h-full flex-1 overflow-hidden bg-app-surface relative">
+      <div className="flex h-full flex-1 flex-col min-w-0 relative z-10">
+        <PageHeader
+          backHref="/ai/vault"
+          icon={item?.type === "note" ? <FileText /> : item?.type === "spreadsheet" ? <Table2 /> : <ImageIcon />}
+          title={
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full max-w-md border-none bg-transparent px-0 text-base font-medium text-app-text-primary outline-none placeholder:text-app-text-ghost"
+              placeholder="Enter title..."
+            />
+          }
+          subtitle={"Manage the files here"}
+          actions={
+            <div className="flex items-center gap-1.5">
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                size="sm"
+                className="rounded-full text-xs h-8"
+                title="Save changes"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
 
-            {/* More Options Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="group flex items-center justify-center h-9 w-9 rounded-full text-app-text-secondary transition-all duration-200 hover:bg-app-surface-glass-strong hover:text-app-text-primary cursor-pointer"
-                  title="More actions"
-                >
-                  <EllipsisVertical
-                    size={16}
-                    className="transition-transform duration-200 group-hover:scale-110"
-                  />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40 bg-app-surface-elevated border border-app-border-default shadow-xl rounded-xl p-1">
-                <DropdownMenuItem
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
-                >
-                  <Share2 size={14} />
-                  <span>Share Item</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
-                >
-                  <Trash2 size={14} className="text-red-300" />
-                  <span>Delete Item</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Share Dialog without button trigger */}
-            <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
-              <DialogContent className="sm:max-w-md bg-app-surface-elevated border-app-border-default shadow-2xl rounded-2xl p-6">
-                <DialogHeader className="space-y-1">
-                  <DialogTitle className="text-xl font-bold tracking-tight text-app-text-primary flex items-center gap-2">
-                    Share Item
-                  </DialogTitle>
-                  <DialogDescription className="text-app-text-muted text-sm">
-                    Generate a public link to share this item with anyone.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-4 space-y-6 bg-app-surface-glass p-5 rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <label
-                        htmlFor="public-mode"
-                        className="text-sm font-medium text-app-text-primary cursor-pointer"
-                      >
-                        Public Access
-                      </label>
-                      <p className="text-xs text-app-text-muted">
-                        {item?.isPublic ? "Anyone with the link can view" : "Only you can access this item"}
-                      </p>
-                    </div>
-                    <Switch
-                      id="public-mode"
-                      checked={item?.isPublic || false}
-                      onCheckedChange={handleTogglePublic}
-                      className="data-[state=checked]:bg-app-primary cursor-pointer"
+              {/* More Options Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="group flex items-center justify-center h-9 w-9 rounded-full text-app-text-secondary transition-all duration-200 hover:bg-app-surface-glass-strong hover:text-app-text-primary cursor-pointer"
+                    title="More actions"
+                  >
+                    <EllipsisVertical
+                      size={16}
+                      className="transition-transform duration-200 group-hover:scale-110"
                     />
-                  </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 bg-app-surface-elevated border border-app-border-default shadow-xl rounded-xl p-1">
+                  <DropdownMenuItem
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Share2 size={14} />
+                    <span>Share Item</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Trash2 size={14} className="text-red-300" />
+                    <span>Delete Item</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                  {item?.isPublic && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <p className="text-xs font-semibold text-app-text-soft uppercase tracking-wider">Public Share Link</p>
-                      <div className="flex items-center gap-2 bg-app-surface-glass p-2 rounded-xl border border-app-border-default focus-within:ring-2 focus-within:ring-brand-primary/20 focus-within:border-brand-primary transition-all duration-200">
-                        <input
-                          readOnly
-                          value={typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : ""}
-                          className="flex-1 bg-transparent border-none text-sm text-app-text-primary px-2 outline-none select-all"
-                          onClick={(e) => (e.target as HTMLInputElement).select()}
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            const url = typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : "";
-                            navigator.clipboard.writeText(url);
-                            toast.success("Link copied to clipboard");
-                          }}
-                          className="h-8 gap-1.5 px-3 rounded-full text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong shrink-0 active:scale-95 transition-transform"
+              {/* Share Dialog without button trigger */}
+              <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+                <DialogContent className="sm:max-w-md bg-app-surface-elevated border-app-border-default shadow-2xl rounded-2xl p-6">
+                  <DialogHeader className="space-y-1">
+                    <DialogTitle className="text-xl font-bold tracking-tight text-app-text-primary flex items-center gap-2">
+                      Share Item
+                    </DialogTitle>
+                    <DialogDescription className="text-app-text-muted text-sm">
+                      Generate a public link to share this item with anyone.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="mt-4 space-y-6 bg-app-surface-glass p-5 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label
+                          htmlFor="public-mode"
+                          className="text-sm font-medium text-app-text-primary cursor-pointer"
                         >
-                          <Copy size={14} />
-                          <span className="text-xs font-medium">Copy</span>
-                        </Button>
+                          Public Access
+                        </label>
+                        <p className="text-xs text-app-text-muted">
+                          {item?.isPublic ? "Anyone with the link can view" : "Only you can access this item"}
+                        </p>
                       </div>
+                      <Switch
+                        id="public-mode"
+                        checked={item?.isPublic || false}
+                        onCheckedChange={handleTogglePublic}
+                        className="data-[state=checked]:bg-app-primary cursor-pointer"
+                      />
                     </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
+
+                    {item?.isPublic && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <p className="text-xs font-semibold text-app-text-soft uppercase tracking-wider">Public Share Link</p>
+                        <div className="flex items-center gap-2 bg-app-surface-glass p-2 rounded-xl border border-app-border-default focus-within:ring-2 focus-within:ring-brand-primary/20 focus-within:border-brand-primary transition-all duration-200">
+                          <input
+                            readOnly
+                            value={typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : ""}
+                            className="flex-1 bg-transparent border-none text-sm text-app-text-primary px-2 outline-none select-all"
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const url = typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : "";
+                              navigator.clipboard.writeText(url);
+                              toast.success("Link copied to clipboard");
+                            }}
+                            className="h-8 gap-1.5 px-3 rounded-full text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong shrink-0 active:scale-95 transition-transform"
+                          >
+                            <Copy size={14} />
+                            <span className="text-xs font-medium">Copy</span>
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          }
+        />
+
+        {/* CONTENT AREA & CHAT */}
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          <div className="relative flex-1 overflow-y-auto bg-app-canvas">
+            {isLoading || content === null ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
+              </div>
+            ) : (
+              <div className="h-full w-full">
+                {data.item.type === "note" ? (
+                  <NoteEditor
+                    key={`${id}-${data.item.updatedAt}`}
+                    initialData={data.item.content}
+                    onChange={setContent}
+                  />
+                ) : data.item.type === "spreadsheet" ? (
+                  <SpreadsheetEditor
+                    key={`${id}-${data.item.updatedAt}`}
+                    initialData={data.item.content}
+                    onChange={setContent}
+                  />
+                ) : (
+                  <GalleryViewer
+                    key={`${id}-${data.item.updatedAt}`}
+                    initialData={data.item.content}
+                    onChange={(newContent) => {
+                      setContent(newContent);
+                      mutate(); // Keep SWR completely in sync
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
-        }
-      />
-
-      {/* CONTENT AREA & CHAT */}
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <div className="relative flex-1 overflow-y-auto bg-app-canvas">
-          {isLoading || content === null ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
-            </div>
-          ) : (
-            <div className="h-full w-full">
-              {data.item.type === "note" ? (
-                <NoteEditor
-                  key={`${id}-${data.item.updatedAt}`}
-                  initialData={data.item.content}
-                  onChange={setContent}
-                />
-              ) : data.item.type === "spreadsheet" ? (
-                <SpreadsheetEditor
-                  key={`${id}-${data.item.updatedAt}`}
-                  initialData={data.item.content}
-                  onChange={setContent}
-                />
-              ) : (
-                <GalleryViewer
-                  key={`${id}-${data.item.updatedAt}`}
-                  initialData={data.item.content}
-                  onChange={(newContent) => {
-                    setContent(newContent);
-                    mutate(); // Keep SWR completely in sync
-                  }}
-                />
-              )}
-            </div>
-          )}
         </div>
-
-        <AnimatePresence mode="wait">
-          {showChat && item?.type !== "gallery" && item?.type !== "album" && (
-            <motion.div
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative z-40 h-full w-[400px] shrink-0 border-l border-app-border-subtle shadow-2xl"
-            >
-              <VaultChatSidePanel
-                messages={messages}
-                input={input}
-                setInput={setInput}
-                isLoading={isChatLoading}
-                sendMessage={sendMessageWithContext}
-                regenerate={regenerateWithContext}
-                selectedModel={selectedModel}
-                setSelectedModel={setSelectedModel}
-                onClose={() => setShowChat(false)}
-                onClearChat={handleClearChat}
-                itemTitle={title || "Untitled Item"}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {item?.type !== "gallery" && item?.type !== "album" && (
+        <Button
+          variant={showChat ? "default" : "ghost"}
+          onClick={() => setShowChat(!showChat)}
+          size="sm"
+          className={`fixed right-6 bottom-6 z-50 group flex size-14 cursor-pointer items-center justify-center rounded-full bg-app-primary text-app-primary-foreground shadow-2xl transition-all hover:scale-110 hover:bg-app-primary-hover active:scale-95 ${showChat ? "bg-app-primary text-white hover:bg-brand-primary/90 hidden" : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong"
+            }`}
+          title={showChat ? "Close AI Assistant" : "Open AI Assistant"}
+        >
+          <Bot size={24} className="group-hover:rotate-90 transition-transform duration-300 group-hover:text-app-primary text-app-primary-foreground" />
+        </Button>
+      )}
+
+
+      <AnimatePresence mode="wait">
+        {showChat && item?.type !== "gallery" && item?.type !== "album" && (
+          <motion.div
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="relative z-40 h-full w-[400px] shrink-0 border-l border-app-border-subtle shadow-2xl"
+            style={{ border: '1px' }}
+          >
+            <VaultChatSidePanel
+              messages={messages}
+              input={input}
+              setInput={setInput}
+              isLoading={isChatLoading}
+              sendMessage={sendMessageWithContext}
+              regenerate={regenerateWithContext}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              onClose={() => setShowChat(false)}
+              onClearChat={handleClearChat}
+              itemTitle={title || "Untitled Item"}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
