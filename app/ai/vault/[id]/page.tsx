@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2 } from "lucide-react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { downloadVaultItem } from "@/lib/download-vault-item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "../_components/note-editor";
 import { SpreadsheetEditor } from "../_components/spreadsheet-editor";
@@ -263,6 +264,10 @@ ${itemContext}`,
     }
   };
 
+  const handleDownload = async () => {
+    await downloadVaultItem(data?.item);
+  };
+
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-10">
@@ -342,6 +347,16 @@ ${itemContext}`,
                     <Share2 size={14} />
                     <span>Share Item</span>
                   </DropdownMenuItem>
+
+                  {(data?.item?.type === 'note' || data?.item?.type === 'spreadsheet') && (
+                    <DropdownMenuItem
+                      onClick={handleDownload}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong rounded-lg cursor-pointer transition-colors"
+                    >
+                      <Download size={14} />
+                      <span>Download</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={handleDelete}
                     className="flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"

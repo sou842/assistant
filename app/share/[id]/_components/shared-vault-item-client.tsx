@@ -54,24 +54,31 @@ export default function SharedVaultItemClient({ id }: { id: string }) {
         <div className="relative flex-1 overflow-y-auto bg-app-canvas">
           <div className="h-full w-full">
             {item.type === "note" ? (
-              <NoteEditor
-                key={`${item._id}-${item.updatedAt}`}
-                initialData={item.content}
-                onChange={() => {}}
-                readOnly={true}
-              />
+              <div className="flex flex-col h-full w-full">
+                {item.coverImage && (
+                  <div className="relative w-full h-48 sm:h-64 overflow-hidden border-b border-app-border-default bg-app-surface-glass shrink-0">
+                    <img src={item.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <NoteEditor
+                  key={`${item._id}-${item.updatedAt}`}
+                  initialData={item.content}
+                  onChange={() => { }}
+                  readOnly={true}
+                />
+              </div>
             ) : item.type === "spreadsheet" ? (
               <SpreadsheetEditor
                 key={`${item._id}-${item.updatedAt}`}
                 initialData={item.content}
-                onChange={() => {}}
+                onChange={() => { }}
                 readOnly={true}
               />
             ) : (
               <GalleryViewer
                 key={`${item._id}-${item.updatedAt}`}
                 initialData={item.content}
-                onChange={() => {}}
+                onChange={() => { }}
               />
             )}
           </div>
