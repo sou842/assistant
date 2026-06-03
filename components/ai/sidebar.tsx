@@ -150,6 +150,13 @@ export function Sidebar({
               {!isCollapsed && <span>New Chat</span>}
             </button>
             <SidebarNavItem
+              active={pathname === "/ai/integrations"}
+              href="/ai/integrations"
+              icon={<Layers size={16} />}
+              isCollapsed={isCollapsed}
+              label="Integrations"
+            />
+            <SidebarNavItem
               active={pathname === "/ai/tasks"}
               href="/ai/tasks"
               icon={<BookOpenCheck size={16} />}
@@ -177,13 +184,6 @@ export function Sidebar({
               icon={<Calendar size={16} />}
               isCollapsed={isCollapsed}
               label="Schedule"
-            />
-            <SidebarNavItem
-              active={pathname === "/ai/integrations"}
-              href="/ai/integrations"
-              icon={<Layers size={16} />}
-              isCollapsed={isCollapsed}
-              label="Integrations"
             />
           </div>
 

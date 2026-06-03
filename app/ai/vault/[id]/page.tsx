@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical } from "lucide-react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -187,8 +187,21 @@ Prioritize actions and responses related to this item.`,
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-10">
-        <p className="mb-4 text-app-danger-strong">Failed to load item</p>
-        <Link href="/ai/vault" className="text-sm text-app-text-faint underline hover:text-app-text-primary">Back to Vault</Link>
+        <div className="flex flex-col items-center text-center max-w-lg p-8">
+          <div className="size-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-app-danger-strong">
+            <AlertCircle size={24} />
+          </div>
+          <h3 className="text-lg font-medium text-app-text-primary mb-2">Failed to load item</h3>
+          <p className="text-sm text-app-text-secondary mb-6">
+            We couldn't retrieve this item from the vault. It might have been deleted or you may not have permission to access it.
+          </p>
+          <Link
+            href="/ai/vault"
+            className="inline-flex items-center justify-center h-10 px-4 rounded-full bg-app-surface-glass-strong text-sm font-medium text-app-text-primary hover:bg-app-surface-hover transition-colors"
+          >
+            Back to Vault
+          </Link>
+        </div>
       </div>
     );
   }

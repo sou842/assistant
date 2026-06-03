@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 'ai';
+import { streamText, convertToModelMessages, stepCountIs, type UIMessage, generateObject } from 'ai';
 import { formatMemoriesForPrompt } from '@/lib/memory-storage';
 import { getMessageText } from '@/lib/ai/message-utils';
 import { tools } from './tools';
@@ -13,7 +13,7 @@ import LlmCall from '@/lib/models/LlmCall';
 import mongoose from 'mongoose';
 
 
-// Allow streaming responses up to 40 seconds
+// Allow streaming responses
 export const maxDuration = 260;
 
 const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -188,11 +188,45 @@ export async function POST(req: Request) {
 
     const stepsLogged: any[] = [];
 
+    // Pre-Routing Logic for Dynamic Tool Discovery (Smart Mode)
+    const toolNames = Object.keys(tools) as [string, ...string[]];
+    let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl']; // Base tools always included
+    
+    try {
+      const recentMessagesText = messages.slice(-3).map((m: any) => `${m.role}: ${getMessageText(m)}`).join("\n");
+      const routingModelId = provider === openai ? 'gpt-4o-mini' : provider === google ? 'gemini-2.5-flash' : 'mistral-small-latest';
+      
+      const availableToolsContext = Object.entries(tools)
+        .map(([name, tool]) => `- ${name}: ${(tool as any).description || 'No description available'}`)
+        .join('\n');
+
+      const { object } = await generateObject({
+        model: provider(routingModelId),
+        schema: z.object({
+          selectedTools: z.array(z.enum(toolNames)).describe("The specific tools needed to answer the user's request. Pick only what is strictly necessary.")
+        }),
+        prompt: `You are an intelligent tool router. Your job is to analyze the user's latest request and select the necessary tools to fulfill it.\n\nAvailable tools:\n${availableToolsContext}\n\nRecent conversation:\n${recentMessagesText}`,
+      });
+      
+      activeToolNames = Array.from(new Set([...activeToolNames, ...object.selectedTools]));
+      console.log('Dynamic Tools Selected (Smart):', activeToolNames);
+    } catch (e) {
+      console.warn('Pre-routing failed, falling back to all tools', e);
+      activeToolNames = Object.keys(tools);
+    }
+
+    const activeTools: Record<string, any> = {};
+    for (const toolName of activeToolNames) {
+      if ((tools as any)[toolName]) {
+        activeTools[toolName] = (tools as any)[toolName];
+      }
+    }
+
     const result = streamText({
       model: provider(model),
       messages: modelMessages.length > 0 ? modelMessages : [{ role: 'user', content: ' ' }],
       system: finalSystemPrompt,
-      tools,
+      tools: activeTools,
       stopWhen: stepCountIs(20),
       onStepFinish: (step) => {
         console.log('\n--- Step Finished ---', step);
