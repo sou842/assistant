@@ -20,6 +20,7 @@ interface VaultChatSidePanelProps {
   onClose: () => void;
   onClearChat: () => void;
   itemTitle: string;
+  itemType?: string;
 }
 
 export function VaultChatSidePanel({
@@ -33,7 +34,8 @@ export function VaultChatSidePanel({
   setSelectedModel,
   onClose,
   onClearChat,
-  itemTitle
+  itemTitle,
+  itemType
 }: VaultChatSidePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = React.useState(true);
@@ -109,7 +111,7 @@ export function VaultChatSidePanel({
           selectedModelData={selectedModelData}
           modelSelectorOpen={false}
           setModelSelectorOpen={() => { }}
-          selectedTask={isFocused ? { title: itemTitle } : null}
+          selectedTask={isFocused ? { title: itemTitle, type: itemType } : null}
           setSelectedTask={(val) => setIsFocused(!!val)}
           space={2}
         />

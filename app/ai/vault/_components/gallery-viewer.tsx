@@ -243,7 +243,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
 
                     {/* TOP BADGE (Always visible or cleanly accented) */}
                     <div className="absolute top-3 left-3 z-30 pointer-events-none">
-                      <span className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 font-mono uppercase text-[9px] text-white/90 tracking-wider">
+                      <span className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 font-mono uppercase text-[9px] text-white/90 tracking-wider">
                         {file.mediaType.split("/")[1] || "unknown"}
                       </span>
                     </div>
@@ -260,7 +260,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                             e.preventDefault();
                             handleDeleteFile(file.id);
                           }}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-red-500 text-white/80 hover:text-white border border-white/10 hover:border-red-500 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                          className="p-1.5 rounded-full bg-white/10 hover:bg-red-500 text-white/80 hover:text-white border border-white/10 hover:border-red-500 transition-all shadow-md cursor-pointer disabled:opacity-50"
                           title="Delete asset"
                         >
                           <Trash2 size={13} className={isDeleting === file.id ? "animate-pulse" : ""} />
@@ -275,7 +275,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                               e.stopPropagation();
                               setLightboxFile(file);
                             }}
-                            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-xl hover:scale-105 cursor-pointer backdrop-blur-md"
+                            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-xl hover:scale-105 cursor-pointer backdrop-blur-md"
                             title="Quick View"
                           >
                             <Eye size={15} />
@@ -286,7 +286,7 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-xl hover:scale-105 flex items-center justify-center backdrop-blur-md"
+                          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-xl hover:scale-105 flex items-center justify-center backdrop-blur-md"
                           title="Open Original"
                         >
                           <ExternalLink size={15} />
@@ -295,9 +295,9 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
 
                       {/* Bottom Meta Data Context */}
                       <div className="flex flex-col gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-transform duration-300 delay-100">
-                        <h4 className="font-medium text-xs text-white truncate select-all drop-shadow-md" title={file.filename}>
+                        {/* <h4 className="font-medium text-xs text-white truncate select-all drop-shadow-md" title={file.filename}>
                           {file.filename}
-                        </h4>
+                        </h4> */}
 
                         <div className="flex items-center justify-between text-[10px] text-white/70">
                           <div className="flex items-center gap-1 drop-shadow-sm">
@@ -312,11 +312,11 @@ export function GalleryViewer({ initialData = [], onChange }: GalleryViewerProps
                               e.stopPropagation();
                               handleDownload(file.url, file.filename);
                             }}
-                            className="flex items-center gap-1 py-1 px-2 rounded-md bg-white/10 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white transition-all font-medium cursor-pointer backdrop-blur-sm"
+                            className="flex items-center gap-1 py-1.5 px-1.5 rounded-full bg-white/10 hover:bg-white text-white hover:text-black border border-white/10 hover:border-white transition-all font-medium cursor-pointer backdrop-blur-sm"
                             title="Download File"
                           >
                             <Download size={10} />
-                            <span>Get</span>
+                            {/* <span>Get</span> */}
                           </button>
                         </div>
                       </div>

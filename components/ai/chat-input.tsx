@@ -2,7 +2,7 @@
 
 import React, { memo, useState, useEffect, useRef } from "react";
 import useSWR from "swr";
-import { CheckIcon, Globe, PlusIcon, User, Search, MessageSquare, X, BookOpenCheck, Image as ImageIcon, FileText } from "lucide-react";
+import { CheckIcon, Globe, PlusIcon, User, Search, MessageSquare, X, BookOpenCheck, Image as ImageIcon, FileText, Table2 } from "lucide-react";
 import { FileUIPart } from "ai";
 import { toast } from "sonner";
 import { type SendChatMessage } from "@/components/ai/types";
@@ -356,8 +356,18 @@ export function ChatInput({
             {/* Task Badge Display */}
             {selectedTask && (
               <div className="px-6 pt-4 flex w-full justify-start items-center">
-                <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-in zoom-in-95 duration-200 max-w-[280px] overflow-hidden">
-                  <BookOpenCheck className="size-3.5 text-indigo-400 shrink-0" />
+                <div className={`w-fit flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-full border animate-in zoom-in-95 duration-200 max-w-full overflow-hidden ${
+                  selectedTask.type === "note" ? "bg-blue-500/10 border-blue-500/20" :
+                  selectedTask.type === "spreadsheet" ? "bg-emerald-500/10 border-emerald-500/20" :
+                  "bg-indigo-500/10 border-indigo-500/20"
+                }`}>
+                  {selectedTask.type === "note" ? (
+                    <FileText className="size-3.5 text-blue-400 shrink-0" />
+                  ) : selectedTask.type === "spreadsheet" ? (
+                    <Table2 className="size-3.5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <BookOpenCheck className="size-3.5 text-indigo-400 shrink-0" />
+                  )}
                   <span className="text-[13px] font-medium text-app-text-secondary leading-none truncate flex items-center gap-1 min-w-0">
                     <span className="shrink-0">Focusing on:</span>
                     <span className="text-app-text-primary font-bold truncate">{selectedTask.title}</span>

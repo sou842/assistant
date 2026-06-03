@@ -636,6 +636,7 @@ ${itemContext}`,
               onClose={() => setShowChat(false)}
               onClearChat={handleClearChat}
               itemTitle={title || "Untitled Item"}
+              itemType={data?.item?.type}
             />
           </motion.div>
         )}
