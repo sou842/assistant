@@ -166,6 +166,7 @@ export async function POST(req: Request) {
       (browserExtensionConnected
         ? "The browser extension is currently CONNECTED. You can perform browser control tasks normally."
         : "CRITICAL: The browser extension is currently NOT connected. Do NOT attempt to use 'browserControl'. Instead, immediately inform the user that the browser extension is not connected and that they must make sure the browser extension is installed and the companion sidepanel is active before they can use this feature."),
+      "13. For Studio Documents: The Studio is a completely separate area from the Vault. It stores professional documents, resumes, slides, and reports. When asked to generate or update a document, you MUST first decide on a design system (e.g., 'premium' or 'paper') and call 'loadDesignSystem' to load the required typography, colors, and layout rules. Only AFTER loading the design system should you call 'createStudioDocument' or 'updateStudioDocument'. The content MUST be valid raw HTML formatted exactly according to the loaded design rules using Tailwind CSS utility classes. NEVER use `<style>` tags. NEVER generate `<html>`, `<head>`, or `<body>` tags. Only return the inner HTML structure.",
       memoryContext
         ? `Use these saved user memories when relevant. Do not mention them unless it helps the answer.\n${memoryContext}`
         : "",
@@ -192,6 +193,14 @@ export async function POST(req: Request) {
     const toolNames = Object.keys(tools) as [string, ...string[]];
     let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl']; // Base tools always included
     
+    // Always include studio tools if we are in the studio context
+    // Always include studio tools if we are in the studio context
+    if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
+      activeToolNames.push('updateStudioDocument', 'loadDesignSystem');
+    } else if (finalSystemPrompt.includes("Studio Documents")) {
+      activeToolNames.push('updateStudioDocument', 'createStudioDocument', 'loadDesignSystem');
+    }
+    
     try {
       const recentMessagesText = messages.slice(-3).map((m: any) => `${m.role}: ${getMessageText(m)}`).join("\n");
       const routingModelId = provider === openai ? 'gpt-4o-mini' : provider === google ? 'gemini-2.5-flash' : 'mistral-small-latest';
@@ -199,20 +208,29 @@ export async function POST(req: Request) {
       const availableToolsContext = Object.entries(tools)
         .map(([name, tool]) => `- ${name}: ${(tool as any).description || 'No description available'}`)
         .join('\n');
-
+ 
       const { object } = await generateObject({
         model: provider(routingModelId),
         schema: z.object({
           selectedTools: z.array(z.enum(toolNames)).describe("The specific tools needed to answer the user's request. Pick only what is strictly necessary.")
         }),
-        prompt: `You are an intelligent tool router. Your job is to analyze the user's latest request and select the necessary tools to fulfill it.\n\nAvailable tools:\n${availableToolsContext}\n\nRecent conversation:\n${recentMessagesText}`,
+        prompt: `You are an intelligent tool router. Your job is to analyze the user's latest request and select the necessary tools to fulfill it. Pay special attention to any system instructions that mandate specific tools.\n\nSystem Context:\n${finalSystemPrompt}\n\nAvailable tools:\n${availableToolsContext}\n\nRecent conversation:\n${recentMessagesText}`,
       });
       
       activeToolNames = Array.from(new Set([...activeToolNames, ...object.selectedTools]));
+      
+      // If we are actively editing a specific document, never allow creating a new one (to avoid creating orphaned/invisible documents)
+      if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
+        activeToolNames = activeToolNames.filter(name => name !== 'createStudioDocument');
+      }
+      
       console.log('Dynamic Tools Selected (Smart):', activeToolNames);
     } catch (e) {
       console.warn('Pre-routing failed, falling back to all tools', e);
       activeToolNames = Object.keys(tools);
+      if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
+        activeToolNames = activeToolNames.filter(name => name !== 'createStudioDocument');
+      }
     }
 
     const activeTools: Record<string, any> = {};

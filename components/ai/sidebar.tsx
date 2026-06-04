@@ -13,7 +13,8 @@ import {
   BookOpenCheck,
   Layers,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Briefcase
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -175,6 +176,13 @@ export function Sidebar({
               icon={<Database size={16} />}
               label="Vault"
               active={pathname.startsWith("/ai/vault")}
+              isCollapsed={isCollapsed}
+            />
+            <SidebarNavItem
+              href="/ai/studio"
+              icon={<Briefcase size={16} />}
+              label="Studio"
+              active={pathname.startsWith("/ai/studio")}
               isCollapsed={isCollapsed}
             />
             {/* <SidebarNavItem

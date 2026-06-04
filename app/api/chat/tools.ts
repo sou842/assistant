@@ -1,4 +1,6 @@
 import { tool } from 'ai';
+import fs from 'fs/promises';
+import path from 'path';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
@@ -6,6 +8,7 @@ import Task from '@/lib/models/Task';
 import User from '@/lib/models/User';
 import Contact from '@/lib/models/Contact';
 import VaultItem from '@/lib/models/VaultItem';
+import StudioDocument from '@/lib/models/StudioDocument';
 import ScheduleTask from '@/lib/models/ScheduleTask';
 import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
 import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
@@ -1026,13 +1029,93 @@ export const tools = {
     execute: async ({ id }) => {
       try {
         const session = await auth();
-        if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
         await dbConnect();
         const result = await VaultItem.deleteOne({ _id: id, userId: session.user.id });
         if (result.deletedCount === 0) return { success: false, error: "Vault item not found" };
         return { success: true, message: "Vault item deleted successfully" };
       } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  loadDesignSystem: tool({
+    description: "Load a specific design system and skill set (e.g., 'premium', 'paper') to use for generating a Studio Document. This returns the design guidelines and skills that you MUST follow when generating HTML. ALWAYS call this BEFORE calling 'createStudioDocument' or 'updateStudioDocument' unless you already have the design system loaded in context.",
+    inputSchema: z.object({
+      designSystem: z.enum(['premium', 'paper']).describe('The name of the design system to load.'),
+    }),
+    execute: async ({ designSystem }) => {
+      try {
+        const skillsDir = path.join(process.cwd(), 'lib', 'skills');
+        const designPath = path.join(skillsDir, `design_${designSystem}.md`);
+        const skillPath = path.join(skillsDir, `skill_${designSystem}.md`);
+
+        const [designContent, skillContent] = await Promise.all([
+          fs.readFile(designPath, 'utf-8').catch(() => `Design file not found for ${designSystem}`),
+          fs.readFile(skillPath, 'utf-8').catch(() => `Skill file not found for ${designSystem}`),
+        ]);
+
+        return {
+          success: true,
+          designSystem,
+          designRules: designContent,
+          skillRules: skillContent,
+          message: `Successfully loaded ${designSystem} design system. You MUST follow these rules when generating HTML.`
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  createStudioDocument: tool({
+    description: "Create a new Studio Document. Use this when the user asks to generate a professional document, resume, slide, or HTML page. The content MUST be valid raw HTML. Use inline styles (e.g. `style='color: red'`). NEVER use `<style>` tags. NEVER generate `<html>`, `<head>`, or `<body>` tags.",
+    inputSchema: z.object({
+      title: z.string().min(1).describe('The title of the document'),
+      content: z.string().describe('The raw HTML content of the document.'),
+      tags: z.array(z.string()).default([]).describe('Optional tags'),
+    }),
+    execute: async (data) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+        await dbConnect();
+        const item = await StudioDocument.create({ ...data, userId: session.user.id });
+        return { success: true, item: JSON.parse(JSON.stringify(item)) };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  updateStudioDocument: tool({
+    description: "Update an existing Studio Document's title, HTML content, or tags. You must have the document ID. The content MUST be valid raw HTML. ALWAYS use Tailwind CSS utility classes in class attributes for all styling (e.g. class='p-6 bg-slate-900 text-white rounded-xl shadow-lg'). Do NOT wrap in <html>, <head>, or <body> tags. Do NOT use style blocks (<style>). Output pure, beautiful Tailwind HTML structures.",
+    inputSchema: z.object({
+      id: z.string().describe('The MongoDB ID of the Studio Document to update'),
+      title: z.string().optional().describe('New title for the document'),
+      content: z.string().optional().describe('New raw HTML content styled with Tailwind CSS utility classes'),
+      tags: z.array(z.string()).optional().describe('Updated tags'),
+    }),
+    execute: async ({ id, ...updateData }) => {
+      try {
+        console.log("updateStudioDocument called with id:", id, "updateData keys:", Object.keys(updateData));
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+        await dbConnect();
+        const item = await StudioDocument.findOneAndUpdate(
+          { _id: id, userId: session.user.id },
+          { $set: updateData },
+          { new: true }
+        );
+        if (!item) {
+          console.error("Studio Document not found for id:", id);
+          return { success: false, error: "Studio Document not found" };
+        }
+        return { success: true, item: JSON.parse(JSON.stringify(item)) };
+      } catch (error: any) {
+        console.error("updateStudioDocument error:", error);
         return { success: false, error: error.message };
       }
     },

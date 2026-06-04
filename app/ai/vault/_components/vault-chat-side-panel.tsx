@@ -4,9 +4,11 @@ import React, { useRef } from "react";
 import { MessageList } from "@/components/ai/message-list";
 import { ChatInput, mistralModels } from "@/components/ai/chat-input";
 import { cn } from "@/lib/utils";
-import { Bot, X, MessageSquare, MessageCircle } from "lucide-react";
+import { Bot, X, MessageSquare, MessageCircle, TextSelect } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UIMessage } from "ai";
+import { AnimatePresence } from "motion/react";
+import { motion } from 'framer-motion';
 
 interface VaultChatSidePanelProps {
   messages: UIMessage[];
@@ -21,6 +23,7 @@ interface VaultChatSidePanelProps {
   onClearChat: () => void;
   itemTitle: string;
   itemType?: string;
+  selectedContext?: { text: string; html: string } | null;
 }
 
 export function VaultChatSidePanel({
@@ -35,7 +38,8 @@ export function VaultChatSidePanel({
   onClose,
   onClearChat,
   itemTitle,
-  itemType
+  itemType,
+  selectedContext
 }: VaultChatSidePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = React.useState(true);
@@ -100,7 +104,23 @@ export function VaultChatSidePanel({
       </div>
 
       {/* Footer / Input */}
-      <div className="p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+      <div className="p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col gap-2">
+        <AnimatePresence>
+          {selectedContext && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-md mx-2"
+            >
+              <TextSelect className="size-4 text-indigo-400" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-medium text-indigo-300">Targeting selection</span>
+                <span className="text-[10px] text-indigo-400/70 truncate w-64">{selectedContext.text.slice(0, 50)}{selectedContext.text.length > 50 ? '...' : ''}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <ChatInput
           input={input}
           setInput={setInput}
