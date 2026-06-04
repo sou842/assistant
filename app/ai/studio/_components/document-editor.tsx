@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, MousePointer2, Type } from "lucide-react";
 
 interface DocumentEditorProps {
@@ -10,6 +11,74 @@ interface DocumentEditorProps {
   onSelectionChange?: (selection: { text: string, html: string } | null) => void;
 }
 
+const IFRAME_TEMPLATE = `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>Document Editor Frame</title>
+      <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+          corePlugins: { preflight: false }
+        };
+      </script>
+      <script src="https://cdn.tailwindcss.com" async></script>
+      <style id="editor-styles">
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          background-color: transparent;
+        }
+        body {
+          overflow-y: auto;
+          padding: 2rem;
+          display: flex;
+          justify-content: center;
+          box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;700&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&family=PT+Mono&family=Roboto:wght@100;300;400;500;700;900&display=swap');
+
+        #document-page {
+          height: auto !important;
+          min-height: 297mm !important;
+        }
+        .document-content {
+          font-family: 'Roboto', sans-serif;
+          color: #111827;
+          height: auto !important;
+          min-height: 100%;
+          box-sizing: border-box;
+        }
+        .document-content div, .document-content section {
+          height: auto !important;
+        }
+        .document-content h1 { font-family: 'Montserrat', sans-serif; font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; margin-top: 2rem; color: #111111; }
+        .document-content h2 { font-family: 'Montserrat', sans-serif; font-size: 1.75rem; font-weight: bold; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #111111; }
+        .document-content h3 { font-family: 'Montserrat', sans-serif; font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; margin-top: 1.25rem; color: #111111; }
+        .document-content p { margin-bottom: 1rem; line-height: 1.6; color: #111827; }
+        .document-content code, .document-content pre, .document-content .mono { font-family: 'PT Mono', monospace; }
+        .document-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .document-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .document-content li { margin-bottom: 0.25rem; }
+        
+        .document-content [data-inspector-hover="true"]:not([data-inspector-selected="true"]) {
+          box-shadow: 0 0 0 2px #6366f1 !important;
+          cursor: pointer !important;
+        }
+        
+        .document-content [data-inspector-selected="true"] {
+          box-shadow: 0 0 0 3px #10b981 !important;
+          background-color: rgba(16, 185, 129, 0.05) !important;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="editor-root" style="width: 100%; height: 100%; display: flex; justify-content: center;"></div>
+    </body>
+  </html>
+`;
+
 export function DocumentEditor({ initialData = "", onChange, readOnly = false, onSelectionChange }: DocumentEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState(initialData || "");
@@ -17,7 +86,14 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
   const hoveredElementRef = useRef<HTMLElement | null>(null);
   const selectedElementRef = useRef<HTMLElement | null>(null);
 
-  // Initialize/sync content
+  const [iframeRef, setIframeRef] = useState<HTMLIFrameElement | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
+
+  const handleIframeLoad = () => {
+    setIframeReady(true);
+  };
+
+  // Initialize/sync content once iframe is ready
   useEffect(() => {
     if (editorRef.current) {
       let safeData = initialData || "";
@@ -29,7 +105,7 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
         editorRef.current.innerHTML = safeData;
       }
     }
-  }, [initialData]);
+  }, [initialData, iframeReady]);
 
   const onSelectionChangeRef = useRef(onSelectionChange);
   useEffect(() => {
@@ -38,10 +114,12 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
 
   useEffect(() => {
     const handleSelectionChange = () => {
-      if (!onSelectionChangeRef.current || !editorRef.current) return;
-      if (isInspectorMode) return; // Prevent native selection from clearing inspector selection
+      if (!onSelectionChangeRef.current || !editorRef.current || !iframeRef) return;
+      if (isInspectorMode) return;
 
-      const selection = window.getSelection();
+      const iframeWindow = iframeRef.contentWindow;
+      if (!iframeWindow) return;
+      const selection = iframeWindow.getSelection();
       if (!selection || selection.rangeCount === 0 || selection.toString().trim() === "") {
         onSelectionChangeRef.current(null);
         return;
@@ -50,13 +128,11 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
       const range = selection.getRangeAt(0);
       let container = range.commonAncestorContainer;
 
-      // Ensure the selection is inside the editor
       if (!editorRef.current.contains(container)) {
         onSelectionChangeRef.current(null);
         return;
       }
 
-      // If it's a text node, get the parent element to capture the HTML tag context
       if (container.nodeType === Node.TEXT_NODE) {
         container = container.parentElement as Node;
       }
@@ -67,9 +143,12 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
       });
     };
 
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [isInspectorMode]); // Re-bind if mode changes (though technically not needed, it's safer)
+    const doc = iframeRef?.contentDocument || iframeRef?.contentWindow?.document;
+    if (!doc) return;
+
+    doc.addEventListener("selectionchange", handleSelectionChange);
+    return () => doc.removeEventListener("selectionchange", handleSelectionChange);
+  }, [isInspectorMode, iframeRef, iframeReady]);
 
   // Inspector Mode Hover & Select Effect
   useEffect(() => {
@@ -104,10 +183,11 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
       }
     };
 
+    const iframeDoc = editor.ownerDocument;
+    const iframeBody = iframeDoc.body;
     const handleContainerClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const scrollContainer = document.getElementById("document-scroll-container");
-      if (scrollContainer && scrollContainer.contains(target)) {
+      if (iframeBody && iframeBody.contains(target)) {
         if (!editor.contains(target) || target === editor) {
           if (selectedElementRef.current) {
             selectedElementRef.current.removeAttribute('data-inspector-selected');
@@ -131,7 +211,6 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
         return;
       }
 
-      // Clear previous selection
       if (selectedElementRef.current) {
         selectedElementRef.current.removeAttribute('data-inspector-selected');
       }
@@ -150,38 +229,22 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
     editor.addEventListener("mouseover", handleMouseOver);
     editor.addEventListener("mouseout", handleMouseOut);
     editor.addEventListener("click", handleClick, { capture: true });
-
-    const scrollContainer = document.getElementById("document-scroll-container");
-    if (scrollContainer) {
-      scrollContainer.addEventListener("click", handleContainerClick);
-    }
+    iframeBody.addEventListener("click", handleContainerClick);
 
     return () => {
       editor.removeEventListener("mouseover", handleMouseOver);
       editor.removeEventListener("mouseout", handleMouseOut);
       editor.removeEventListener("click", handleClick, { capture: true });
-      if (scrollContainer) {
-        scrollContainer.removeEventListener("click", handleContainerClick);
-      }
+      iframeBody.removeEventListener("click", handleContainerClick);
       if (hoveredElementRef.current) {
         hoveredElementRef.current.removeAttribute('data-inspector-hover');
       }
     };
-  }, [isInspectorMode]);
-
-  // Clean up selected element if it gets removed or mode changes (optional, we keep it active)
-  useEffect(() => {
-    if (!isInspectorMode && selectedElementRef.current) {
-      selectedElementRef.current.removeAttribute('data-inspector-selected');
-      selectedElementRef.current = null;
-      if (onSelectionChangeRef.current) onSelectionChangeRef.current(null);
-    }
-  }, [isInspectorMode]);
+  }, [isInspectorMode, iframeReady]);
 
   const handleInput = () => {
     if (editorRef.current) {
       let newContent = editorRef.current.innerHTML;
-      // Strip out the inspector data attributes so they don't get saved to the DB
       newContent = newContent.replace(/\sdata-inspector-(?:hover|selected)="true"/g, '');
       setContent(newContent);
       onChange(newContent);
@@ -190,19 +253,22 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
 
   const execCommand = (command: string, value?: string) => {
     if (readOnly) return;
-    document.execCommand(command, false, value);
+    const doc = iframeRef?.contentDocument || iframeRef?.contentWindow?.document;
+    if (!doc) return;
+    doc.execCommand(command, false, value);
     if (editorRef.current) {
       editorRef.current.focus();
     }
     handleInput();
   };
 
+  const mountNode = iframeRef?.contentDocument?.getElementById("editor-root");
+
   return (
     <div className="flex flex-col h-full bg-[#f3f4f6] text-black">
       {/* TOOLBAR */}
       {!readOnly && (
         <div className="flex items-center gap-1 p-2 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 justify-center">
-
           <div className="flex bg-gray-100 p-0.5 rounded-md mr-2">
             <button
               onClick={() => setIsInspectorMode(false)}
@@ -245,51 +311,26 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
       )}
 
       {/* A4 PAGE CONTAINER */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center w-full" id="document-scroll-container">
-        <div
-          ref={editorRef}
-          className={`document-content outline-none w-full ${isInspectorMode ? '' : 'cursor-text'}`}
-          contentEditable={!readOnly && !isInspectorMode}
-          suppressContentEditableWarning
-          onInput={handleInput}
-          style={{ minHeight: '100%' }}
+      <div className="flex-1 w-full h-full relative" id="document-scroll-container">
+        <iframe
+          ref={setIframeRef}
+          onLoad={handleIframeLoad}
+          srcDoc={IFRAME_TEMPLATE}
+          className="w-full h-full border-none bg-transparent"
+          title="document-editor-iframe"
         />
+        {iframeReady && mountNode && createPortal(
+          <div
+            ref={editorRef}
+            className={`document-content outline-none w-full ${isInspectorMode ? '' : 'cursor-text'}`}
+            contentEditable={!readOnly && !isInspectorMode}
+            suppressContentEditableWarning
+            onInput={handleInput}
+            style={{ minHeight: '100%' }}
+          />,
+          mountNode
+        )}
       </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;700&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&family=PT+Mono&family=Roboto:wght@100;300;400;500;700;900&display=swap');
-
-        #document-page {
-          height: auto !important;
-          min-height: 297mm !important;
-        }
-        .document-content {
-          font-family: 'Roboto', sans-serif;
-          color: #111827;
-          height: auto !important;
-        }
-        .document-content div, .document-content section {
-          height: auto !important;
-        }
-        .document-content h1 { font-family: 'Montserrat', sans-serif; font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; margin-top: 2rem; color: #111111; }
-        .document-content h2 { font-family: 'Montserrat', sans-serif; font-size: 1.75rem; font-weight: bold; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #111111; }
-        .document-content h3 { font-family: 'Montserrat', sans-serif; font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; margin-top: 1.25rem; color: #111111; }
-        .document-content p { margin-bottom: 1rem; line-height: 1.6; color: #111827; }
-        .document-content code, .document-content pre, .document-content .mono { font-family: 'PT Mono', monospace; }
-        .document-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .document-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .document-content li { margin-bottom: 0.25rem; }
-        
-        .document-content [data-inspector-hover="true"]:not([data-inspector-selected="true"]) {
-          box-shadow: 0 0 0 2px #6366f1 !important;
-          cursor: pointer !important;
-        }
-        
-        .document-content [data-inspector-selected="true"] {
-          box-shadow: 0 0 0 3px #10b981 !important;
-          background-color: rgba(16, 185, 129, 0.05) !important;
-        }
-      `}</style>
     </div>
   );
 }

@@ -1042,9 +1042,9 @@ export const tools = {
   }),
 
   loadDesignSystem: tool({
-    description: "Load a specific design system and skill set (e.g., 'premium', 'paper') to use for generating a Studio Document. This returns the design guidelines and skills that you MUST follow when generating HTML. ALWAYS call this BEFORE calling 'createStudioDocument' or 'updateStudioDocument' unless you already have the design system loaded in context.",
+    description: "Load a specific design system and skill set (e.g., 'premium', 'paper', 'glassmorphism', 'storytelling') to use for generating a Studio Document. This returns the design guidelines and skills that you MUST follow when generating HTML. ALWAYS call this BEFORE calling 'createStudioDocument' or 'updateStudioDocument' unless you already have the design system loaded in context.",
     inputSchema: z.object({
-      designSystem: z.enum(['premium', 'paper']).describe('The name of the design system to load.'),
+      designSystem: z.enum(['premium', 'paper', 'glassmorphism', 'storytelling']).describe('The name of the design system to load.'),
     }),
     execute: async ({ designSystem }) => {
       try {
@@ -1116,6 +1116,36 @@ export const tools = {
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
       } catch (error: any) {
         console.error("updateStudioDocument error:", error);
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  editStudioDocumentSection: tool({
+    description: "Fast targeted edit for an existing Studio Document. Use this to update a specific section instead of rewriting the whole document. This is MUCH faster than updateStudioDocument. Provide a unique snippet of the existing HTML (targetText) and the new HTML (newText) that will replace it.",
+    inputSchema: z.object({
+      id: z.string().describe('The MongoDB ID of the Studio Document'),
+      targetText: z.string().describe('A unique snippet of the existing HTML to be replaced. Must match exactly. Try to include the full opening and closing tags of the element you are modifying.'),
+      newText: z.string().describe('The new HTML that will replace the targetText.'),
+    }),
+    execute: async ({ id, targetText, newText }) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+        await dbConnect();
+        
+        const doc = await StudioDocument.findOne({ _id: id, userId: session.user.id });
+        if (!doc) return { success: false, error: "Studio document not found" };
+
+        if (!doc.content || !doc.content.includes(targetText)) {
+          return { success: false, error: "targetText not found in the document. Please ensure it matches exactly or use updateStudioDocument to replace the entire document." };
+        }
+
+        doc.content = doc.content.replace(targetText, newText);
+        await doc.save();
+        
+        return { success: true, item: JSON.parse(JSON.stringify(doc)) };
+      } catch (error: any) {
         return { success: false, error: error.message };
       }
     },
