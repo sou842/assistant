@@ -16,6 +16,7 @@ function PlaygroundContent() {
     <div className="flex h-screen flex-col bg-app-canvas">
       <PageHeader
         icon={<Blocks />}
+        backHref="/ai/playground"
         title="Agentic Workflow Builder"
         subtitle="Connect AI tools together to build custom workflows."
       >

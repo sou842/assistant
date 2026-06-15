@@ -27,6 +27,15 @@ export default function SchedulePage() {
   const { data: result, isLoading } = useSWR("/api/schedule/tasks", fetcher);
   const tasks = React.useMemo(() => result?.data || [], [result]);
 
+  const filteredTasks = React.useMemo(() => {
+    if (!prompt.trim()) return tasks;
+    const lowerPrompt = prompt.toLowerCase();
+    return tasks.filter((task: any) => 
+      task.title.toLowerCase().includes(lowerPrompt) || 
+      task.steps?.some((step: any) => step.type.toLowerCase().includes(lowerPrompt))
+    );
+  }, [tasks, prompt]);
+
   const refresh = () => mutate("/api/schedule/tasks");
 
   const createFromAI = async () => {
@@ -125,7 +134,7 @@ export default function SchedulePage() {
           subtitle="Manage recurring and one-time automations"
           actions={
             <Link href="/ai/schedule/calendar">
-              <Button variant="outline" className="rounded-full border-app-border-strong text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
+              <Button variant="outline" className="rounded-full border-app-border-default text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
                 <CalendarDays className="size-4" />
                 Calendar View
               </Button>
@@ -136,18 +145,15 @@ export default function SchedulePage() {
         <div className="flex-1 overflow-y-auto scrollbar-hide relative z-10">
           <div className="mx-auto w-full max-w-7xl space-y-6 px-5 py-8">
             <div className="rounded-2xl border border-app-border-default bg-app-surface-glass p-4 sm:p-5">
-              <div className="flex items-start gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-3">
                 <Bot className="mt-0.5 size-5 text-app-text-soft" />
-                <div>
-                  <h2 className="text-sm font-medium text-app-text-primary">Create with AI</h2>
-                  <p className="text-xs text-app-text-faint">Example: send weather every hour to +91..., remind me tomorrow 9am.</p>
-                </div>
+                <h2 className="text-sm font-medium text-app-text-primary">Create with AI</h2>
               </div>
               <div className="flex gap-2">
                 <Input
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Create a schedule task..."
+                  placeholder="Search or create a schedule task..."
                   className="rounded-full border-app-border-default bg-app-surface-glass pl-4"
                 />
                 <Button onClick={createFromAI} disabled={isCreating} className="rounded-full bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover">
@@ -168,10 +174,12 @@ export default function SchedulePage() {
 
               {isLoading ? (
                 <div className="p-6 text-sm text-app-text-ghost">Loading schedule tasks...</div>
-              ) : tasks.length === 0 ? (
-                <div className="p-6 text-sm text-app-text-ghost">No schedule tasks yet.</div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="p-6 text-sm text-app-text-ghost">
+                  {prompt.trim() ? "No schedule tasks match your search." : "No schedule tasks yet."}
+                </div>
               ) : (
-                tasks.map((task: any) => (
+                filteredTasks.map((task: any) => (
                   <div 
                     key={task._id} 
                     className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3 hover:bg-app-surface-glass-strong cursor-pointer transition-colors"
