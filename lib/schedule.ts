@@ -308,27 +308,22 @@ async function executeHttpRequest(config: any, context: any) {
   return { status: res.status, ok: res.ok, data: responseData };
 }
 
-async function executeRunScript(config: any, context: any) {
-  const code = config.code || 'return null;';
-  
-  // Wrap the user's code in a self-invoking function so 'return' works at the top level
-  const scriptContent = `
-    (function(context) {
-      ${code}
-    })(context);
-  `;
-  
-  const sandbox = { context };
-  vm.createContext(sandbox);
-
-  try {
-    const script = new vm.Script(scriptContent);
-    // Execute with a strict 1000ms timeout
-    const result = script.runInContext(sandbox, { timeout: 1000 });
-    return result;
-  } catch (error: any) {
-    throw new Error(`Script error: ${error.message}`);
+async function withRetry<T>(fn: () => Promise<T>, retries = 1, delayMs = 1000): Promise<T> {
+  let attempt = 0;
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (error) {
+      attempt++;
+      if (attempt > retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
+  throw new Error('Unexpected retry loop exit');
+}
+
+async function executeRunScript(config: any, context: any) {
+  throw new Error("Script execution is disabled for security reasons.");
 }
 
 export async function executeScheduleTaskRun(task: any, run: any) {
@@ -365,19 +360,19 @@ export async function executeScheduleTaskRun(task: any, run: any) {
       try {
         switch (step.type) {
           case 'fetch_weather':
-            stepOutput = await executeFetchWeather(step.config, localContext);
+            stepOutput = await withRetry(() => executeFetchWeather(step.config, localContext));
             break;
           case 'ai_prompt':
             stepOutput = await executeAIPrompt(step.config, localContext);
             break;
           case 'send_email':
-            stepOutput = await executeSendEmail(step.config, localContext, task);
+            stepOutput = await withRetry(() => executeSendEmail(step.config, localContext, task));
             break;
           case 'send_whatsapp':
-            stepOutput = await executeSendWhatsapp(step.config, localContext);
+            stepOutput = await withRetry(() => executeSendWhatsapp(step.config, localContext));
             break;
           case 'http_request':
-            stepOutput = await executeHttpRequest(step.config, localContext);
+            stepOutput = await withRetry(() => executeHttpRequest(step.config, localContext));
             break;
           case 'run_script':
             stepOutput = await executeRunScript(step.config, localContext);

@@ -3,7 +3,7 @@
 import React from "react";
 import useSWR, { mutate } from "swr";
 import { format } from "date-fns";
-import { Bot, Calendar, CalendarDays, Menu, Pause, Play, Plus, Trash2, Zap } from "lucide-react";
+import { Bot, Calendar, CalendarDays, Menu, Pause, Play, Plus, Trash2, Zap, AlertCircle } from "lucide-react";
 import { useAI } from "../_components/ai-provider";
 import { PageHeader } from "../_components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -109,7 +110,8 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="flex h-screen relative overflow-hidden">
+    <TooltipProvider>
+      <div className="flex h-screen relative overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 relative">
         <PageHeader
           icon={<Calendar />}
@@ -180,7 +182,7 @@ export default function SchedulePage() {
                     </div>
                     <div className="col-span-2 text-xs text-app-text-soft">{task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}</div>
                     <div className="col-span-2 text-xs text-app-text-soft">{task.nextRunAt ? format(new Date(task.nextRunAt), "MMM d, HH:mm") : "-"}</div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 flex items-center gap-1.5">
                       <Badge
                         className={cn(
                           "capitalize rounded-full",
@@ -192,6 +194,17 @@ export default function SchedulePage() {
                       >
                         {task.status}
                       </Badge>
+                      {task.status === "failed" && task.lastError && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertCircle className="size-4 text-red-400 cursor-help shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs bg-red-950 border border-red-800 text-red-100 p-2 rounded shadow-lg">
+                            <p className="text-xs font-semibold">Last Error:</p>
+                            <p className="text-[11px] font-mono leading-tight">{task.lastError}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                     <div className="col-span-3 flex items-center justify-end gap-2">
                       <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={() => handleRunNow(task._id)}>
@@ -211,6 +224,7 @@ export default function SchedulePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

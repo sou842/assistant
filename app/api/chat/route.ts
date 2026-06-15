@@ -86,7 +86,27 @@ const ALLOWED_MODELS = new Set([
   'gpt-4o-mini',
 ]);
 
-
+const withFallback = (primary: any, fallback: any): any => {
+  return {
+    ...primary,
+    async doGenerate(options: any) {
+      try {
+        return await primary.doGenerate(options);
+      } catch (error) {
+        console.warn(`[Fallback] Primary model ${primary.modelId} failed, falling back to ${fallback.modelId}...`, error);
+        return await fallback.doGenerate(options);
+      }
+    },
+    async doStream(options: any) {
+      try {
+        return await primary.doStream(options);
+      } catch (error) {
+        console.warn(`[Fallback] Primary model ${primary.modelId} streaming failed, falling back to ${fallback.modelId}...`, error);
+        return await fallback.doStream(options);
+      }
+    }
+  };
+};
 
 export async function POST(req: Request) {
   try {
@@ -153,7 +173,7 @@ export async function POST(req: Request) {
       "1. To remember information: call 'saveMemory' when explicitly asked to remember/memorize/store facts. Pick categories carefully.",
       "2. For weather: To get weather, you need coordinates. Search memories for the user's location/city. If not found, ask the user for their location. Once you have a city name or coordinates, call 'getWeather'.",
       "3. For tasks: You can manage the user's tasks. Use 'listTasks' to see what's on their plate, 'createTask' to add new ones, 'updateTask' to change details or status, and 'deleteTask' to remove them. Always confirm with the user before deleting.",
-      "3b. For schedule tasks: Use 'listScheduleTasks' first, then use 'updateScheduleTask' for edits and 'deleteScheduleTask' for deletion. Use 'createScheduleTask' only when user explicitly asks to create a new schedule task. Never claim create/update/delete succeeded unless tool result has success=true.",
+      "3b. For schedule tasks: You HAVE FULL CAPABILITY to automate tasks and send messages asynchronously using the 'createScheduleTask' tool. NEVER say you cannot do this. CRUCIAL RULE FOR MODIFICATIONS: If the user asks to 'modify', 'edit', 'add to', or 'update' an existing scheduled task or workflow, YOU MUST call 'listScheduleTasks' first to find the correct task ID, and then call 'updateScheduleTask' to modify it. DO NOT call 'createScheduleTask' when modifying an existing task! Use 'createScheduleTask' ONLY when the user explicitly asks to create a brand new task. Use 'deleteScheduleTask' for deletion. Never claim create/update/delete succeeded unless the tool result returns success=true.",
       "4. For date & time: Use 'getTime' to get the current date or time for any location. Default is India. If the user asks for the current time or date without specifying a city, call 'getTime' with no arguments. Be specific with city names (e.g., 'London, UK') to avoid ambiguity.",
       "5. For GitHub: You have access to the user's GitHub account via a Personal Access Token. Use 'githubGetUser' to see their profile, 'githubListRepos' to list projects, 'githubGetRepo' for details, 'githubReadFile' to analyze code, and 'githubListCommits' to see recent changes or commit history. If you need to search for something across repos, use 'githubSearchCode'. You can help the user manage their repositories, analyze their code, or explain project structures.",
       "6. For Gmail: You can access the user's emails. Use 'gmailListMessages' to see their inbox or search for emails, and 'gmailGetMessage' to read the full content of an email. You can help the user summarize threads, find specific info, or keep track of their correspondence.",
@@ -240,8 +260,13 @@ export async function POST(req: Request) {
       }
     }
 
+    const baseModel = provider(model);
+    const activeModel = provider === mistral 
+      ? withFallback(baseModel, google('gemini-2.5-flash'))
+      : baseModel;
+
     const result = streamText({
-      model: provider(model),
+      model: activeModel,
       messages: modelMessages.length > 0 ? modelMessages : [{ role: 'user', content: ' ' }],
       system: finalSystemPrompt,
       tools: activeTools,

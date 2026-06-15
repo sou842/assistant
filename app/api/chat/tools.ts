@@ -108,12 +108,6 @@ const stepSchema = z.discriminatedUnion('type', [
       body: z.string().optional().describe("JSON string body for POST/PUT. Use templates like {{context.step1.key}}"),
     })
   }),
-  baseStepSchema.extend({
-    type: z.literal('run_script'),
-    config: z.object({
-      code: z.string().describe("JavaScript code to execute. IMPORTANT: You MUST use the 'return' keyword to output data. Example: `const price = context.step1.data; return { price };`")
-    })
-  }),
 ]);
 
 export const tools = {
@@ -382,7 +376,7 @@ export const tools = {
   }),
 
   createScheduleTask: tool({
-    description: "Create a schedule task (one-time or recurring) containing multiple steps. Break down complex requests into steps. Use 'http_request' to hit external APIs, 'run_script' to parse their data, and 'send_email' to notify the user. IMPORTANT: Context variables are passed via {{context.stepId.key}}. You MUST use the 'condition' field on a step if you want to skip it dynamically. CRITICAL: DO NOT use setTimeout or artificial delays in scripts; timing is handled natively via 'intervalMinutes' or 'runAt'.",
+    description: "Create a schedule task (one-time or recurring) containing multiple steps. Break down complex requests into steps. Use 'http_request' to hit external APIs and 'send_email' or 'send_whatsapp' to notify the user. Use 'fetch_weather' to get weather data, and 'ai_prompt' to analyze text/context using an AI. IMPORTANT: Context variables are passed via {{context.stepId.key}}. You MUST use the 'condition' field on a step if you want to skip it dynamically.",
     inputSchema: z.object({
       title: z.string().min(1).max(140),
       steps: z.array(stepSchema).min(1),

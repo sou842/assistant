@@ -64,8 +64,63 @@ User input: ${prompt}`,
       id: s.id || uuidv4(),
     }));
 
+    const validationError = validateWorkflowSteps(data.steps);
+    if (validationError) {
+      return NextResponse.json({ success: false, error: validationError }, { status: 422 });
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+function validateWorkflowSteps(steps: any[]): string | null {
+  const stepIds = new Set<string>();
+  
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    
+    if (step.condition) {
+      const refs = findContextReferences(step.condition);
+      for (const ref of refs) {
+        if (!stepIds.has(ref)) {
+          return `Step "${step.id}" references an invalid or future step ID "${ref}" in its condition.`;
+        }
+      }
+    }
+    
+    const configStr = JSON.stringify(step.config || {});
+    const templateRefs = findTemplateReferences(configStr);
+    for (const ref of templateRefs) {
+      if (!stepIds.has(ref)) {
+        return `Step "${step.id}" references an invalid or future step ID "${ref}" in its config.`;
+      }
+    }
+    
+    stepIds.add(step.id);
+  }
+  
+  return null;
+}
+
+function findContextReferences(expr: string): string[] {
+  const refs: string[] = [];
+  const regex = /context\.([a-zA-Z0-9_-]+)/g;
+  let match;
+  while ((match = regex.exec(expr)) !== null) {
+    refs.push(match[1]);
+  }
+  return refs;
+}
+
+function findTemplateReferences(str: string): string[] {
+  const refs: string[] = [];
+  const regex = /\{\{\s*(?:context\.)?([a-zA-Z0-9_-]+)(?:\.[^}]+)?\s*\}\}/g;
+  let match;
+  while ((match = regex.exec(str)) !== null) {
+    refs.push(match[1]);
+  }
+  return refs;
+}
+
