@@ -40,9 +40,13 @@ export interface FlowCanvasHandle {
 interface FlowEditorProps {
   onExecutingChange?: (isExecuting: boolean) => void;
   initialTemplateId?: string | null;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+  readOnly?: boolean;
+  onSaveNodeConfig?: (nodeId: string, newConfig: any) => void;
 }
 
-const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingChange, initialTemplateId }, ref) => {
+const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingChange, initialTemplateId, initialNodes, initialEdges, readOnly, onSaveNodeConfig }, ref) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -53,12 +57,15 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
   const { isLoading: isRegistryLoading } = useToolRegistry();
 
   useEffect(() => {
-    if (initialTemplateId && PREBUILT_TEMPLATES[initialTemplateId]) {
+    if (initialNodes && initialEdges) {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+    } else if (initialTemplateId && PREBUILT_TEMPLATES[initialTemplateId]) {
       const template = PREBUILT_TEMPLATES[initialTemplateId];
       setNodes(template.nodes);
       setEdges(template.edges);
     }
-  }, [initialTemplateId, setNodes, setEdges]);
+  }, [initialTemplateId, initialNodes, initialEdges, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
@@ -115,7 +122,10 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
         return n;
       })
     );
-  }, [setNodes]);
+    if (onSaveNodeConfig) {
+      onSaveNodeConfig(nodeId, config);
+    }
+  }, [setNodes, onSaveNodeConfig]);
 
   const updateNodeState: UpdateNodeStateCallback = useCallback((nodeId, stateUpdate) => {
     setNodes((nds) =>
@@ -168,20 +178,23 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden selection:bg-primary/30">
-      <Sidebar />
+      {!readOnly && <Sidebar />}
       
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
+          onNodesChange={readOnly ? undefined : onNodesChange}
+          onEdgesChange={readOnly ? undefined : onEdgesChange}
+          onConnect={readOnly ? undefined : onConnect}
+          onDrop={readOnly ? undefined : onDrop}
+          onDragOver={readOnly ? undefined : onDragOver}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
+          nodesConnectable={!readOnly}
+          nodesDraggable={!readOnly}
+          elementsSelectable={true}
           fitView
           className="bg-dot-pattern"
           defaultEdgeOptions={{ 

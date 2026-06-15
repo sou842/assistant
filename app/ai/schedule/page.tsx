@@ -12,12 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TooltipContent, Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { useRouter } from "next/navigation";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function SchedulePage() {
-  const { setMobileSidebarOpen } = useAI();
+  const router = useRouter();
   const [prompt, setPrompt] = React.useState("");
   const [isCreating, setIsCreating] = React.useState(false);
 
@@ -75,7 +78,8 @@ export default function SchedulePage() {
     if (!json.success) throw new Error(json.error || "Update failed");
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!confirm("Delete this schedule task?")) return;
     try {
       await fetch(`/api/schedule/tasks/${id}`, { method: "DELETE" });
@@ -85,7 +89,8 @@ export default function SchedulePage() {
     }
   };
 
-  const handleRunNow = async (id: string) => {
+  const handleRunNow = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       const res = await fetch(`/api/schedule/tasks/${id}/run`, { method: "POST" });
       const json = await res.json();
@@ -100,7 +105,8 @@ export default function SchedulePage() {
     }
   };
 
-  const togglePause = async (task: any) => {
+  const togglePause = async (task: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await updateTask(task._id, { status: task.status === "paused" ? "active" : "paused" });
       refresh();
@@ -166,7 +172,11 @@ export default function SchedulePage() {
                 <div className="p-6 text-sm text-app-text-ghost">No schedule tasks yet.</div>
               ) : (
                 tasks.map((task: any) => (
-                  <div key={task._id} className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3">
+                  <div 
+                    key={task._id} 
+                    className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3 hover:bg-app-surface-glass-strong cursor-pointer transition-colors"
+                    onClick={() => router.push(`/ai/schedule/${task._id}`)}
+                  >
                     <div className="col-span-4 min-w-0">
                       <p className="truncate text-sm text-app-text-primary">{task.title}</p>
                       <div className="flex flex-wrap items-center gap-1 mt-1">
@@ -195,25 +205,27 @@ export default function SchedulePage() {
                         {task.status}
                       </Badge>
                       {task.status === "failed" && task.lastError && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <AlertCircle className="size-4 text-red-400 cursor-help shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs bg-red-950 border border-red-800 text-red-100 p-2 rounded shadow-lg">
-                            <p className="text-xs font-semibold">Last Error:</p>
-                            <p className="text-[11px] font-mono leading-tight">{task.lastError}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertCircle className="size-4 text-red-400 cursor-help shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs bg-red-950 border border-red-800 text-red-100 p-2 rounded shadow-lg">
+                              <p className="text-xs font-semibold">Last Error:</p>
+                              <p className="text-[11px] font-mono leading-tight">{task.lastError}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       )}
                     </div>
                     <div className="col-span-3 flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={() => handleRunNow(task._id)}>
+                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={(e) => handleRunNow(task._id, e)}>
                         <Zap className="size-3.5" /> Run
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={() => togglePause(task)}>
+                      <Button size="sm" variant="outline" className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass" onClick={(e) => togglePause(task, e)}>
                         {task.status === "paused" ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 rounded-full border-red-400/30 text-red-300" onClick={() => handleDelete(task._id)}>
+                      <Button size="sm" variant="outline" className="h-8 rounded-full border-red-400/30 text-red-300 hover:bg-red-400/10" onClick={(e) => handleDelete(task._id, e)}>
                         <Trash2 className="size-3.5" />
                       </Button>
                     </div>

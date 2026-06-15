@@ -73,3 +73,25 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
+    const { id } = await params;
+    const task = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
+    
+    if (!task) {
+      return NextResponse.json({ success: false, error: 'Schedule task not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: task });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}

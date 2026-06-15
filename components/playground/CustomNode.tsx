@@ -15,21 +15,21 @@ export type CustomNodeData = {
 
 export function CustomNode({ data, selected }: NodeProps<Node<CustomNodeData>>) {
   const { getTool } = useToolRegistry();
-  const tool = getTool(data.toolId as string);
   const state = data.state;
+  const tool = getTool(data.toolId as string) || {
+    id: data.toolId as string,
+    name: (data.toolId as string).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    category: "Schedule Action",
+    icon: "Activity",
+    inputs: [{ name: 'in', type: 'any', isConnection: true }],
+    outputs: [{ name: 'out', type: 'any' }],
+    execute: async () => ({})
+  } as any;
 
   const Icon = useMemo(() => {
     if (!tool) return LucideIcons.Box;
     return (LucideIcons as any)[tool.icon] || LucideIcons.Box;
   }, [tool]);
-
-  if (!tool) {
-    return (
-      <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-xl shadow-lg backdrop-blur-md">
-        Unknown tool: {data.toolId}
-      </div>
-    );
-  }
 
   // Filter handles
   const inputHandles = tool.inputs.filter((i) => i.isConnection);
