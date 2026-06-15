@@ -51,7 +51,7 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const { screenToFlowPosition } = useReactFlow();
-  
+
   const [isExecuting, setIsExecuting] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const { isLoading: isRegistryLoading } = useToolRegistry();
@@ -93,8 +93,8 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
         id: getId(),
         type: 'customTool',
         position,
-        data: { 
-          toolId, 
+        data: {
+          toolId,
           config: {},
           state: { status: 'idle' } as NodeExecutionState
         },
@@ -131,12 +131,12 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
     setNodes((nds) =>
       nds.map((n) => {
         if (n.id === nodeId) {
-          return { 
-            ...n, 
-            data: { 
-              ...n.data, 
-              state: { ...(n.data.state as NodeExecutionState), ...stateUpdate } 
-            } 
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              state: { ...(n.data.state as NodeExecutionState), ...stateUpdate }
+            }
           };
         }
         return n;
@@ -179,7 +179,7 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
   return (
     <div className="flex h-full w-full bg-background overflow-hidden selection:bg-primary/30">
       {!readOnly && <Sidebar />}
-      
+
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
@@ -197,9 +197,9 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
           elementsSelectable={true}
           fitView
           className="bg-dot-pattern"
-          defaultEdgeOptions={{ 
-             style: { strokeWidth: 3 },
-             className: "stroke-primary/50 hover:stroke-primary transition-colors"
+          defaultEdgeOptions={{
+            style: { strokeWidth: 3 },
+            className: "stroke-primary/50 hover:stroke-primary transition-colors"
           }}
         >
           <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="opacity-40" />
@@ -207,10 +207,12 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
         </ReactFlow>
       </div>
 
-      <ConfigPanel 
-        selectedNode={selectedNode} 
-        updateNodeConfig={updateNodeConfig} 
-      />
+      {selectedNode &&
+        <ConfigPanel
+          selectedNode={selectedNode}
+          updateNodeConfig={updateNodeConfig}
+        />
+      }
     </div>
   );
 });

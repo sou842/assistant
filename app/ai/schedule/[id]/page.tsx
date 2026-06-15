@@ -1,9 +1,9 @@
 "use client";
 
-import React, { use, useMemo } from "react";
+import React, { use, useMemo, useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
-import { ArrowLeft, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, AlertCircle, Bot, Forward } from "lucide-react";
 import { PageHeader } from "../../_components/page-header";
 import FlowCanvas from "@/components/playground/FlowCanvas";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,11 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ScheduleDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: result, isLoading } = useSWR(`/api/schedule/tasks/${id}`, fetcher);
+  const { data: result, isLoading, mutate } = useSWR(`/api/schedule/tasks/${id}`, fetcher);
   const task = result?.data;
+  
+  const [globalPrompt, setGlobalPrompt] = useState("");
+  const [isGlobalGenerating, setIsGlobalGenerating] = useState(false);
 
   const { initialNodes, initialEdges } = useMemo(() => {
     if (!task?.steps || task.steps.length === 0) {
@@ -85,6 +88,48 @@ export default function ScheduleDetailsPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const handleGlobalAI = async () => {
+    if (!globalPrompt.trim() || !task) return;
+    
+    setIsGlobalGenerating(true);
+    try {
+      const res = await fetch("/api/workflow/ai-global-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: globalPrompt,
+          currentSteps: task.steps
+        })
+      });
+      
+      const json = await res.json();
+      if (!json.success) {
+        toast.error(json.error || "Failed to generate global config");
+        return;
+      }
+
+      // Save the updated steps back to the DB
+      const saveRes = await fetch(`/api/schedule/tasks/${task._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steps: json.steps })
+      });
+      
+      const saveJson = await saveRes.json();
+      if (saveJson.success) {
+        toast.success("Workflow globally updated by AI");
+        setGlobalPrompt("");
+        mutate(); // Refresh the page data
+      } else {
+        toast.error("Failed to save global changes");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong");
+    } finally {
+      setIsGlobalGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-app-canvas">
@@ -109,6 +154,7 @@ export default function ScheduleDetailsPage({ params }: { params: Promise<{ id: 
     <div className="flex h-screen flex-col bg-app-canvas overflow-hidden">
       <PageHeader
         icon={<Calendar />}
+        backHref="/ai/schedule"
         title={task.title}
         subtitle={task.scheduleType === "one_time" ? "One-time Execution" : `Recurring every ${task.intervalMinutes} minutes`}
       >
@@ -124,12 +170,6 @@ export default function ScheduleDetailsPage({ params }: { params: Promise<{ id: 
           >
             {task.status}
           </Badge>
-          <Link href="/ai/schedule">
-            <Button variant="outline" size="sm" className="rounded-full">
-              <ArrowLeft className="size-4 mr-1.5" />
-              Back
-            </Button>
-          </Link>
         </div>
       </PageHeader>
 
@@ -174,6 +214,33 @@ export default function ScheduleDetailsPage({ params }: { params: Promise<{ id: 
           readOnly={true}
           onSaveNodeConfig={handleSaveNodeConfig}
         />
+
+        {/* Global AI Assistant Floating Bar */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
+          <div className="bg-background/80 backdrop-blur-xl border border-primary/20 p-2 pl-1.5 rounded-full shadow-2xl flex items-center gap-3 relative overflow-hidden transition-all focus-within:border-primary/50 focus-within:shadow-primary/20 focus-within:ring-4 focus-within:ring-primary/10">
+            <div className="flex items-center justify-center bg-primary/10 w-10 h-10 rounded-full ml-1 shrink-0">
+              <Bot className="size-5 text-primary" />
+            </div>
+            <input
+              type="text"
+              placeholder="Ask AI to modify the overall workflow"
+              className="flex-1 bg-transparent border-none text-sm focus:outline-none focus:ring-0 placeholder:text-muted-foreground/60 h-10"
+              value={globalPrompt}
+              onChange={(e) => setGlobalPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleGlobalAI();
+              }}
+              disabled={isGlobalGenerating}
+            />
+            <Button
+              onClick={handleGlobalAI}
+              disabled={isGlobalGenerating || !globalPrompt.trim()}
+              className="shrink-0 rounded-full p-2 h-9 w-9"
+            >
+              {isGlobalGenerating ? <Loader2 className="size-4 animate-spin" /> : <Forward className="size-5" />}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
