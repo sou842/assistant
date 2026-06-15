@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -64,6 +64,14 @@ const PREBUILT_WORKFLOWS = [
 
 export default function PlaygroundTemplatesPage() {
   const [query, setQuery] = useState("");
+  const [savedWorkflows, setSavedWorkflows] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('ai_workflows') || '[]');
+      setSavedWorkflows(existing);
+    } catch (e) {}
+  }, []);
 
   const filteredWorkflows = useMemo(() => {
     return PREBUILT_WORKFLOWS.filter(
@@ -192,6 +200,44 @@ export default function PlaygroundTemplatesPage() {
               );
             })}
           </div>
+
+          {savedWorkflows.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-xl font-bold tracking-tight mb-4">My Workflows</h2>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {savedWorkflows.filter(w => w.name.toLowerCase().includes(query.toLowerCase())).map((workflow) => (
+                  <Link
+                    key={workflow.id}
+                    href={`/ai/playground/create?template=${workflow.id}`}
+                    className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all hover:border-white/20 hover:bg-white/[0.05]"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-black">
+                        <Workflow className="size-4 text-white" />
+                      </div>
+
+                      <ArrowRight className="size-4 text-white/30 transition-all group-hover:translate-x-1 group-hover:text-white/70" />
+                    </div>
+
+                    <h3 className="mt-4 text-base font-semibold">
+                      {workflow.name}
+                    </h3>
+
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-white/55">
+                      Custom workflow saved on {new Date(workflow.createdAt).toLocaleDateString()}
+                    </p>
+
+                    {/* FLOW */}
+                    <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                      <div className="rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white/70">
+                        {workflow.nodes?.length || 0} Nodes
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

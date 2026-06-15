@@ -10,21 +10,54 @@ export async function POST(req: Request) {
       try {
         const fetchRes = await fetch(new URL('/api/chat', req.url).toString(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'cookie': req.headers.get('cookie') || ''
+          },
           body: JSON.stringify({
             messages: [
-              ...(inputs.systemPrompt ? [{ role: 'system', content: inputs.systemPrompt }] : []),
-              { role: 'user', content: inputs.input }
+              ...(inputs.systemPrompt ? [{ id: Math.random().toString(36).slice(2), role: 'system', content: inputs.systemPrompt }] : []),
+              { id: Math.random().toString(36).slice(2), role: 'user', content: inputs.input || '' }
             ]
           }),
         });
         
         if (!fetchRes.ok) {
-           return NextResponse.json({ error: 'Failed to fetch AI response' }, { status: 500 });
+           const errText = await fetchRes.text();
+           return NextResponse.json({ error: `AI Error: ${fetchRes.status} ${errText}` }, { status: 500 });
         }
 
         const text = await fetchRes.text(); 
-        const cleanText = text.replace(/0:"/g, '').replace(/"\n/g, '').replace(/\\n/g, '\n');
+        console.log('Raw API Response text length:', text.length);
+        console.log('Raw API Response (first 100 chars):', text.substring(0, 100));
+        
+        const chunks = text.split('\n');
+        let cleanText = '';
+        for (const chunk of chunks) {
+          const trimmed = chunk.trim();
+          if (trimmed.startsWith('data: ')) {
+            const dataStr = trimmed.substring(6).trim();
+            if (dataStr === '[DONE]') continue;
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.type === 'text-delta' && data.delta) {
+                cleanText += data.delta;
+              }
+            } catch(e) {}
+          } else if (trimmed.startsWith('0:')) {
+            try {
+              cleanText += JSON.parse(trimmed.substring(2));
+            } catch(e) {}
+          }
+        }
+        
+        console.log('Parsed Clean Text length:', cleanText.length);
+        console.log('Parsed Clean Text (first 100 chars):', cleanText.substring(0, 100));
+
+        // Fallback: if we couldn't parse it with `0:`, maybe it's not encoded that way
+        if (cleanText === '' && text.length > 0) {
+           cleanText = text; // Just return raw text to see it in UI
+        }
 
         return NextResponse.json({ result: { response: cleanText } });
       } catch (e: any) {

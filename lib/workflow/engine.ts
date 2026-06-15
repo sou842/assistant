@@ -56,7 +56,12 @@ export async function executeWorkflow(
     nodes.forEach((n) => updateNodeState(n.id, { status: 'pending', result: undefined, error: undefined }));
 
     // 2. Get order
-    const order = getExecutionOrder(nodes, edges);
+    let order: string[] = [];
+    try {
+      order = getExecutionOrder(nodes, edges);
+    } catch (err: any) {
+      throw new Error(`Invalid workflow configuration: ${err.message}`);
+    }
 
     // 3. Execution Context
     const nodeResults = new Map<string, Record<string, any>>();
@@ -105,7 +110,13 @@ export async function executeWorkflow(
             })
           });
           
-          const data = await res.json();
+          let data;
+          try {
+            data = await res.json();
+          } catch (e) {
+            throw new Error('Failed to parse backend response');
+          }
+          
           if (!res.ok || data.error) {
             throw new Error(data.error || 'Backend execution failed');
           }
@@ -115,13 +126,13 @@ export async function executeWorkflow(
         nodeResults.set(nodeId, result);
         updateNodeState(nodeId, { status: 'success', result });
       } catch (err: any) {
-        updateNodeState(nodeId, { status: 'error', error: err.message });
-        throw new Error(`Execution failed at node ${nodeId}: ${err.message}`);
+        const errMsg = err.message || 'Execution failed';
+        updateNodeState(nodeId, { status: 'error', error: errMsg });
+        throw new Error(`Execution failed at node ${node.data.toolId || nodeId}: ${errMsg}`);
       }
     }
   } catch (err: any) {
     console.error('Workflow execution aborted:', err);
-    // Don't swallow the error, the caller might want it
-    throw err;
+    throw err; // Let caller handle it for UI toast
   }
 }

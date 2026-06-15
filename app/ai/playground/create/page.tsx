@@ -22,6 +22,15 @@ function PlaygroundContent() {
       >
         <div className="flex items-center justify-end gap-3 w-full">
           <button
+            onClick={() => {
+              const name = window.prompt("Enter workflow name:");
+              if (name) canvasRef.current?.saveWorkflow(name);
+            }}
+            className="flex h-9 items-center gap-2 rounded-full bg-white/10 px-4 text-xs font-semibold text-white transition hover:bg-white/20"
+          >
+            Save Workflow
+          </button>
+          <button
             onClick={() => canvasRef.current?.runWorkflow()}
             disabled={isExecuting}
             className="flex h-9 items-center gap-2 rounded-full bg-app-primary px-4 text-xs font-semibold text-app-primary-foreground shadow-2xl transition hover:bg-app-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"

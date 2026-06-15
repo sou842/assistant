@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { nanoid } from 'nanoid';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { CustomNode } from './CustomNode';
 import { Sidebar } from './Sidebar';
@@ -34,6 +35,7 @@ const getId = () => `dndnode_${id++}_${nanoid(4)}`;
 
 export interface FlowCanvasHandle {
   runWorkflow: () => Promise<void>;
+  saveWorkflow: (name: string) => void;
   hasNodes: boolean;
 }
 
@@ -64,8 +66,32 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
       const template = PREBUILT_TEMPLATES[initialTemplateId];
       setNodes(template.nodes);
       setEdges(template.edges);
+    } else if (initialTemplateId?.startsWith('workflow_')) {
+      const existing = JSON.parse(localStorage.getItem('ai_workflows') || '[]');
+      const saved = existing.find((w: any) => w.id === initialTemplateId);
+      if (saved) {
+        setNodes(saved.nodes || []);
+        setEdges(saved.edges || []);
+      }
+    } else if (!initialTemplateId) {
+      try {
+        const draft = JSON.parse(localStorage.getItem('ai_workflow_draft') || 'null');
+        if (draft && draft.nodes) {
+          setNodes(draft.nodes);
+          setEdges(draft.edges || []);
+        }
+      } catch (e) {}
     }
   }, [initialTemplateId, initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (nodes.length === 0 && edges.length === 0) return;
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('ai_workflow_draft', JSON.stringify({ nodes, edges }));
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges]);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
@@ -148,18 +174,37 @@ const FlowEditor = forwardRef<FlowCanvasHandle, FlowEditorProps>(({ onExecutingC
     if (isExecuting) return;
     setIsExecuting(true);
     onExecutingChange?.(true);
+    toast.info('Starting workflow execution...');
     try {
       await executeWorkflow(nodes, edges, updateNodeState);
-    } catch (error) {
+      toast.success('Workflow executed successfully!');
+    } catch (error: any) {
       console.error(error);
+      toast.error(`Workflow failed: ${error.message}`);
     } finally {
       setIsExecuting(false);
       onExecutingChange?.(false);
     }
   };
 
+  const handleSave = (name: string) => {
+    const workflow = {
+      id: `workflow_${nanoid(8)}`,
+      name,
+      createdAt: new Date().toISOString(),
+      nodes,
+      edges,
+    };
+    
+    const existing = JSON.parse(localStorage.getItem('ai_workflows') || '[]');
+    existing.push(workflow);
+    localStorage.setItem('ai_workflows', JSON.stringify(existing));
+    toast.success(`Workflow "${name}" saved!`);
+  };
+
   useImperativeHandle(ref, () => ({
     runWorkflow: handleRun,
+    saveWorkflow: handleSave,
     hasNodes: nodes.length > 0,
   }));
 

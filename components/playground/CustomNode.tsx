@@ -1,6 +1,6 @@
 'use client';
 
-import { type Node, Handle, Position, NodeProps } from '@xyflow/react';
+import { type Node, Handle, Position, NodeProps, useReactFlow } from '@xyflow/react';
 import { useToolRegistry } from '@/lib/workflow/registry';
 import { NodeExecutionState } from '@/lib/workflow/types';
 import * as LucideIcons from 'lucide-react';
@@ -13,8 +13,9 @@ export type CustomNodeData = {
   state?: NodeExecutionState;
 };
 
-export function CustomNode({ data, selected }: NodeProps<Node<CustomNodeData>>) {
+export function CustomNode({ id, data, selected }: NodeProps<Node<CustomNodeData>>) {
   const { getTool } = useToolRegistry();
+  const { setNodes, setEdges } = useReactFlow();
   const state = data.state;
   const tool = getTool(data.toolId as string) || {
     id: data.toolId as string,
@@ -31,23 +32,29 @@ export function CustomNode({ data, selected }: NodeProps<Node<CustomNodeData>>) 
     return (LucideIcons as any)[tool.icon] || LucideIcons.Box;
   }, [tool]);
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+  };
+
   // Filter handles
   const inputHandles = tool.inputs.filter((i) => i.isConnection);
   const outputHandles = tool.outputs;
 
   const statusColor = 
-    state?.status === 'running' ? 'border-blue-500 ring-2 ring-blue-500/50' :
-    state?.status === 'success' ? 'border-green-500' :
-    state?.status === 'error' ? 'border-red-500 ring-2 ring-red-500/50' :
+    state?.status === 'running' ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-blue-500/20' :
+    state?.status === 'success' ? 'border-green-500 shadow-green-500/20' :
+    state?.status === 'error' ? 'border-red-500 ring-2 ring-red-500/50 shadow-red-500/20' :
     selected ? 'border-primary ring-2 ring-primary/20' : 'border-border';
 
   return (
     <div className={cn(
-      "w-72 bg-background/80 backdrop-blur-xl border rounded-2xl shadow-xl transition-all duration-300",
+      "w-72 bg-background/80 backdrop-blur-xl border rounded-2xl shadow-xl transition-all duration-300 group",
       statusColor
     )}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border/50 flex items-center gap-3 bg-muted/30 rounded-t-2xl">
+      <div className="px-4 py-3 border-b border-border/50 flex items-center gap-3 bg-muted/30 rounded-t-2xl relative">
         <div className="p-2 bg-primary/10 rounded-lg text-primary">
           <Icon className="w-5 h-5" />
         </div>
@@ -57,10 +64,19 @@ export function CustomNode({ data, selected }: NodeProps<Node<CustomNodeData>>) 
         </div>
         
         {/* Status Indicator */}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           {state?.status === 'running' && <LucideIcons.Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
           {state?.status === 'success' && <LucideIcons.CheckCircle2 className="w-4 h-4 text-green-500" />}
           {state?.status === 'error' && <LucideIcons.AlertCircle className="w-4 h-4 text-red-500" />}
+          
+          {/* Delete Button (visible on hover) */}
+          <button 
+            onClick={handleDelete}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-md"
+            title="Delete node"
+          >
+            <LucideIcons.Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
