@@ -9,6 +9,33 @@ import {
 } from "@tanstack/react-table";
 import { Plus, Trash2 } from "lucide-react";
 
+const isImageUrl = (url: string, colName: string) => {
+  if (typeof url !== "string" || !url.trim().startsWith("http")) return false;
+  const trimmed = url.trim();
+  
+  let isUrl = false;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+    isUrl = parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+
+  if (!isUrl) return false;
+
+  const lowerCol = colName.toLowerCase();
+  if (lowerCol.includes("image") || lowerCol.includes("thumbnail") || lowerCol.includes("photo") || lowerCol.includes("avatar") || lowerCol.includes("logo") || lowerCol.includes("picture")) {
+    return true;
+  }
+
+  const path = parsed.pathname.toLowerCase();
+  if (/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i.test(path)) return true;
+  if (parsed.hostname.includes("unsplash.com") || parsed.hostname.includes("picsum.photos")) return true;
+
+  return false;
+};
+
 interface SpreadsheetEditorProps {
   initialData?: any[];
   onChange: (data: any[]) => void;
@@ -94,8 +121,23 @@ export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: S
         };
 
         if (readOnly) {
+          const isImage = isImageUrl(value, colKey);
+          
+          if (isImage) {
+            return (
+              <div className="w-full bg-transparent border-none outline-none p-3 flex justify-center group relative">
+                <a href={value.trim()} target="_blank" rel="noopener noreferrer" className="block w-full h-22 relative rounded-md overflow-hidden bg-app-surface-glass transition-all duration-300">
+                  <img src={value.trim()} alt="Broken Image" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                    <span className="text-white text-xs font-medium bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-md">View Full</span>
+                  </div>
+                </a>
+              </div>
+            );
+          }
+
           return (
-            <div className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-2">
+            <div className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-3 pb-1 hover:pb-3 leading-relaxed whitespace-pre-wrap line-clamp-3 hover:line-clamp-none transition-all max-h-64 overflow-y-auto">
               {value}
             </div>
           );
@@ -190,7 +232,7 @@ export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: S
                   </td>
                 )}
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-0 border-r border-app-border-default last:border-r-0">
+                  <td key={cell.id} className="p-0 border-r border-app-border-default last:border-r-0 align-top min-w-[200px] max-w-[500px] break-words">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
