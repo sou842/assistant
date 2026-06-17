@@ -137,7 +137,7 @@ export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: S
           }
 
           return (
-            <div className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-3 pb-1 hover:pb-3 leading-relaxed whitespace-pre-wrap line-clamp-3 hover:line-clamp-none transition-all max-h-64 overflow-y-auto">
+            <div className="w-full bg-transparent border-none outline-none text-sm text-app-text-secondary p-3 pb-1 hover:pb-3 leading-relaxed whitespace-pre-wrap line-clamp-3 hover:line-clamp-none transition-all max-h-full overflow-y-auto">
               {value}
             </div>
           );
