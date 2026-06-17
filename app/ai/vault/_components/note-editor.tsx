@@ -8,9 +8,10 @@ interface NoteEditorProps {
   initialData?: any;
   onChange: (data: any) => void;
   readOnly?: boolean;
+  compact?: boolean;
 }
 
-export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEditorProps) {
+export function NoteEditor({ initialData, onChange, readOnly = false, compact = false }: NoteEditorProps) {
   const editorRef = useRef<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -363,7 +364,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false }: NoteEdit
   }, [readOnly, isReady]);
 
   return (
-    <div className="w-full h-full p-8 max-w-6xl mx-auto pb-32">
+    <div className={compact ? "w-full h-full min-h-[150px]" : "w-full h-full p-8 max-w-6xl mx-auto pb-32"}>
       <div
         id="editorjs-instance"
         ref={containerRef}

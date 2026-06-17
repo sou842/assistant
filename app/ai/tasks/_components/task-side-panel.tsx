@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { NoteEditor } from "@/app/ai/vault/_components/note-editor";
 import {
   Select,
   SelectContent,
@@ -32,12 +33,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Delete, Loader2, Trash2, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
-  description: z.string().max(1000).optional(),
+  description: z.string().max(100000).optional(),
   status: z.enum(["todo", "in-progress", "done", "backlog"]),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   dueDate: z.date().optional().nullable(),
@@ -55,6 +56,7 @@ interface TaskSidePanelProps {
 
 export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: TaskSidePanelProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -114,31 +116,54 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-lg bg-app-canvas/90 backdrop-blur-3xl border-app-border-default text-app-text-primary p-0 flex flex-col">
-        <div className="p-4 border-b border-app-border-subtle">
-          <SheetHeader className="p-0 gap-1">
-            <SheetTitle className="text-xl font-semibold text-app-text-primary">
-              {task?._id ? "Edit Task" : "Add Task"}
-            </SheetTitle>
-            <SheetDescription className="text-app-text-muted">
-              {task?._id ? "Update the details of your task." : "Create a new task to track your progress."}
-            </SheetDescription>
+      <SheetContent
+        hideCloseButton
+        className={cn(
+          "bg-app-canvas/95 backdrop-blur-xl border-l border-app-border-default text-app-text-primary p-0 flex flex-col shadow-2xl transition-all duration-300",
+          isExpanded ? "sm:max-w-4xl w-[90vw]" : "sm:max-w-lg"
+        )}
+      >
+        {/* Header Section */}
+        <div className="px-2 py-2 sm:px-4 border-b border-app-border-subtle bg-white/5 pr-14">
+          <SheetHeader className="p-0 space-y-1.5 flex flex-row justify-between items-center">
+            <div className="flex flex-col justify-between gap-1">
+              <SheetTitle className="text-sm font-semibold text-app-text-primary tracking-tight">
+                {task?._id ? "Edit Task" : "Add Task"}
+              </SheetTitle>
+              <SheetDescription className="text-xs text-app-text-muted">
+                {task?._id
+                  ? "Update the details of your task."
+                  : "Create a new task to track your progress."}
+              </SheetDescription>
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-app-text-muted hover:text-app-text-primary h-8 w-8 rounded-full"
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
           </SheetHeader>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-10">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8 custom-scrollbar">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-app-text-soft">Title</FormLabel>
+                    <FormLabel className="text-sm font-medium text-app-text-soft">Title</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="What needs to be done?"
-                        className="h-12 rounded bg-app-surface-glass border-app-border-default focus:border-app-border-strong text-app-text-primary text-base"
+                        className="h-11 rounded-full bg-app-surface-glass border-app-border-default focus-visible:ring-1 focus-visible:ring-app-border-strong text-app-text-primary text-base transition-all shadow-sm"
                         {...field}
                       />
                     </FormControl>
@@ -147,38 +172,20 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-app-text-soft">Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Add more context to this task..."
-                        className="bg-app-surface-glass border-app-border-default focus:border-app-border-strong min-h-[140px] text-base resize-none rounded-lg"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
                 <FormField
                   control={form.control}
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-app-text-soft">Status</FormLabel>
+                      <FormLabel className="text-sm font-medium text-app-text-soft">Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full h-11 bg-app-surface-glass border-app-border-default focus:border-app-border-strong rounded-lg">
+                          <SelectTrigger className="w-full h-12 bg-app-surface-glass border-app-border-default focus:ring-1 focus:ring-app-border-strong rounded-full transition-all shadow-sm">
                             <SelectValue placeholder="Status" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary">
+                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary rounded-xl shadow-xl">
                           <SelectItem value="backlog">Backlog</SelectItem>
                           <SelectItem value="todo">To Do</SelectItem>
                           <SelectItem value="in-progress">In Progress</SelectItem>
@@ -195,14 +202,14 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-app-text-soft">Priority</FormLabel>
+                      <FormLabel className="text-sm font-medium text-app-text-soft">Priority</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full h-11 bg-app-surface-glass border-app-border-default focus:border-app-border-strong rounded-lg">
+                          <SelectTrigger className="w-full h-12 bg-app-surface-glass border-app-border-default focus:ring-1 focus:ring-app-border-strong rounded-full transition-all shadow-sm">
                             <SelectValue placeholder="Priority" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary">
+                        <SelectContent className="bg-zinc-900 border-app-border-default text-app-text-primary rounded-xl shadow-xl">
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>
@@ -220,19 +227,19 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-app-text-soft">Due Date</FormLabel>
+                    <FormLabel className="text-sm font-medium text-app-text-soft">Due Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={"outline"}
+                            variant="outline"
                             className={cn(
-                              "w-full h-11 pl-3 text-left font-normal bg-app-surface-glass border-app-border-default hover:bg-app-surface-glass-strong hover:text-app-text-primary rounded-lg",
-                              !field.value && "text-muted-foreground"
+                              "w-full h-11 pl-4 text-left font-normal bg-app-surface-glass dark:border-app-border-default hover:bg-white/5 hover:text-app-text-primary rounded-full transition-all shadow-sm",
+                              !field.value && "text-app-text-muted"
                             )}
                           >
-                            {field.value ? (
-                              format(field.value, "PPP")
+                            {field?.value ? (
+                              format(field?.value, "PPP")
                             ) : (
                               <span>Set a due date</span>
                             )}
@@ -240,18 +247,41 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-zinc-950 border-app-border-default" align="start">
+                      <PopoverContent className="w-auto p-0 bg-zinc-950 border-app-border-default rounded-xl shadow-xl" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
+                          selected={field?.value || undefined}
+                          onSelect={field?.onChange}
                           disabled={(date) =>
                             date < new Date(new Date().setHours(0, 0, 0, 0))
                           }
                           initialFocus
+                          className="p-3"
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-app-text-soft">Description</FormLabel>
+                    <FormControl>
+                      <div className="bg-app-surface-glass border border-app-border-default transition-all duration-200 focus-within:ring-1 focus-within:ring-app-border-strong focus-within:border-app-border-strong rounded-xl overflow-hidden min-h-[200px] text-base relative z-10 px-3 shadow-sm">
+                        <NoteEditor
+                          compact
+                          initialData={field.value}
+                          onChange={(data) => {
+                            field.onChange(typeof data === 'string' ? data : JSON.stringify(data));
+                          }}
+                        />
+                      </div>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -260,27 +290,28 @@ export function TaskSidePanel({ isOpen, onClose, task, onSubmit, onDelete }: Tas
           </Form>
         </div>
 
-        <div className="p-4 border-t border-app-border-subtle bg-white/2 flex flex-col-reverse items-center justify-between gap-4">
-          {task?._id && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full h-12 px-6 rounded-full text-gray-500 bg-transparent border border-app-border-default hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              onClick={handleDelete}
-              disabled={isSubmitting}
-            >
-              Delete
-            </Button>
-          )}
+        {/* Footer Actions */}
+        <div className="px-6 py-4 sm:px-8 border-t border-app-border-subtle bg-app-canvas/80 flex flex-row items-center gap-3">
           <Button
             type="submit"
             disabled={isSubmitting}
             onClick={form.handleSubmit(handleSubmit)}
-            className="w-full px-8 h-12 rounded-full bg-white text-black hover:bg-white/90"
+            className="flex-1 h-11 rounded-full bg-white text-zinc-950 font-medium hover:bg-gray-200 transition-colors shadow-sm"
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {task?._id ? "Save Changes" : "Create Task"}
           </Button>
+          {task?._id && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 px-5 rounded-full bg-transparent border dark:border-app-border-default hover:border-red-500/20 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              onClick={handleDelete}
+              disabled={isSubmitting}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>

@@ -8,6 +8,34 @@ import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+function getTaskPreviewText(description?: string) {
+  if (!description) return "";
+  try {
+    if (description?.trim()?.startsWith("{") || description?.trim()?.startsWith("[")) {
+      const parsed = JSON.parse(description);
+      const blocks = Array.isArray(parsed) ? parsed : parsed.blocks;
+      if (Array.isArray(blocks)) {
+        return blocks
+          ?.filter((b: any) => ["paragraph", "header", "list", "quote"].includes(b.type))
+          ?.map((b: any) => {
+            if (b.type === "paragraph" || b.type === "header" || b.type === "quote") {
+              return b.data?.text || "";
+            } else if (b.type === "list") {
+              return b.data?.items?.map((item: any) => typeof item === "string" ? item : item.content || "").join(" ") || "";
+            }
+            return "";
+          })
+          ?.join(" ")
+          ?.replace(/<[^>]*>?/gm, "") // Strip HTML tags
+          ?.trim();
+      }
+    }
+  } catch (e) {
+    // Ignore parse error, return as-is
+  }
+  return description;
+}
+
 interface TaskCardProps {
   task: any;
   onEdit?: (task: any) => void;
@@ -78,7 +106,7 @@ export function TaskCard({ task, onEdit, isOverlay, isSortable = true }: TaskCar
 
         {task?.description && (
           <p className="text-xs text-app-text-soft line-clamp-2 leading-relaxed">
-            {task.description}
+            {getTaskPreviewText(task.description)}
           </p>
         )}
 
