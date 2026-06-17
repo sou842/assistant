@@ -344,7 +344,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({ sendUsage: true } as any);
   } catch (error) {
     console.error('Chat API Error:', error);
     return new Response('An unexpected error occurred', { status: 500 });
