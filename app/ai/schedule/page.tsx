@@ -133,12 +133,20 @@ export default function SchedulePage() {
           title="Schedule"
           subtitle="Manage recurring and one-time automations"
           actions={
-            <Link href="/ai/schedule/calendar">
-              <Button variant="outline" className="rounded-full border-app-border-default text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
-                <CalendarDays className="size-4" />
-                Calendar View
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/ai/schedule/templates">
+                <Button variant="outline" className="rounded-full border-app-border-default text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
+                  <Bot className="size-4" />
+                  Templates
+                </Button>
+              </Link>
+              <Link href="/ai/schedule/calendar">
+                <Button variant="outline" className="rounded-full border-app-border-default text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
+                  <CalendarDays className="size-4" />
+                  Calendar View
+                </Button>
+              </Link>
+            </div>
           }
         />
 
