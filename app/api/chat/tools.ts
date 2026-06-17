@@ -925,7 +925,7 @@ export const tools = {
   }),
 
   listVaultItems: tool({
-    description: "List all items in the user's Vault. The Vault stores spreadsheets and notes.",
+    description: "List all items in the user's Vault. The Vault stores spreadsheets, tables, sheets, notes, documents, files, galleries, and albums. Use this whenever the user asks about their tables, sheets, files, or vault contents.",
     inputSchema: z.object({
       type: vaultItemTypeSchema.optional().describe('Filter by type (spreadsheet or note)'),
       search: z.string().optional().describe('Search for items with titles or tags matching this query'),
@@ -951,7 +951,7 @@ export const tools = {
   }),
 
   getVaultItem: tool({
-    description: "Get the full content of a specific Vault item (spreadsheet or note) by its ID.",
+    description: "Get the full content of a specific Vault item (spreadsheet, table, sheet, file, or note) by its ID.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Vault item'),
     }),
@@ -971,7 +971,7 @@ export const tools = {
   }),
 
   createVaultItem: tool({
-    description: "Create a new item in the Vault (spreadsheet, note, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
+    description: "Create a new item in the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
     inputSchema: z.object({
       title: z.string().min(1).max(100).describe('Title of the vault item'),
       type: vaultItemTypeSchema.describe('Type: spreadsheet, note, gallery, or album'),
@@ -993,7 +993,7 @@ export const tools = {
   }),
 
   updateVaultItem: tool({
-    description: "Update an existing Vault item (spreadsheet, note, gallery, or album). Use 'getVaultItem' first to get the current content, then send the FULL updated content array/object here. IMPORTANT: Before updating a 'note', you MUST call 'getVaultNoteGuidelines'. Before updating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
+    description: "Update an existing Vault item (spreadsheet, table, sheet, note, file, gallery, or album). Use 'getVaultItem' first to get the current content, then send the FULL updated content array/object here. IMPORTANT: Before updating a 'note', you MUST call 'getVaultNoteGuidelines'. Before updating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Vault item to update'),
       title: z.string().optional().describe('New title'),
@@ -1016,7 +1016,7 @@ export const tools = {
   }),
 
   deleteVaultItem: tool({
-    description: "Delete an item from the Vault. Use with caution.",
+    description: "Delete an item from the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use with caution.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Vault item to delete'),
     }),

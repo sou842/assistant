@@ -202,8 +202,8 @@ export default function SchedulePage() {
             actions={
               <div className="flex items-center gap-2">
                 <Link href="/ai/schedule/calendar">
-                  <Button variant="outline" className="rounded-full border-app-border-default text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary">
-                    <CalendarDays className="size-4 mr-2" />
+                  <Button variant="outline" className="rounded-full border-app-border-default dark:border-app-border-default text-app-text-soft hover:bg-app-surface-glass dark:hover:bg-app-surface-glass hover:text-app-text-primary">
+                    <CalendarDays className="size-4" />
                     Calendar View
                   </Button>
                 </Link>
@@ -268,8 +268,8 @@ export default function SchedulePage() {
               </div>
 
               {/* Tasks Table */}
-              <div className="overflow-hidden rounded-2xl border border-app-border-default bg-app-surface-glass-soft">
-                <div className="grid grid-cols-12 gap-2 border-b border-app-border-default px-4 py-3 text-xs text-app-text-faint">
+              <div className="overflow-x-auto rounded-2xl border border-app-border-default bg-app-surface-glass-soft">
+                <div className="grid grid-cols-12 gap-2 border-b border-app-border-default px-4 py-3 text-xs text-app-text-faint min-w-[1000px] lg:min-w-auto">
                   <div className="col-span-4">Task</div>
                   <div className="col-span-2">Type</div>
                   <div className="col-span-2">Next Run</div>
@@ -281,19 +281,19 @@ export default function SchedulePage() {
                   <div className="p-6 text-sm text-app-text-ghost flex items-center gap-2">
                     <Loader2 className="size-4 animate-spin" /> Loading schedule tasks...
                   </div>
-                ) : filteredTasks.length === 0 ? (
-                  <div className="p-6 text-sm text-app-text-ghost">
+                ) : filteredTasks?.length === 0 ? (
+                  <div className="p-6 text-sm text-app-text-ghost min-w-[1000px] lg:min-w-auto">
                     {prompt?.trim() ? "No schedule tasks match your search." : "No schedule tasks yet."}
                   </div>
                 ) : (
-                  filteredTasks.map((task: Task) => (
+                  filteredTasks?.map((task: Task) => (
                     <div 
                       key={task._id} 
                       role="button"
                       tabIndex={0}
                       onClick={() => handleRowClick(task._id)}
                       onKeyDown={(e) => handleRowKeyDown(e, task._id)}
-                      className="grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3 hover:bg-app-surface-glass-strong cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                      className="min-w-[1000px] lg:min-w-auto grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3 hover:bg-app-surface-glass-strong cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
                     >
                       <div className="col-span-4 min-w-0">
                         <p className="truncate text-sm text-app-text-primary">{task.title}</p>
@@ -348,7 +348,7 @@ export default function SchedulePage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 rounded-full border-app-border-strong hover:bg-app-surface-glass min-w-[70px]" 
+                          className="h-8 rounded-full border-app-border-strong dark:border-app-border-strong hover:bg-app-surface-glass dark:hover:bg-app-surface-glass min-w-[70px]" 
                           onClick={(e) => handleRunNow(task._id, e)}
                           disabled={runningTasks.has(task._id)}
                           aria-label={`Run ${task.title} now`}
@@ -368,7 +368,7 @@ export default function SchedulePage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 w-8 p-0 rounded-full border-app-border-strong hover:bg-app-surface-glass flex items-center justify-center" 
+                          className="h-8 w-8 p-0 rounded-full border-app-border-strong dark:border-app-border-strong hover:bg-app-surface-glass dark:hover:bg-app-surface-glass flex items-center justify-center" 
                           onClick={(e) => togglePause(task, e)}
                           disabled={togglingTasks.has(task._id)}
                           aria-label={task.status === "paused" ? "Resume task" : "Pause task"}
@@ -384,7 +384,7 @@ export default function SchedulePage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 rounded-full border-red-400/30 text-red-300 hover:bg-red-400/10 hover:text-red-200" 
+                          className="h-8 rounded-full border-red-400/30 dark:border-red-400/30 text-red-300 hover:bg-red-400/10 dark:hover:bg-red-400/10 hover:text-red-200" 
                           onClick={(e) => handleDelete(task._id, e)}
                           aria-label="Delete task"
                         >
