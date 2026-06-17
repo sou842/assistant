@@ -28,14 +28,14 @@ export default function Error({
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
             onClick={() => reset()}
-            className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-app-primary text-app-primary-foreground text-sm font-medium hover:bg-app-primary-hover shadow-lg shadow-app-primary/20 transition-all active:scale-95"
+            className="inline-flex items-center justify-center h-11 px-6 rounded-full cursor-pointer bg-app-primary text-app-primary-foreground text-sm font-medium hover:bg-app-primary-hover shadow-lg shadow-app-primary/20 transition-all active:scale-95"
           >
             <RotateCcw className="mr-2 size-4" />
             Try Again
           </button>
           <button
             onClick={() => window.history.back()}
-            className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-app-surface-glass-strong text-app-text-primary text-sm font-medium hover:bg-app-surface-hover transition-all active:scale-95"
+            className="inline-flex items-center justify-center h-11 px-6 rounded-full cursor-pointer bg-app-surface-glass-strong text-app-text-primary text-sm font-medium hover:bg-app-surface-hover transition-all active:scale-95"
           >
             Go Back
           </button>

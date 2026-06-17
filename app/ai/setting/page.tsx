@@ -13,7 +13,18 @@ import {
   ChevronDown,
   Plus,
   X,
-  Settings,
+  Settings as SettingsIcon,
+  Bell,
+  Palette,
+  LayoutGrid,
+  Mic,
+  CreditCard,
+  Shield,
+  Database,
+  Lock,
+  User,
+  Keyboard,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -38,14 +49,14 @@ const emptyForm = {
   enabled: true,
 };
 
-type SettingTab = "appearance" | "memory";
+type SettingTab = "general" | "memory" | "personalization" | "apps" | "data" | "security";
 
 export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Tabs management
-  const currentTab = (searchParams.get("tab") as SettingTab) || "appearance";
+  const currentTab = (searchParams.get("tab") as SettingTab) || "general";
   const setActiveTab = (tab: SettingTab) => {
     router.push(`/ai/setting?tab=${tab}`);
   };
@@ -186,374 +197,293 @@ export default function SettingsPage() {
 
   if (!mounted) return null;
 
-  const themes = [
-    {
-      id: "light",
-      name: "Light Theme",
-      description: "Clean and bright high-contrast theme",
-      icon: Sun,
-    },
-    {
-      id: "dark",
-      name: "Dark Theme",
-      description: "Sleek and easy on the eyes at night",
-      icon: Moon,
-    },
-    {
-      id: "system",
-      name: "System Sync",
-      description: "Dynamically matches device system settings",
-      icon: Laptop,
-    },
-  ];
-
-  const tabs = [
-    {
-      id: "appearance" as SettingTab,
-      label: "Appearance",
-      icon: Sun,
-    },
-    {
-      id: "memory" as SettingTab,
-      label: "Jarvis Memory",
-      icon: Brain,
-    },
+  const sidebarTabs = [
+    { id: "general", label: "General", icon: SettingsIcon },
+    { id: "memory", label: "Jarvis Memory", icon: Brain },
+    // { id: "personalization", label: "Personalization", icon: Palette },
+    // { id: "apps", label: "Apps", icon: LayoutGrid },
+    // { id: "data", label: "Data controls", icon: Database },
+    // { id: "security", label: "Security and login", icon: Shield },
   ];
 
   return (
-    <div className="flex h-screen flex-col bg-app-background overflow-hidden">
-      {/* Properly Aligned Global Page Header */}
-      <PageHeader
-        icon={<Settings />}
-        title="Settings"
-        subtitle="Configure client visual themes and manage knowledge memories"
-        actions={
-          <div className="inline-flex p-0.5 bg-app-surface border border-app-border-default rounded-full shadow-inner">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = currentTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-200 cursor-pointer",
-                    isActive
-                      ? "bg-brand-primary text-white shadow-sm"
-                      : "text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass-soft"
-                  )}
-                >
-                  <Icon className="size-3" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        }
-      />
+    <div className="flex h-screen flex-col md:flex-row-reverse bg-app-background overflow-hidden text-app-text-primary">
+      {/* Right Sidebar */}
+      <div className="w-full md:w-[260px] flex-shrink-0 border-l border-app-border-default bg-app-surface/40 flex flex-col">
+        <div className="p-4 pt-6 md:p-6 md:pt-8 pb-4">
+          <h1 className="text-xl font-bold tracking-tight">Settings</h1>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-0.5">
+          {sidebarTabs.map((tab) => {
+            const isActive = currentTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as SettingTab)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors cursor-pointer",
+                  isActive
+                    ? "bg-app-surface-elevated text-app-text-primary font-medium shadow-sm border border-app-border-default/50"
+                    : "text-app-text-secondary hover:bg-app-surface hover:text-app-text-primary"
+                )}
+              >
+                <Icon className={cn("size-4", isActive ? "text-brand-primary" : "text-app-text-ghost")} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {/* Content Container */}
-      <div className="flex-1 overflow-y-auto">
-        <main className="mx-auto w-full max-w-7xl px-6 py-10 md:px-10">
-          {/* 1. APPEARANCE TAB */}
-          {currentTab === "appearance" && (
-            <div className="space-y-6">
-              <section className="relative overflow-hidden rounded-3xl border border-app-border-default bg-app-surface p-8 shadow-sm">
-                <div className="relative">
-                  <div className="mb-8 flex items-start justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-app-text-primary">
-                        Interface Theme
-                      </h2>
-                      <p className="mt-2 text-sm text-app-text-muted">
-                        Select your preferred client layout scheme.
-                      </p>
-                    </div>
+      {/* Right Content Area */}
+      <div className="flex-1 overflow-y-auto bg-app-background">
+        <div className="max-w-6xl mx-auto px-6 py-8 md:px-12 md:py-12">
+          
+          {/* GENERAL TAB (Appearance, etc.) */}
+          {currentTab === "general" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="text-xl font-semibold mb-6 pb-4">General</h2>
+              
+              <div className="space-y-1">
+                {/* Setting Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-app-border-default/50 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-app-text-primary">Appearance</h3>
+                    <p className="text-[13px] text-app-text-muted mt-0.5">Select your preferred client layout scheme.</p>
                   </div>
-
-                  <div className="grid gap-6 md:grid-cols-3">
-                    {themes.map((t) => {
-                      const Icon = t.icon;
-                      const isActive = theme === t.id;
-
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => setTheme(t.id)}
-                          className={cn(
-                            "group relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer flex items-center gap-4",
-                            isActive
-                              ? "border-brand-primary bg-app-surface-elevated shadow-sm ring-1 ring-brand-primary/20"
-                              : "border-app-border-default bg-app-surface hover:border-app-border-strong hover:bg-app-surface-elevated/40"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-350",
-                              isActive
-                                ? "bg-brand-primary text-white scale-105"
-                                : "bg-app-surface-elevated text-app-text-muted group-hover:text-app-text-primary"
-                            )}
-                          >
-                            <Icon className="size-5" />
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <h3
-                              className={cn(
-                                "text-sm font-semibold transition-colors",
-                                isActive ? "text-app-text-primary" : "text-app-text-secondary"
-                              )}
-                            >
-                              {t.name}
-                            </h3>
-                            <p className="mt-1 text-xs text-app-text-muted leading-relaxed truncate">
-                              {t.description}
-                            </p>
-                          </div>
-
-                          {isActive && (
-                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-primary">
-                              <Check className="size-3.5 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
+                  <div className="flex items-center gap-2 bg-app-surface-elevated p-1 rounded-full border border-app-border-default">
+                    <button
+                      onClick={() => setTheme("light")}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer",
+                        theme === "light" ? "bg-app-background shadow-sm text-app-text-primary border border-app-border-default/50" : "text-app-text-muted hover:text-app-text-primary"
+                      )}
+                    >
+                      <Sun className="size-3.5" />
+                      Light
+                    </button>
+                    <button
+                      onClick={() => setTheme("dark")}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer",
+                        theme === "dark" ? "bg-app-background shadow-sm text-app-text-primary border border-app-border-default/50" : "text-app-text-muted hover:text-app-text-primary"
+                      )}
+                    >
+                      <Moon className="size-3.5" />
+                      Dark
+                    </button>
+                    <button
+                      onClick={() => setTheme("system")}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer",
+                        theme === "system" ? "bg-app-background shadow-sm text-app-text-primary border border-app-border-default/50" : "text-app-text-muted hover:text-app-text-primary"
+                      )}
+                    >
+                      <Laptop className="size-3.5" />
+                      System
+                    </button>
                   </div>
                 </div>
-              </section>
+
+                {/* Dummy Settings Rows to match ChatGPT style */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-app-border-default/50 gap-4 opacity-70">
+                  <div>
+                    <h3 className="text-sm font-medium text-app-text-primary">Language</h3>
+                    <p className="text-[13px] text-app-text-muted mt-0.5">Interface language</p>
+                  </div>
+                  <select className="bg-app-surface-elevated border border-app-border-default rounded-lg px-3 py-2 text-sm text-app-text-primary outline-none min-w-[140px] cursor-not-allowed" disabled>
+                    <option>Auto-detect</option>
+                    <option>English</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-app-border-default/50 gap-4 opacity-70">
+                  <div>
+                    <h3 className="text-sm font-medium text-app-text-primary">Higher intelligence</h3>
+                    <p className="text-[13px] text-app-text-muted mt-0.5 max-w-[80%]">Jarvis can automatically use a higher intelligence setting when you ask a complex question.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-not-allowed">
+                    <input type="checkbox" className="sr-only peer" disabled defaultChecked />
+                    <div className="w-11 h-6 bg-app-surface-elevated peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-app-border-default peer-checked:bg-brand-primary"></div>
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* 2. MEMORY TAB */}
+          {/* MEMORY TAB */}
           {currentTab === "memory" && (
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-app-text-primary">
-                    Memory Manager
-                  </h2>
-                  <p className="mt-1.5 text-sm text-app-text-muted font-normal">
-                    Manage information and context limits that Jarvis keeps in mind across conversations.
-                  </p>
-                </div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center justify-between mb-6 pb-4">
+                <h2 className="text-xl font-semibold">Jarvis Memory</h2>
                 <button
                   onClick={() => {
                     resetForm();
                     setOpenDrawer(true);
                   }}
-                  className="flex h-11 items-center gap-2 rounded-xl bg-app-primary px-5 text-sm font-semibold text-app-primary-foreground shadow-md transition hover:bg-app-primary-hover cursor-pointer self-start md:self-auto"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface-elevated border border-app-border-default rounded-full text-sm font-medium hover:bg-app-surface-glass transition cursor-pointer"
                 >
-                  <Plus size={16} />
+                  <Plus className="size-4" />
                   Add Memory
                 </button>
               </div>
 
-              {/* Filters Row */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full bg-app-surface/55 p-4 border border-app-border-default rounded-2xl">
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-app-text-ghost" />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search memory titles, contents, tags..."
-                    className="h-10 w-full rounded-xl border border-app-border-default bg-app-surface pl-10 pr-4 text-sm text-app-text-primary outline-none transition-all placeholder:text-app-text-faint focus:border-app-border-strong"
-                  />
-                </div>
-                <div className="dropdown dropdown-end w-full sm:w-auto">
-                  <button
-                    tabIndex={0}
-                    className="flex h-10 w-full sm:w-auto cursor-pointer items-center justify-between gap-2 rounded-xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-soft transition-all hover:text-app-text-primary"
+              <div className="space-y-4">
+                <p className="text-[13px] text-app-text-muted mb-6">
+                  Manage information and context limits that Jarvis keeps in mind across conversations.
+                </p>
+                
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-ghost" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search memory titles, tags..."
+                      className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-elevated pl-9 pr-3 text-sm text-app-text-primary outline-none placeholder:text-app-text-faint focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                    />
+                  </div>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value as MemoryCategory | "all")}
+                    className="h-9 rounded-full border border-app-border-default bg-app-surface-elevated px-3 text-sm text-app-text-primary outline-none focus:border-brand-primary cursor-pointer"
                   >
-                    <span>
-                      {categoryFilter === "all"
-                        ? "All Categories"
-                        : memoryCategories.find((c) => c.id === categoryFilter)
-                          ?.label}
-                    </span>
-                    <ChevronDown size={14} className="opacity-40" />
-                  </button>
-                  <ul
-                    tabIndex={0}
-                    className="dropdown-content z-10 menu mt-2 w-48 rounded-xl border border-app-border-default bg-app-surface-elevated p-2 shadow-2xl"
-                  >
-                    <li>
-                      <button
-                        onClick={() => setCategoryFilter("all")}
-                        className={cn(
-                          "py-2 text-xs",
-                          categoryFilter === "all"
-                            ? "bg-app-surface-glass-strong text-app-text-primary"
-                            : "text-app-text-faint hover:bg-app-surface-glass"
-                        )}
-                      >
-                        All Categories
-                      </button>
-                    </li>
-                    {memoryCategories.map((category) => (
-                      <li key={category.id}>
-                        <button
-                          onClick={() => setCategoryFilter(category.id)}
-                          className={cn(
-                            "py-2 text-xs",
-                            categoryFilter === category.id
-                              ? "bg-app-surface-glass-strong text-app-text-primary"
-                              : "text-app-text-faint hover:bg-app-surface-glass"
-                          )}
-                        >
-                          {category.label}
-                        </button>
-                      </li>
+                    <option value="all">All Categories</option>
+                    {memoryCategories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
-                  </ul>
+                  </select>
+                </div>
+
+                <div className=" rounded-xl overflow-hidden">
+                  {isSyncing ? (
+                    <div className="flex h-40 flex-col items-center justify-center text-app-text-primary">
+                      <div className="size-6 rounded-full border-2 border-app-border-default border-t-brand-primary animate-spin mb-3" />
+                      <span className="text-xs uppercase tracking-widest text-app-text-ghost">Loading</span>
+                    </div>
+                  ) : filteredMemories.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-center px-6">
+                      <Brain className="size-8 text-app-text-ghost mb-3" />
+                      <h3 className="text-sm font-medium text-app-text-primary">No memories found</h3>
+                      <p className="text-xs text-app-text-muted mt-1">Try adjusting your search or add a new memory.</p>
+                    </div>
+                  ) : (
+                    <div className="[&_table]:text-sm">
+                      <MemoryTable
+                        data={filteredMemories}
+                        onEdit={editMemory}
+                        onDelete={deleteMemory}
+                        onToggle={toggleMemory}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Memories Table Display */}
-              {isSyncing ? (
-                <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-app-border-default bg-app-surface text-app-text-primary">
-                  <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin mb-3" />
-                  <span className="text-xs uppercase tracking-[0.2em] text-app-text-ghost">
-                    Loading memories
-                  </span>
-                </div>
-              ) : filteredMemories.length === 0 ? (
-                <div className="flex min-h-[350px] flex-col items-center justify-center rounded-2xl border border-dashed border-app-border-default bg-app-surface px-6 text-center">
-                  <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-app-border-default bg-app-surface-glass-soft">
-                    <Brain className="size-6 text-app-text-ghost" />
-                  </div>
-                  <h3 className="text-lg font-semibold">No memories matching search query</h3>
-                  <p className="mt-2 max-w-sm text-xs leading-5 text-app-text-faint">
-                    Try adjusting filters or input search parameter terms.
-                  </p>
-                </div>
-              ) : (
-                <MemoryTable
-                  data={filteredMemories}
-                  onEdit={editMemory}
-                  onDelete={deleteMemory}
-                  onToggle={toggleMemory}
-                />
-              )}
             </div>
           )}
-        </main>
+
+          {/* DUMMY TABS */}
+          {["personalization", "apps", "data", "security"].includes(currentTab) && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-app-border-default capitalize">
+                {currentTab.replace("-", " ")}
+              </h2>
+              <div className="flex flex-col items-center justify-center h-48 text-center border border-dashed border-app-border-default rounded-xl">
+                <p className="text-app-text-muted text-sm">This setting category is currently empty.</p>
+              </div>
+            </div>
+          )}
+          
+        </div>
       </div>
 
-      {/* DRAWER FOR ADDING/EDITING MEMORY */}
+      {/* DRAWER FOR ADDING/EDITING MEMORY - Simplified to match new aesthetic */}
       <div
         className={cn(
-          "fixed inset-0 z-50 transition-all duration-300",
+          "fixed inset-0 z-[100] transition-all duration-300 flex items-center justify-center p-4",
           openDrawer ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
       >
         <div
           onClick={resetForm}
-          className="absolute inset-0 bg-app-overlay/40 backdrop-blur-sm transition-opacity"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         />
 
         <div
           className={cn(
-            "absolute right-0 top-0 h-full w-full max-w-md border-l border-app-border-default bg-app-canvas transition-transform duration-300 ease-out",
-            openDrawer ? "translate-x-0" : "translate-x-full"
+            "relative w-full max-w-lg bg-app-surface border border-app-border-default rounded-2xl shadow-2xl transition-transform duration-300 ease-out",
+            openDrawer ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
           )}
         >
-          <form onSubmit={submitMemory} className="h-full flex flex-col">
-            <div className="flex h-16 items-center justify-between border-b border-app-border-default px-5">
-              <div>
-                <h2 className="font-bold text-app-text-primary text-base">
-                  {editingId ? "Edit Memory" : "Add Memory"}
-                </h2>
-                <p className="mt-1 text-[11px] text-app-text-faint">
-                  Active memories are integrated into AI thinking context.
-                </p>
-              </div>
-
+          <form onSubmit={submitMemory} className="flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between p-5 border-b border-app-border-default">
+              <h2 className="font-semibold text-lg">
+                {editingId ? "Edit Memory" : "Add Memory"}
+              </h2>
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex size-9 items-center justify-center rounded-xl text-app-text-faint hover:bg-app-surface-glass cursor-pointer"
+                className="p-1.5 rounded-md text-app-text-muted hover:bg-app-surface-elevated transition cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div>
-                <label className="text-xs font-bold text-app-text-soft">
+                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
                   Title
                 </label>
                 <input
                   value={form.title}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      title: e.target.value,
-                    }))
-                  }
-                  placeholder="Short memory key (e.g. My Favorite Editor)"
-                  className="mt-2 h-11 w-full rounded-xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-primary outline-none focus:border-brand-primary"
+                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="Short memory key"
+                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-app-text-soft">
-                  Memory Content
+                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                  Content
                 </label>
                 <textarea
                   value={form.content}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      content: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
                   placeholder="Tell Jarvis what to keep in mind..."
-                  className="mt-2 min-h-[140px] w-full resize-none rounded-xl border border-app-border-default bg-app-surface p-4 text-sm leading-relaxed text-app-text-primary outline-none focus:border-brand-primary"
+                  className="w-full min-h-[120px] resize-none rounded-lg border border-app-border-default bg-app-background p-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-app-text-soft">
+                  <label className="text-xs font-medium text-app-text-muted block mb-1.5">
                     Category
                   </label>
                   <select
                     value={form.category}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        category: e.target.value as MemoryCategory,
-                      }))
-                    }
-                    className="mt-2 h-11 w-full rounded-xl border border-app-border-default bg-app-surface px-3 text-sm text-app-text-primary outline-none focus:border-brand-primary"
+                    onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as MemoryCategory }))}
+                    className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary cursor-pointer"
                   >
                     {memoryCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.label}
-                      </option>
+                      <option key={category.id} value={category.id}>{category.label}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-app-text-soft">
+                  <label className="text-xs font-medium text-app-text-muted block mb-1.5">
                     Status
                   </label>
                   <button
                     type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        enabled: !prev.enabled,
-                      }))
-                    }
+                    onClick={() => setForm((prev) => ({ ...prev, enabled: !prev.enabled }))}
                     className={cn(
-                      "mt-2 h-11 w-full rounded-xl border text-sm font-semibold transition cursor-pointer",
+                      "w-full h-10 rounded-lg border text-sm font-medium transition cursor-pointer flex items-center justify-center",
                       form.enabled
-                        ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-                        : "border-app-border-default bg-app-surface text-app-text-faint"
+                        ? "bg-brand-primary/10 border-brand-primary/30 text-brand-primary"
+                        : "bg-app-surface-elevated border-app-border-default text-app-text-muted"
                     )}
                   >
                     {form.enabled ? "Active" : "Disabled"}
@@ -562,30 +492,32 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-app-text-soft">
-                  Tags (Comma separated)
+                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                  Tags
                 </label>
                 <input
                   value={form.tags}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      tags: e.target.value,
-                    }))
-                  }
-                  placeholder="work, workspace, coding"
-                  className="mt-2 h-11 w-full rounded-xl border border-app-border-default bg-app-surface px-4 text-sm text-app-text-primary outline-none focus:border-brand-primary"
+                  onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
+                  placeholder="e.g. work, coding (comma separated)"
+                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
                 />
               </div>
             </div>
 
-            <div className="border-t border-app-border-default p-5">
+            <div className="p-5 border-t border-app-border-default flex justify-end gap-3 bg-app-surface-elevated/30 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2 text-sm font-medium text-app-text-secondary hover:text-app-text-primary transition cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={!form.content.trim()}
-                className="h-12 w-full rounded-xl bg-app-primary text-sm font-semibold text-app-primary-foreground transition hover:bg-app-primary-hover disabled:bg-app-surface-glass-strong disabled:text-app-text-ghost cursor-pointer"
+                className="px-5 py-2 rounded-lg bg-brand-primary text-white text-sm font-medium hover:bg-brand-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
               >
-                {editingId ? "Update Memory" : "Save Memory"}
+                {editingId ? "Update" : "Save"}
               </button>
             </div>
           </form>
