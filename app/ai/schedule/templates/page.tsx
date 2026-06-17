@@ -64,6 +64,20 @@ export default function TemplatesPage() {
     setRunTime(now.toTimeString().slice(0, 5));
   };
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const templateId = params.get("templateId");
+    if (templateId) {
+      const templateToOpen = scheduleTemplates.find((t) => t.id === templateId);
+      if (templateToOpen) {
+        handleOpenTemplate(templateToOpen);
+        // Clean up URL so it doesn't re-open if they close and refresh
+        window.history.replaceState({}, '', '/ai/schedule/templates');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleInputChange = (fieldId: string, value: string) => {
     setFormValues(prev => ({ ...prev, [fieldId]: value }));
   };
