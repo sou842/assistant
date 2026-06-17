@@ -1,7 +1,8 @@
 "use client";
 
 import useSWR from "swr";
-import { FileText, Table2, Image as ImageIcon } from "lucide-react";
+import { FileText, Table2, Image as ImageIcon, Lock, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { NoteEditor } from "@/app/ai/vault/_components/note-editor";
 import { SpreadsheetEditor } from "@/app/ai/vault/_components/spreadsheet-editor";
 import { GalleryViewer } from "@/app/ai/vault/_components/gallery-viewer";
@@ -17,11 +18,25 @@ export default function SharedVaultItemClient({ id }: { id: string }) {
 
   if (error) {
     return (
-      <div className="flex-1 flex h-screen flex-col items-center justify-center p-10 bg-app-surface text-app-text-primary">
-        <h1 className="text-2xl font-bold mb-4">Item Not Found</h1>
-        <p className="mb-4 text-app-text-secondary">This item may not exist or is no longer public.</p>
+      <div className="flex-1 flex h-screen flex-col items-center justify-center p-10 bg-app-surface">
+        <div className="flex flex-col items-center text-center max-w-lg p-8">
+          <div className="size-12 rounded-full bg-brand-primary/10 flex items-center justify-center mb-4 text-brand-primary">
+            <Lock size={24} />
+          </div>
+          <h3 className="text-lg font-medium text-app-text-primary mb-2">Access Denied</h3>
+          <p className="text-sm text-app-text-secondary mb-6">
+            This file is locked, or you don't have permission to view it. It may have been deleted or made private by the owner.
+          </p>
+          <Link
+            href="/ai"
+            className="inline-flex items-center justify-center h-10 px-4 rounded-full bg-app-surface-glass-strong text-sm font-medium text-app-text-primary hover:bg-app-surface-hover transition-colors"
+          >
+            <ArrowLeft className="mr-2 size-4" />
+            Return Home
+          </Link>
+        </div>
       </div>
-    )
+    );
   }
 
   if (isLoading || !data) {
