@@ -19,7 +19,11 @@ export async function GET(req: Request) {
       filter.title = { $regex: search, $options: 'i' };
     }
 
-    const items = await VaultItem.find(filter).select('-content').sort({ createdAt: -1 });
+    let query = VaultItem.find(filter).sort({ createdAt: -1 });
+    if (type !== 'gallery') {
+      query = query.select('-content');
+    }
+    const items = await query;
     return NextResponse.json({ items });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
