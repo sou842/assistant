@@ -18,7 +18,7 @@ export const maxDuration = 260;
 
 const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 2;
   while (attempts < maxAttempts) {
     attempts++;
     try {
@@ -38,11 +38,19 @@ const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<
   return fetch(url, init);
 };
 
-const mistral = createMistral({
-  apiKey: process.env.MISTRAL_API_KEY,
-  baseURL: process.env.MISTRAL_BASE_URL,
-  fetch: customFetch,
-});
+const mistralApiKeys = (process.env.MISTRAL_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+
+if (mistralApiKeys.length === 0) {
+  mistralApiKeys.push('dummy_key');
+}
+
+const mistralProviders = mistralApiKeys.map(key => 
+  createMistral({
+    apiKey: key,
+    baseURL: process.env.MISTRAL_BASE_URL,
+    fetch: customFetch,
+  })
+);
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -86,24 +94,37 @@ const ALLOWED_MODELS = new Set([
   'gpt-4o-mini',
 ]);
 
-const withFallback = (primary: any, fallback: any): any => {
+const withFallback = (models: any[]): any => {
+  const primary = models[0];
   return {
     ...primary,
     async doGenerate(options: any) {
-      try {
-        return await primary.doGenerate(options);
-      } catch (error) {
-        console.warn(`[Fallback] Primary model ${primary.modelId} failed, falling back to ${fallback.modelId}...`, error);
-        return await fallback.doGenerate(options);
+      let lastError;
+      for (let i = 0; i < models.length; i++) {
+        const currentModel = models[i];
+        try {
+          return await currentModel.doGenerate(options);
+        } catch (error: any) {
+          if (error?.name === 'AbortError') throw error;
+          console.warn(`[Fallback] Model ${currentModel?.modelId || 'unknown'} (instance ${i + 1}/${models.length}) failed...`, error?.message || error);
+          lastError = error;
+        }
       }
+      throw lastError;
     },
     async doStream(options: any) {
-      try {
-        return await primary.doStream(options);
-      } catch (error) {
-        console.warn(`[Fallback] Primary model ${primary.modelId} streaming failed, falling back to ${fallback.modelId}...`, error);
-        return await fallback.doStream(options);
+      let lastError;
+      for (let i = 0; i < models.length; i++) {
+        const currentModel = models[i];
+        try {
+          return await currentModel.doStream(options);
+        } catch (error: any) {
+          if (error?.name === 'AbortError') throw error;
+          console.warn(`[Fallback] Model ${currentModel?.modelId || 'unknown'} (instance ${i + 1}/${models.length}) streaming failed...`, error?.message || error);
+          lastError = error;
+        }
       }
+      throw lastError;
     }
   };
 };
@@ -128,11 +149,7 @@ export async function POST(req: Request) {
       ? requestedModel
       : 'mistral-large-latest';
 
-    const provider = model === 'gpt-4o-mini'
-      ? openai
-      : model === 'gemini-2.5-flash'
-        ? google
-        : mistral;
+    const isMistral = model !== 'gpt-4o-mini' && model !== 'gemini-2.5-flash';
 
     let canPersist = false;
     try {
@@ -223,14 +240,14 @@ export async function POST(req: Request) {
     
     try {
       const recentMessagesText = messages.slice(-3).map((m: any) => `${m.role}: ${getMessageText(m)}`).join("\n");
-      const routingModelId = provider === openai ? 'gpt-4o-mini' : provider === google ? 'gemini-2.5-flash' : 'mistral-small-latest';
+      const routingModelId = model === 'gpt-4o-mini' ? 'gpt-4o-mini' : model === 'gemini-2.5-flash' ? 'gemini-2.5-flash' : 'mistral-small-latest';
       
       const availableToolsContext = Object.entries(tools)
         .map(([name, tool]) => `- ${name}: ${(tool as any).description || 'No description available'}`)
         .join('\n');
  
       const { object } = await generateObject({
-        model: provider(routingModelId),
+        model: model === 'gpt-4o-mini' ? openai(routingModelId) : model === 'gemini-2.5-flash' ? google(routingModelId) : withFallback([...mistralProviders.map(p => p(routingModelId)), google('gemini-2.5-flash')]),
         schema: z.object({
           selectedTools: z.array(z.enum(toolNames)).describe("The specific tools needed to answer the user's request. Pick only what is strictly necessary.")
         }),
@@ -265,10 +282,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const baseModel = provider(model);
-    const activeModel = provider === mistral 
-      ? withFallback(baseModel, google('gemini-2.5-flash'))
-      : baseModel;
+    const activeModel = model === 'gpt-4o-mini' 
+      ? openai(model) 
+      : model === 'gemini-2.5-flash' 
+        ? google(model) 
+        : withFallback([...mistralProviders.map(p => p(model)), google('gemini-2.5-flash')]);
 
     const result = streamText({
       model: activeModel,
