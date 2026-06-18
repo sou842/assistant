@@ -11,6 +11,7 @@ import dbConnect from '@/lib/mongodb';
 import Chat from '@/lib/models/Chat';
 import LlmCall from '@/lib/models/LlmCall';
 import mongoose from 'mongoose';
+import User from '@/lib/models/User';
 
 
 // Allow streaming responses
@@ -152,9 +153,25 @@ export async function POST(req: Request) {
     const isMistral = model !== 'gpt-4o-mini' && model !== 'gemini-2.5-flash';
 
     let canPersist = false;
+    let integrationContext = "You do not currently know the user's connected apps status.";
     try {
       await dbConnect();
       canPersist = true;
+      if (userEmail !== "unknown") {
+        const user = await User.findOne({ email: userEmail });
+        if (user) {
+          const connectedApps = [];
+          if (user.githubAccessToken) connectedApps.push("GitHub");
+          if (user.googleRefreshToken) connectedApps.push("Google");
+          if (user.leetcodeUsername) connectedApps.push(`LeetCode (Username: ${user.leetcodeUsername})`);
+          
+          if (connectedApps.length > 0) {
+            integrationContext = `The user currently has the following apps integrated: ${connectedApps.join(", ")}.`;
+          } else {
+            integrationContext = `The user currently has no apps integrated.`;
+          }
+        }
+      }
     } catch (dbConnectError) {
       console.warn('MongoDB unavailable, continuing without persistence:', dbConnectError);
     }
@@ -208,7 +225,8 @@ export async function POST(req: Request) {
       memoryContext
         ? `Use these saved user memories when relevant. Do not mention them unless it helps the answer.\n${memoryContext}`
         : "",
-      attachedFilesContext
+      attachedFilesContext,
+      integrationContext
     ].filter(Boolean).join("\n\n");
 
     const finalSystemPrompt = clientSystemPrompt
