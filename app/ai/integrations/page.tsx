@@ -326,7 +326,7 @@ export default function IntegrationsPage() {
         name: "LeetCode",
         icon: (
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png"
+            src="https://leetcode.com/favicon.ico"
             className="size-6 object-contain dark:invert"
             alt="LeetCode"
           />
