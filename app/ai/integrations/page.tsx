@@ -40,7 +40,7 @@ function ConnectionDialog({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-md bg-app-canvas border-app-border-subtle shadow-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-md bg-app-surface-elevated border-app-border-subtle shadow-2xl rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-app-text-primary mb-2">{title}</DialogTitle>
         </DialogHeader>
@@ -49,7 +49,7 @@ function ConnectionDialog({
           {children}
         </div>
 
-        <DialogFooter className="mt-4 gap-3 sm:gap-0">
+        <DialogFooter className="mt-0 gap-3">
           <Button
             variant="ghost"
             onClick={onClose}
@@ -110,6 +110,7 @@ function IntegrationCard({
   googleConnected,
   leetcodeConnected,
   telegramConnected,
+  devtoConnected,
   onGithubConnect,
   onGithubDisconnect,
   onGoogleConnect,
@@ -118,12 +119,15 @@ function IntegrationCard({
   onLeetcodeDisconnect,
   onTelegramConnect,
   onTelegramDisconnect,
+  onDevtoConnect,
+  onDevtoDisconnect,
 }: {
   item: Integration;
   githubConnected: boolean;
   googleConnected: boolean;
   leetcodeConnected: boolean;
   telegramConnected: boolean;
+  devtoConnected: boolean;
   onGithubConnect: () => void;
   onGithubDisconnect: () => void;
   onGoogleConnect: () => void;
@@ -132,17 +136,21 @@ function IntegrationCard({
   onLeetcodeDisconnect: () => void;
   onTelegramConnect: () => void;
   onTelegramDisconnect: () => void;
+  onDevtoConnect: () => void;
+  onDevtoDisconnect: () => void;
 }) {
   const isGithub = item.id === "github";
   const isGoogle = item.id === "google";
   const isLeetcode = item.id === "leetcode";
   const isTelegram = item.id === "telegram";
+  const isDevto = item.id === "devto";
 
   let isConnected = item.connected;
   if (isGithub) isConnected = githubConnected;
   if (isGoogle) isConnected = googleConnected;
   if (isLeetcode) isConnected = leetcodeConnected;
   if (isTelegram) isConnected = telegramConnected;
+  if (isDevto) isConnected = devtoConnected;
 
   const handleCardClick = () => {
     if (item.comingSoon) return;
@@ -155,10 +163,12 @@ function IntegrationCard({
       onLeetcodeConnect();
     } else if (isTelegram && !telegramConnected) {
       onTelegramConnect();
+    } else if (isDevto && !devtoConnected) {
+      onDevtoConnect();
     }
   };
 
-  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected) || (isTelegram && !telegramConnected);
+  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected) || (isTelegram && !telegramConnected) || (isDevto && !devtoConnected);
 
   return (
     <div
@@ -207,7 +217,7 @@ function IntegrationCard({
         </div>
       </div>
 
-      {(isGithub || isGoogle || isLeetcode || isTelegram) && (
+      {(isGithub || isGoogle || isLeetcode || isTelegram || isDevto) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -224,6 +234,9 @@ function IntegrationCard({
             } else if (isTelegram) {
               if (telegramConnected) onTelegramDisconnect();
               else onTelegramConnect();
+            } else if (isDevto) {
+              if (devtoConnected) onDevtoDisconnect();
+              else onDevtoConnect();
             }
           }}
           title={isConnected ? `Disconnect ${item.name}` : `Connect ${item.name}`}
@@ -251,6 +264,10 @@ export default function IntegrationsPage() {
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [telegramChatId, setTelegramChatId] = useState("");
   const [isConnectingTelegram, setIsConnectingTelegram] = useState(false);
+  const [devtoConnected, setDevtoConnected] = useState(false);
+  const [showDevtoDialog, setShowDevtoDialog] = useState(false);
+  const [devtoApiKey, setDevtoApiKey] = useState("");
+  const [isConnectingDevto, setIsConnectingDevto] = useState(false);
 
   useEffect(() => {
     const fetchGithubStatus = async () => {
@@ -293,10 +310,21 @@ export default function IntegrationsPage() {
       }
     };
 
+    const fetchDevtoStatus = async () => {
+      try {
+        const response = await fetch("/api/integrations/devto/status");
+        const data = await response.json();
+        setDevtoConnected(data.connected);
+      } catch (error) {
+        console.error("Failed to fetch Dev.to status:", error);
+      }
+    };
+
     fetchGithubStatus();
     fetchGoogleStatus();
     fetchLeetcodeStatus();
     fetchTelegramStatus();
+    fetchDevtoStatus();
   }, []);
 
   const connectGithub = () => {
@@ -403,6 +431,41 @@ export default function IntegrationsPage() {
     }
   };
 
+  const connectDevto = () => setShowDevtoDialog(true);
+  
+  const submitDevto = async () => {
+    if (!devtoApiKey) return;
+    setIsConnectingDevto(true);
+    try {
+      const res = await fetch("/api/integrations/devto/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: devtoApiKey }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setDevtoConnected(true);
+      setShowDevtoDialog(false);
+      setDevtoApiKey("");
+      toast.success("Dev.to connected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to connect Dev.to");
+    } finally {
+      setIsConnectingDevto(false);
+    }
+  };
+
+  const disconnectDevto = async () => {
+    try {
+      await fetch("/api/integrations/devto/disconnect", { method: "POST" });
+      setDevtoConnected(false);
+      toast.success("Dev.to disconnected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to disconnect Dev.to");
+    }
+  };
+
   const activeIntegrations: Integration[] = useMemo(
     () => [
       {
@@ -460,6 +523,17 @@ export default function IntegrationsPage() {
             src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg"
             className="size-6 object-contain"
             alt="Telegram"
+          />
+        ),
+      },
+      {
+        id: "devto",
+        name: "Dev.to",
+        icon: (
+          <img
+            src="https://dev-to-uploads.s3.amazonaws.com/uploads/logos/resized_logo_UQww2soKuUsjaOGNB38o.png"
+            className="size-6 object-contain dark:invert"
+            alt="Dev.to"
           />
         ),
       },
@@ -596,6 +670,7 @@ export default function IntegrationsPage() {
               googleConnected={googleConnected}
               leetcodeConnected={leetcodeConnected}
               telegramConnected={telegramConnected}
+              devtoConnected={devtoConnected}
               onGithubConnect={connectGithub}
               onGithubDisconnect={disconnectGithub}
               onGoogleConnect={connectGoogle}
@@ -604,6 +679,8 @@ export default function IntegrationsPage() {
               onLeetcodeDisconnect={disconnectLeetcode}
               onTelegramConnect={connectTelegram}
               onTelegramDisconnect={disconnectTelegram}
+              onDevtoConnect={connectDevto}
+              onDevtoDisconnect={disconnectDevto}
             />
           ))}
         </div>
@@ -659,18 +736,70 @@ export default function IntegrationsPage() {
             />
           </div>
 
-          <div className="mt-6 rounded-lg bg-app-surface-glass-soft border border-app-border-subtle p-4">
+          <div className="mt-6 rounded-xl bg-app-canvas border border-app-border-subtle p-4">
             <h3 className="text-sm font-medium text-app-text-primary mb-2">How to find your Chat ID:</h3>
             <ol className="list-decimal list-inside text-sm text-app-text-soft space-y-2 mb-3">
               <li>Open Telegram and search for <strong className="text-app-text-primary">@userinfobot</strong></li>
-              <li>Start a chat (or send <code className="bg-app-surface-glass px-1.5 py-0.5 rounded text-app-text-primary border border-app-border-subtle">/start</code>)</li>
+              <li>Start a chat ( or send <code className="bg-app-surface-glass px-1.5 py-0.5 mr-0.5 rounded-full text-xs text-app-text-primary border border-app-border-subtle">/start</code>)</li>
               <li>Copy the number next to <strong className="text-app-text-primary">Id:</strong></li>
             </ol>
             <div className="pt-3 border-t border-app-border-subtle/50">
               <p className="text-xs text-app-text-muted">
-                Or open it directly on the web: <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 hover:underline ml-1 font-medium transition-colors">t.me/userinfobot &rarr;</a>
+                Or open it directly on the web:
+                <a
+                  target="_blank"
+                  href="https://t.me/userinfobot"
+                  rel="noopener noreferrer"
+                  className="text-brand-primary hover:underline ml-1 font-medium transition-colors">
+                  t.me/userinfobot
+                </a>
               </p>
             </div>
+          </div>
+        </ConnectionDialog>
+
+        <ConnectionDialog
+          isOpen={showDevtoDialog}
+          onClose={() => setShowDevtoDialog(false)}
+          title="Connect Dev.to"
+          onSubmit={submitDevto}
+          isSubmitting={isConnectingDevto}
+          disableSubmit={!devtoApiKey}
+        >
+          <div className="mb-6 mt-4 rounded-xl bg-app-canvas border border-app-border-subtle p-4">
+            <h3 className="text-sm font-medium text-app-text-primary mb-2">How to find your API Key:</h3>
+            <ol className="list-decimal list-inside text-sm text-app-text-soft space-y-2 mb-3">
+              <li>Log in to your <strong className="text-app-text-primary">Dev.to</strong> account</li>
+              <li>Go to <strong className="text-app-text-primary">Settings &gt; Extensions</strong></li>
+              <li>Generate a new <strong className="text-app-text-primary">API Key</strong> and copy it</li>
+            </ol>
+            <div className="pt-3 border-t border-app-border-subtle/50">
+              <p className="text-xs text-app-text-muted">
+                Or open settings directly:
+                <a
+                  target="_blank"
+                  href="https://dev.to/settings/extensions"
+                  rel="noopener noreferrer"
+                  className="text-brand-primary hover:underline ml-1 font-medium transition-colors">
+                  dev.to/settings
+                </a>
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="devtoApiKey" className="block text-sm font-medium text-app-text-primary mb-2">
+              Dev.to API Key
+            </label>
+            <input
+              id="devtoApiKey"
+              type="text"
+              value={devtoApiKey}
+              onChange={(e) => setDevtoApiKey(e.target.value)}
+              className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
+              placeholder="e.g. j7x2k..."
+              autoFocus
+            />
           </div>
         </ConnectionDialog>
       </main>

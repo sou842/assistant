@@ -9,6 +9,7 @@ export interface IUser extends Document {
   googleRefreshToken?: string;
   leetcodeUsername?: string;
   telegramChatId?: string;
+  devtoApiKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,8 +24,14 @@ const UserSchema = new Schema<IUser>(
     googleRefreshToken: { type: String },
     leetcodeUsername: { type: String },
     telegramChatId: { type: String },
+    devtoApiKey: { type: String },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+// Force schema compilation in Next.js HMR
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+export default mongoose.model<IUser>('User', UserSchema);

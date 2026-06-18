@@ -75,6 +75,15 @@ async function getTelegramChatId() {
   return user.telegramChatId;
 }
 
+async function getDevtoApiKey() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.devtoApiKey) throw new Error("Dev.to account not connected. Please connect it in the Integrations page.");
+  return user.devtoApiKey;
+}
+
 
 
 const memoryCategorySchema = z.enum(['profile', 'preference', 'project', 'fact', 'instruction']);
@@ -1812,6 +1821,114 @@ export const tools = {
         return { success: true, deliveredMessage: message };
       } catch (error: any) {
         return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  publishDevtoArticle: tool({
+    description: "Create a new article or draft on Dev.to. The body should be formatted in Markdown. Front matter is not required but you must provide title and tags.",
+    parameters: z.object({
+      title: z.string().describe("The title of the article."),
+      body_markdown: z.string().describe("The markdown content of the article."),
+      published: z.boolean().describe("If true, the article will be published immediately. If false, it will be saved as a draft."),
+      tags: z.array(z.string()).optional().describe("An array of tags (e.g., ['react', 'nextjs', 'tutorial']). Maximum 4 tags allowed."),
+    }),
+    execute: async ({ title, body_markdown, published, tags }) => {
+      try {
+        const apiKey = await getDevtoApiKey();
+        const res = await fetch("https://dev.to/api/articles", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": apiKey,
+            "User-Agent": "Jarvis-Assistant/1.0",
+          },
+          body: JSON.stringify({
+            article: {
+              title,
+              body_markdown,
+              published,
+              tags,
+            },
+          }),
+        });
+
+        const textResponse = await res.text();
+        if (!res.ok) {
+          let errorMessage = `Failed to publish article (Status: ${res.status})`;
+          try {
+            const err = JSON.parse(textResponse);
+            errorMessage = err.error || err.message || errorMessage;
+          } catch (parseError) {
+            console.error("Dev.to HTML Error Response:", textResponse);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = JSON.parse(textResponse);
+        return { success: true, url: data.url, id: data.id };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  fetchMyDevtoArticles: tool({
+    description: "Fetch the user's published or drafted Dev.to articles. Useful for reading their past work or checking analytics (views, reactions).",
+    parameters: z.object({
+      page: z.number().optional().describe("Pagination page (default: 1)"),
+      per_page: z.number().optional().describe("Items per page (default: 10, max: 1000)"),
+    }),
+    execute: async ({ page = 1, per_page = 10 }) => {
+      try {
+        const apiKey = await getDevtoApiKey();
+        const res = await fetch(`https://dev.to/api/articles/me?page=${page}&per_page=${per_page}`, {
+          headers: { "api-key": apiKey },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch articles");
+        const data = await res.json();
+        return data.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          url: a.url,
+          published: a.published,
+          page_views_count: a.page_views_count,
+          public_reactions_count: a.public_reactions_count,
+          comments_count: a.comments_count,
+        }));
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  fetchTrendingDevtoArticles: tool({
+    description: "Fetch trending articles on Dev.to. Useful for research or staying up to date.",
+    parameters: z.object({
+      tag: z.string().optional().describe("Filter by a specific tag (e.g., 'react', 'python')"),
+      top: z.number().optional().describe("Number of days to filter for top articles (e.g., 1, 7, 30)"),
+    }),
+    execute: async ({ tag, top }) => {
+      try {
+        const url = new URL("https://dev.to/api/articles");
+        if (tag) url.searchParams.append("tag", tag);
+        if (top) url.searchParams.append("top", top.toString());
+        url.searchParams.append("per_page", "5");
+
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error("Failed to fetch trending articles");
+        
+        const data = await res.json();
+        return data.map((a: any) => ({
+          title: a.title,
+          url: a.url,
+          description: a.description,
+          tags: a.tags,
+          reactions: a.public_reactions_count,
+        }));
+      } catch (e: any) {
+        return { error: e.message };
       }
     },
   }),
