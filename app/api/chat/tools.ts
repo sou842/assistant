@@ -1533,5 +1533,40 @@ export const tools = {
       }
     },
   }),
+
+  tavilySearch: tool({
+    description: "Search the web for real-time information, news, or deep research.",
+    inputSchema: z.object({
+      query: z.string().describe("The search query"),
+      searchDepth: z.enum(['basic', 'advanced']).optional().default('basic').describe("Use 'advanced' for deep research, 'basic' for quick facts/news"),
+    }),
+    execute: async ({ query, searchDepth }) => {
+      try {
+        const response = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.TAVILY_API_KEY}`
+          },
+          body: JSON.stringify({
+            query: query,
+            search_depth: searchDepth,
+            include_answer: true,
+            include_images: false
+          })
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          return { error: `Tavily API error: ${response.statusText}. ${JSON.stringify(errData)}` };
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    }
+  }),
 };
 
