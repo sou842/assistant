@@ -4,6 +4,8 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Layers, Menu, Radio } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 import { useAI } from "../_components/ai-provider";
 
@@ -14,6 +16,59 @@ type Integration = {
   connected?: boolean;
   comingSoon?: boolean;
 };
+
+function ConnectionDialog({
+  isOpen,
+  onClose,
+  title,
+  children,
+  onSubmit,
+  isSubmitting,
+  submitLabel = "Connect",
+  submittingLabel = "Connecting...",
+  disableSubmit = false,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  submitLabel?: string;
+  submittingLabel?: string;
+  disableSubmit?: boolean;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-md bg-app-canvas border-app-border-subtle shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold text-app-text-primary mb-2">{title}</DialogTitle>
+        </DialogHeader>
+
+        <div className="py-2">
+          {children}
+        </div>
+
+        <DialogFooter className="mt-4 gap-3 sm:gap-0">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="rounded-full text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={disableSubmit || isSubmitting}
+            className="rounded-full bg-blue-600 hover:bg-brand-primary text-white"
+          >
+            {isSubmitting ? submittingLabel : submitLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function IntegrationStatus() {
   const searchParams = useSearchParams();
@@ -54,32 +109,40 @@ function IntegrationCard({
   githubConnected,
   googleConnected,
   leetcodeConnected,
+  telegramConnected,
   onGithubConnect,
   onGithubDisconnect,
   onGoogleConnect,
   onGoogleDisconnect,
   onLeetcodeConnect,
   onLeetcodeDisconnect,
+  onTelegramConnect,
+  onTelegramDisconnect,
 }: {
   item: Integration;
   githubConnected: boolean;
   googleConnected: boolean;
   leetcodeConnected: boolean;
+  telegramConnected: boolean;
   onGithubConnect: () => void;
   onGithubDisconnect: () => void;
   onGoogleConnect: () => void;
   onGoogleDisconnect: () => void;
   onLeetcodeConnect: () => void;
   onLeetcodeDisconnect: () => void;
+  onTelegramConnect: () => void;
+  onTelegramDisconnect: () => void;
 }) {
   const isGithub = item.id === "github";
   const isGoogle = item.id === "google";
   const isLeetcode = item.id === "leetcode";
-  
+  const isTelegram = item.id === "telegram";
+
   let isConnected = item.connected;
   if (isGithub) isConnected = githubConnected;
   if (isGoogle) isConnected = googleConnected;
   if (isLeetcode) isConnected = leetcodeConnected;
+  if (isTelegram) isConnected = telegramConnected;
 
   const handleCardClick = () => {
     if (item.comingSoon) return;
@@ -90,10 +153,12 @@ function IntegrationCard({
       onGoogleConnect();
     } else if (isLeetcode && !leetcodeConnected) {
       onLeetcodeConnect();
+    } else if (isTelegram && !telegramConnected) {
+      onTelegramConnect();
     }
   };
 
-  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected);
+  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected) || (isTelegram && !telegramConnected);
 
   return (
     <div
@@ -142,7 +207,7 @@ function IntegrationCard({
         </div>
       </div>
 
-      {(isGithub || isGoogle || isLeetcode) && (
+      {(isGithub || isGoogle || isLeetcode || isTelegram) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -156,6 +221,9 @@ function IntegrationCard({
             } else if (isLeetcode) {
               if (leetcodeConnected) onLeetcodeDisconnect();
               else onLeetcodeConnect();
+            } else if (isTelegram) {
+              if (telegramConnected) onTelegramDisconnect();
+              else onTelegramConnect();
             }
           }}
           title={isConnected ? `Disconnect ${item.name}` : `Connect ${item.name}`}
@@ -179,6 +247,10 @@ export default function IntegrationsPage() {
   const [showLeetcodeDialog, setShowLeetcodeDialog] = useState(false);
   const [leetcodeUsername, setLeetcodeUsername] = useState("");
   const [isConnectingLeetcode, setIsConnectingLeetcode] = useState(false);
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [showTelegramDialog, setShowTelegramDialog] = useState(false);
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [isConnectingTelegram, setIsConnectingTelegram] = useState(false);
 
   useEffect(() => {
     const fetchGithubStatus = async () => {
@@ -211,9 +283,20 @@ export default function IntegrationsPage() {
       }
     };
 
+    const fetchTelegramStatus = async () => {
+      try {
+        const response = await fetch("/api/integrations/telegram/status");
+        const data = await response.json();
+        setTelegramConnected(data.isConnected);
+      } catch (error) {
+        console.error("Failed to fetch Telegram status:", error);
+      }
+    };
+
     fetchGithubStatus();
     fetchGoogleStatus();
     fetchLeetcodeStatus();
+    fetchTelegramStatus();
   }, []);
 
   const connectGithub = () => {
@@ -283,6 +366,43 @@ export default function IntegrationsPage() {
     }
   };
 
+  const connectTelegram = () => {
+    setShowTelegramDialog(true);
+  };
+
+  const submitTelegram = async () => {
+    if (!telegramChatId) return;
+    setIsConnectingTelegram(true);
+    try {
+      const res = await fetch("/api/integrations/telegram/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: telegramChatId }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setTelegramConnected(true);
+      setShowTelegramDialog(false);
+      setTelegramChatId("");
+      toast.success("Telegram connected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to connect Telegram");
+    } finally {
+      setIsConnectingTelegram(false);
+    }
+  };
+
+  const disconnectTelegram = async () => {
+    try {
+      await fetch("/api/integrations/telegram/disconnect", { method: "POST" });
+      setTelegramConnected(false);
+      toast.success("Telegram disconnected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to disconnect Telegram");
+    }
+  };
+
   const activeIntegrations: Integration[] = useMemo(
     () => [
       {
@@ -329,6 +449,17 @@ export default function IntegrationsPage() {
             src="https://leetcode.com/favicon.ico"
             className="size-6 object-contain dark:invert"
             alt="LeetCode"
+          />
+        ),
+      },
+      {
+        id: "telegram",
+        name: "Telegram",
+        icon: (
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg"
+            className="size-6 object-contain"
+            alt="Telegram"
           />
         ),
       },
@@ -464,57 +595,84 @@ export default function IntegrationsPage() {
               githubConnected={githubConnected}
               googleConnected={googleConnected}
               leetcodeConnected={leetcodeConnected}
+              telegramConnected={telegramConnected}
               onGithubConnect={connectGithub}
               onGithubDisconnect={disconnectGithub}
               onGoogleConnect={connectGoogle}
               onGoogleDisconnect={disconnectGoogle}
               onLeetcodeConnect={connectLeetcode}
               onLeetcodeDisconnect={disconnectLeetcode}
+              onTelegramConnect={connectTelegram}
+              onTelegramDisconnect={disconnectTelegram}
             />
           ))}
         </div>
 
-        {showLeetcodeDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-app-canvas p-6 shadow-2xl border border-app-border-subtle">
-              <h2 className="text-xl font-semibold text-app-text-primary mb-2">Connect LeetCode</h2>
-              <p className="text-sm text-app-text-soft mb-6">
-                Enter your LeetCode username to allow Jarvis to access your public statistics and submissions.
-              </p>
-              
-              <div className="mb-6">
-                <label htmlFor="username" className="block text-sm font-medium text-app-text-primary mb-2">
-                  LeetCode Username
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={leetcodeUsername}
-                  onChange={(e) => setLeetcodeUsername(e.target.value)}
-                  className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
-                  placeholder="e.g. vG0FY1V5T2"
-                  autoFocus
-                />
-              </div>
+        <ConnectionDialog
+          isOpen={showLeetcodeDialog}
+          onClose={() => setShowLeetcodeDialog(false)}
+          title="Connect LeetCode"
+          onSubmit={submitLeetcode}
+          isSubmitting={isConnectingLeetcode}
+          disableSubmit={!leetcodeUsername}
+        >
+          <p className="text-sm text-app-text-soft mb-6">
+            Enter your LeetCode username to allow Jarvis to access your public statistics and submissions.
+          </p>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowLeetcodeDialog(false)}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={submitLeetcode}
-                  disabled={!leetcodeUsername || isConnectingLeetcode}
-                  className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary transition-colors disabled:opacity-50"
-                >
-                  {isConnectingLeetcode ? "Connecting..." : "Connect"}
-                </button>
-              </div>
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-app-text-primary mb-2">
+              LeetCode Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={leetcodeUsername}
+              onChange={(e) => setLeetcodeUsername(e.target.value)}
+              className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
+              placeholder="e.g. vG0FY1V5T2"
+              autoFocus
+            />
+          </div>
+        </ConnectionDialog>
+
+        <ConnectionDialog
+          isOpen={showTelegramDialog}
+          onClose={() => setShowTelegramDialog(false)}
+          title="Connect Telegram"
+          onSubmit={submitTelegram}
+          isSubmitting={isConnectingTelegram}
+          disableSubmit={!telegramChatId}
+        >
+          <div>
+            <label htmlFor="chatId" className="block text-sm font-medium text-app-text-primary mb-2">
+              Telegram Chat ID
+            </label>
+            <input
+              id="chatId"
+              type="text"
+              value={telegramChatId}
+              onChange={(e) => setTelegramChatId(e.target.value)}
+              className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
+              placeholder="e.g. 123456789"
+              autoFocus
+            />
+          </div>
+
+          <div className="mt-6 rounded-lg bg-app-surface-glass-soft border border-app-border-subtle p-4">
+            <h3 className="text-sm font-medium text-app-text-primary mb-2">How to find your Chat ID:</h3>
+            <ol className="list-decimal list-inside text-sm text-app-text-soft space-y-2 mb-3">
+              <li>Open Telegram and search for <strong className="text-app-text-primary">@userinfobot</strong></li>
+              <li>Start a chat (or send <code className="bg-app-surface-glass px-1.5 py-0.5 rounded text-app-text-primary border border-app-border-subtle">/start</code>)</li>
+              <li>Copy the number next to <strong className="text-app-text-primary">Id:</strong></li>
+            </ol>
+            <div className="pt-3 border-t border-app-border-subtle/50">
+              <p className="text-xs text-app-text-muted">
+                Or open it directly on the web: <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 hover:underline ml-1 font-medium transition-colors">t.me/userinfobot &rarr;</a>
+              </p>
             </div>
           </div>
-        )}
+        </ConnectionDialog>
       </main>
     </div>
   );

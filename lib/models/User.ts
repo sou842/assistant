@@ -8,6 +8,7 @@ export interface IUser extends Document {
   githubAccessToken?: string;
   googleRefreshToken?: string;
   leetcodeUsername?: string;
+  telegramChatId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,7 @@ const UserSchema = new Schema<IUser>(
     githubAccessToken: { type: String },
     googleRefreshToken: { type: String },
     leetcodeUsername: { type: String },
+    telegramChatId: { type: String },
   },
   { timestamps: true }
 );

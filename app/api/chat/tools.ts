@@ -66,6 +66,15 @@ async function getLeetcodeUsername() {
   return user.leetcodeUsername;
 }
 
+async function getTelegramChatId() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.telegramChatId) throw new Error("Telegram account not connected. Please connect it in the Integrations page.");
+  return user.telegramChatId;
+}
+
 
 
 const memoryCategorySchema = z.enum(['profile', 'preference', 'project', 'fact', 'instruction']);
@@ -1771,6 +1780,38 @@ export const tools = {
         return data.data;
       } catch (e: any) {
         return { error: e.message };
+      }
+    },
+  }),
+
+  telegramSendMessage: tool({
+    description: "Send a message to the user's Telegram account. Use this to notify the user of completed background tasks, alerts, or summaries.",
+    parameters: z.object({
+      message: z.string().describe("The text message to send to the user."),
+    }),
+    execute: async ({ message }) => {
+      try {
+        const chatId = await getTelegramChatId();
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) throw new Error("TELEGRAM_BOT_TOKEN environment variable is not configured.");
+
+        const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(`Telegram API Error: ${errData.description}`);
+        }
+
+        return { success: true, deliveredMessage: message };
+      } catch (error: any) {
+        return { success: false, error: error.message };
       }
     },
   }),

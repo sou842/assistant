@@ -164,6 +164,7 @@ export async function POST(req: Request) {
           if (user.githubAccessToken) connectedApps.push("GitHub");
           if (user.googleRefreshToken) connectedApps.push("Google");
           if (user.leetcodeUsername) connectedApps.push(`LeetCode (Username: ${user.leetcodeUsername})`);
+          if (user.telegramChatId) connectedApps.push(`Telegram (Chat ID: ${user.telegramChatId})`);
           
           if (connectedApps.length > 0) {
             integrationContext = `The user currently has the following apps integrated: ${connectedApps.join(", ")}.`;
