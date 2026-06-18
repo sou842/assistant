@@ -204,7 +204,7 @@ export async function POST(req: Request) {
         ? "The browser extension is currently CONNECTED. You can perform browser control tasks normally."
         : "CRITICAL: The browser extension is currently NOT connected. Do NOT attempt to use 'browserControl'. Instead, immediately inform the user that the browser extension is not connected and that they must make sure the browser extension is installed and the companion sidepanel is active before they can use this feature."),
       "13. For Studio Documents: The Studio is a completely separate area from the Vault. It stores professional documents, resumes, slides, and reports. When asked to generate or update a document, you MUST first decide on a design system (e.g., 'premium', 'paper', 'glassmorphism', or 'storytelling') and call 'loadDesignSystem' to load the required typography, colors, and layout rules. Only AFTER loading the design system should you call 'createStudioDocument', 'updateStudioDocument', or 'editStudioDocumentSection'. The content MUST be valid raw HTML formatted exactly according to the loaded design rules using Tailwind CSS utility classes. NEVER use `<style>` tags. NEVER generate `<html>`, `<head>`, or `<body>` tags. For small targeted updates to an existing document, ALWAYS use 'editStudioDocumentSection' instead of 'updateStudioDocument' as it is MUCH faster. Only return the inner HTML structure.",
-      "14. For Web Search & Real-Time Info: You have access to the 'tavilySearch' tool. Use it whenever the user asks for real-time information, news, deep research, or facts you might not know. It is much faster and more reliable than 'browserControl' for fetching general web data. You can set the search depth to 'advanced' for deep research or keep it 'basic' for quick facts.",
+      "14. For Web Search & Real-Time Info: You have access to the 'webSearch' tool. Use it whenever the user asks for real-time information, news, deep research, or facts you might not know. It is much faster and more reliable than 'browserControl' for fetching general web data. You can set the search depth to 'advanced' for deep research or keep it 'basic' for quick facts.",
       memoryContext
         ? `Use these saved user memories when relevant. Do not mention them unless it helps the answer.\n${memoryContext}`
         : "",
@@ -229,7 +229,7 @@ export async function POST(req: Request) {
 
     // Pre-Routing Logic for Dynamic Tool Discovery (Smart Mode)
     const toolNames = Object.keys(tools) as [string, ...string[]];
-    let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl', 'tavilySearch']; // Base tools always included
+    let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl', 'webSearch']; // Base tools always included
     
     // Always include studio tools if we are in the studio context
     // Always include studio tools if we are in the studio context

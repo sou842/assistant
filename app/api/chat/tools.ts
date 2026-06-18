@@ -1534,7 +1534,7 @@ export const tools = {
     },
   }),
 
-  tavilySearch: tool({
+  webSearch: tool({
     description: "Search the web for real-time information, news, or deep research.",
     inputSchema: z.object({
       query: z.string().describe("The search query"),
