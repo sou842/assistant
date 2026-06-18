@@ -1684,4 +1684,96 @@ export const tools = {
       }
     },
   }),
+
+  getLeetCodeSolvedProblems: tool({
+    description: "Get a list of the user's recently accepted/solved LeetCode problems.",
+    inputSchema: z.object({
+      limit: z.number().max(50).default(20).describe("Number of accepted submissions to fetch"),
+    }),
+    execute: async ({ limit }) => {
+      let username;
+      try { username = await getLeetcodeUsername(); } catch (e: any) { return { error: e.message }; }
+      try {
+        const query = `
+          query recentAcSubmissions($username: String!, $limit: Int!) {
+            recentAcSubmissionList(username: $username, limit: $limit) {
+              id title titleSlug timestamp
+            }
+          }
+        `;
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { username, limit } }),
+        });
+        if (!res.ok) return { error: "Failed to fetch accepted LeetCode submissions" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  getLeetCodeDailyChallenge: tool({
+    description: "Get the LeetCode Daily Coding Challenge for today.",
+    inputSchema: z.object({}),
+    execute: async () => {
+      try {
+        const query = `
+          query questionOfToday {
+            activeDailyCodingChallengeQuestion {
+              date link
+              question {
+                difficulty title titleSlug hasSolution
+                topicTags { name slug }
+              }
+            }
+          }
+        `;
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+        if (!res.ok) return { error: "Failed to fetch daily challenge" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  getLeetCodeProblemDetails: tool({
+    description: "Get detailed information about a specific LeetCode problem including its description, hints, and constraints.",
+    inputSchema: z.object({
+      titleSlug: z.string().describe("The slug of the problem (e.g., 'two-sum')"),
+    }),
+    execute: async ({ titleSlug }) => {
+      try {
+        const query = `
+          query questionData($titleSlug: String!) {
+            question(titleSlug: $titleSlug) {
+              questionFrontendId title titleSlug content
+              difficulty hints similarQuestions
+              topicTags { name slug }
+            }
+          }
+        `;
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { titleSlug } }),
+        });
+        if (!res.ok) return { error: "Failed to fetch problem details" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
 };
+
+
