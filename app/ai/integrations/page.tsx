@@ -492,7 +492,7 @@ export default function IntegrationsPage() {
                   value={leetcodeUsername}
                   onChange={(e) => setLeetcodeUsername(e.target.value)}
                   className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
-                  placeholder="e.g. sos742"
+                  placeholder="e.g. vG0FY1V5T2"
                   autoFocus
                 />
               </div>
