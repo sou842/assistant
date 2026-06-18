@@ -53,25 +53,33 @@ function IntegrationCard({
   item,
   githubConnected,
   googleConnected,
+  leetcodeConnected,
   onGithubConnect,
   onGithubDisconnect,
   onGoogleConnect,
   onGoogleDisconnect,
+  onLeetcodeConnect,
+  onLeetcodeDisconnect,
 }: {
   item: Integration;
   githubConnected: boolean;
   googleConnected: boolean;
+  leetcodeConnected: boolean;
   onGithubConnect: () => void;
   onGithubDisconnect: () => void;
   onGoogleConnect: () => void;
   onGoogleDisconnect: () => void;
+  onLeetcodeConnect: () => void;
+  onLeetcodeDisconnect: () => void;
 }) {
   const isGithub = item.id === "github";
   const isGoogle = item.id === "google";
+  const isLeetcode = item.id === "leetcode";
   
   let isConnected = item.connected;
   if (isGithub) isConnected = githubConnected;
   if (isGoogle) isConnected = googleConnected;
+  if (isLeetcode) isConnected = leetcodeConnected;
 
   const handleCardClick = () => {
     if (item.comingSoon) return;
@@ -80,10 +88,12 @@ function IntegrationCard({
       onGithubConnect();
     } else if (isGoogle && !googleConnected) {
       onGoogleConnect();
+    } else if (isLeetcode && !leetcodeConnected) {
+      onLeetcodeConnect();
     }
   };
 
-  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected);
+  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected);
 
   return (
     <div
@@ -132,7 +142,7 @@ function IntegrationCard({
         </div>
       </div>
 
-      {(isGithub || isGoogle) && (
+      {(isGithub || isGoogle || isLeetcode) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -143,6 +153,9 @@ function IntegrationCard({
             } else if (isGoogle) {
               if (googleConnected) onGoogleDisconnect();
               else onGoogleConnect();
+            } else if (isLeetcode) {
+              if (leetcodeConnected) onLeetcodeDisconnect();
+              else onLeetcodeConnect();
             }
           }}
           title={isConnected ? `Disconnect ${item.name}` : `Connect ${item.name}`}
@@ -162,6 +175,10 @@ export default function IntegrationsPage() {
 
   const [githubConnected, setGithubConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [leetcodeConnected, setLeetcodeConnected] = useState(false);
+  const [showLeetcodeDialog, setShowLeetcodeDialog] = useState(false);
+  const [leetcodeUsername, setLeetcodeUsername] = useState("");
+  const [isConnectingLeetcode, setIsConnectingLeetcode] = useState(false);
 
   useEffect(() => {
     const fetchGithubStatus = async () => {
@@ -184,8 +201,19 @@ export default function IntegrationsPage() {
       }
     };
 
+    const fetchLeetcodeStatus = async () => {
+      try {
+        const response = await fetch("/api/integrations/leetcode/status");
+        const data = await response.json();
+        setLeetcodeConnected(data.connected);
+      } catch (error) {
+        console.error("Failed to fetch LeetCode status:", error);
+      }
+    };
+
     fetchGithubStatus();
     fetchGoogleStatus();
+    fetchLeetcodeStatus();
   }, []);
 
   const connectGithub = () => {
@@ -215,6 +243,43 @@ export default function IntegrationsPage() {
     } catch (error) {
       console.error(error);
       toast.error("Failed to disconnect Google");
+    }
+  };
+
+  const connectLeetcode = () => {
+    setShowLeetcodeDialog(true);
+  };
+
+  const submitLeetcode = async () => {
+    if (!leetcodeUsername) return;
+    setIsConnectingLeetcode(true);
+    try {
+      const res = await fetch("/api/integrations/leetcode/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: leetcodeUsername }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setLeetcodeConnected(true);
+      setShowLeetcodeDialog(false);
+      setLeetcodeUsername("");
+      toast.success("LeetCode connected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to connect LeetCode");
+    } finally {
+      setIsConnectingLeetcode(false);
+    }
+  };
+
+  const disconnectLeetcode = async () => {
+    try {
+      await fetch("/api/integrations/leetcode/disconnect", { method: "POST" });
+      setLeetcodeConnected(false);
+      toast.success("LeetCode disconnected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to disconnect LeetCode");
     }
   };
 
@@ -253,6 +318,17 @@ export default function IntegrationsPage() {
             src="https://cdn-icons-png.flaticon.com/128/4423/4423697.png"
             className="size-6 object-contain"
             alt="WhatsApp"
+          />
+        ),
+      },
+      {
+        id: "leetcode",
+        name: "LeetCode",
+        icon: (
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png"
+            className="size-6 object-contain dark:invert"
+            alt="LeetCode"
           />
         ),
       },
@@ -387,13 +463,58 @@ export default function IntegrationsPage() {
               item={item}
               githubConnected={githubConnected}
               googleConnected={googleConnected}
+              leetcodeConnected={leetcodeConnected}
               onGithubConnect={connectGithub}
               onGithubDisconnect={disconnectGithub}
               onGoogleConnect={connectGoogle}
               onGoogleDisconnect={disconnectGoogle}
+              onLeetcodeConnect={connectLeetcode}
+              onLeetcodeDisconnect={disconnectLeetcode}
             />
           ))}
         </div>
+
+        {showLeetcodeDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-app-canvas p-6 shadow-2xl border border-app-border-subtle">
+              <h2 className="text-xl font-semibold text-app-text-primary mb-2">Connect LeetCode</h2>
+              <p className="text-sm text-app-text-soft mb-6">
+                Enter your LeetCode username to allow Jarvis to access your public statistics and submissions.
+              </p>
+              
+              <div className="mb-6">
+                <label htmlFor="username" className="block text-sm font-medium text-app-text-primary mb-2">
+                  LeetCode Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={leetcodeUsername}
+                  onChange={(e) => setLeetcodeUsername(e.target.value)}
+                  className="w-full rounded-full border border-app-border-default bg-app-surface-glass px-4 py-2 text-sm text-app-text-primary focus:border-app-border-strong focus:outline-none"
+                  placeholder="e.g. sos742"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowLeetcodeDialog(false)}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-app-text-soft hover:bg-app-surface-glass hover:text-app-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitLeetcode}
+                  disabled={!leetcodeUsername || isConnectingLeetcode}
+                  className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary transition-colors disabled:opacity-50"
+                >
+                  {isConnectingLeetcode ? "Connecting..." : "Connect"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

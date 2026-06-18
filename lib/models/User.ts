@@ -7,6 +7,7 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   githubAccessToken?: string;
   googleRefreshToken?: string;
+  leetcodeUsername?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +20,7 @@ const UserSchema = new Schema<IUser>(
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     githubAccessToken: { type: String },
     googleRefreshToken: { type: String },
+    leetcodeUsername: { type: String },
   },
   { timestamps: true }
 );

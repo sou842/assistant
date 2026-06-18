@@ -57,6 +57,15 @@ async function getGithubToken() {
   return user.githubAccessToken;
 }
 
+async function getLeetcodeUsername() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.leetcodeUsername) throw new Error("LeetCode account not connected. Please connect it in the Integrations page.");
+  return user.leetcodeUsername;
+}
+
 
 
 const memoryCategorySchema = z.enum(['profile', 'preference', 'project', 'fact', 'instruction']);
@@ -1568,5 +1577,111 @@ export const tools = {
       }
     }
   }),
-};
 
+  getLeetCodeStats: tool({
+    description: "Get the authenticated user's LeetCode public statistics (problems solved, acceptance rate, contest rating, etc).",
+    inputSchema: z.object({}),
+    execute: async () => {
+      let username;
+      try { username = await getLeetcodeUsername(); } catch (e: any) { return { error: e.message }; }
+      try {
+        const query = `
+          query getUserProfile($username: String!) {
+            allQuestionsCount { difficulty count }
+            matchedUser(username: $username) {
+              submitStats {
+                acSubmissionNum { difficulty count submissions }
+              }
+              profile { ranking userAvatar realName aboutMe }
+            }
+          }
+        `;
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { username } }),
+        });
+        if (!res.ok) return { error: "Failed to fetch LeetCode stats" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  getLeetCodeRecentSubmissions: tool({
+    description: "Get the authenticated user's recent LeetCode submissions.",
+    inputSchema: z.object({
+      limit: z.number().max(20).default(5).describe("Number of submissions to fetch"),
+    }),
+    execute: async ({ limit }) => {
+      let username;
+      try { username = await getLeetcodeUsername(); } catch (e: any) { return { error: e.message }; }
+      try {
+        const query = `
+          query getRecentSubmissionList($username: String!, $limit: Int) {
+            recentSubmissionList(username: $username, limit: $limit) {
+              title titleSlug timestamp statusDisplay lang
+            }
+          }
+        `;
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { username, limit } }),
+        });
+        if (!res.ok) return { error: "Failed to fetch LeetCode submissions" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  getLeetCodeProblems: tool({
+    description: "Search for LeetCode problems by tags (e.g., 'two-pointers', 'dynamic-programming', 'array').",
+    inputSchema: z.object({
+      tags: z.array(z.string()).describe("List of problem tags to filter by (e.g., ['two-pointers'])"),
+      limit: z.number().max(50).default(10).describe("Number of problems to return"),
+    }),
+    execute: async ({ tags, limit }) => {
+      try {
+        const query = `
+          query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+            problemsetQuestionList: questionList(
+              categorySlug: $categorySlug
+              limit: $limit
+              skip: $skip
+              filters: $filters
+            ) {
+              total: totalNum
+              questions: data {
+                acRate difficulty freqBar frontendQuestionId: questionFrontendId
+                isFavor paidOnly: isPaidOnly status title titleSlug hasVideoSolution hasSolution
+                topicTags { name id slug }
+              }
+            }
+          }
+        `;
+        const variables = {
+          categorySlug: "",
+          skip: 0,
+          limit,
+          filters: { tags }
+        };
+        const res = await fetch("https://leetcode.com/graphql", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables }),
+        });
+        if (!res.ok) return { error: "Failed to fetch LeetCode problems" };
+        const data = await res.json();
+        return data.data;
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+};
