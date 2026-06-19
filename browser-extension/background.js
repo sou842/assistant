@@ -11,6 +11,12 @@ if (typeof chrome !== "undefined" && chrome.sidePanel && chrome.sidePanel.setPan
 // Track the last tab we interacted with or opened
 let lastInteractedTabId = null;
 
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (lastInteractedTabId === tabId) {
+    lastInteractedTabId = null;
+  }
+});
+
 // Helper: Add logs to chrome.storage for the sidepanel to render
 async function logAction(action, status, detail, error = null) {
   try {
@@ -393,6 +399,16 @@ async function runAgentLoop(prompt, model) {
     let totalTokens = usageData.currentTokenUsage?.total || 0;
 
     let targetTabId = lastInteractedTabId;
+    
+    // Verify targetTabId is valid
+    if (targetTabId) {
+      try {
+        await chrome.tabs.get(targetTabId);
+      } catch (e) {
+        targetTabId = null;
+      }
+    }
+
     if (!targetTabId) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab) {
@@ -401,6 +417,7 @@ async function runAgentLoop(prompt, model) {
         return;
       }
       targetTabId = tab.id;
+      lastInteractedTabId = targetTabId;
     }
 
     const maxSteps = 15;
