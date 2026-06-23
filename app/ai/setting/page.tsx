@@ -15,7 +15,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tabs management
   const currentTab = (searchParams.get("tab") as SettingTab) || "general";
   const setActiveTab = (tab: SettingTab) => {
     router.push(`/ai/setting?tab=${tab}`);
@@ -28,6 +27,25 @@ export default function SettingsPage() {
   }, []);
 
   if (!mounted) return null;
+
+  function maincontent() {
+    switch (currentTab) {
+      case "general":
+        return <GeneralTab />
+      case "memory":
+        return <MemoryTab />
+      case "contact":
+        return <ContactTab />
+      default:
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-col items-center justify-center h-48 text-center border border-dashed border-app-border-default rounded-xl">
+              <p className="text-app-text-muted text-sm">This setting category is currently empty.</p>
+            </div>
+          </div>
+        );
+    }
+  }
 
   const sidebarTabs = [
     { id: "general", label: "General", icon: SettingsIcon },
@@ -53,28 +71,7 @@ export default function SettingsPage() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto bg-app-background relative">
           <div className="max-w-6xl mx-auto px-4 py-6 md:px-10 md:py-10">
-
-            {/* GENERAL TAB */}
-            {currentTab === "general" && <GeneralTab />}
-
-            {/* MEMORY TAB */}
-            {currentTab === "memory" && <MemoryTab />}
-
-            {/* CONTACT TAB */}
-            {currentTab === "contact" && <ContactTab />}
-
-            {/* DUMMY TABS */}
-            {["personalization", "apps", "data", "security"].includes(currentTab) && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-app-border-default capitalize">
-                  {currentTab.replace("-", " ")}
-                </h2>
-                <div className="flex flex-col items-center justify-center h-48 text-center border border-dashed border-app-border-default rounded-xl">
-                  <p className="text-app-text-muted text-sm">This setting category is currently empty.</p>
-                </div>
-              </div>
-            )}
-
+            {maincontent()}
           </div>
         </div>
 
