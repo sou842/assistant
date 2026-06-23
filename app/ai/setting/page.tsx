@@ -59,17 +59,15 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-screen flex-col bg-app-background overflow-hidden text-app-text-primary">
-      <PageHeader
-        icon={<SettingsIcon />}
-        title="Settings"
-        subtitle="Manage your AI preferences and memory"
-        backHref="/ai"
-      />
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-
-        {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto bg-app-background relative">
+          <PageHeader
+            icon={<SettingsIcon />}
+            title="Settings"
+            subtitle="Manage your AI preferences and memory"
+            backHref="/ai"
+          />
           <div className="max-w-6xl mx-auto px-4 py-6 md:px-10 md:py-10">
             {maincontent()}
           </div>
@@ -77,7 +75,8 @@ export default function SettingsPage() {
 
         {/* right Sidebar */}
         <div className="w-full md:w-[240px] lg:w-[260px] flex-shrink-0 border-b md:border-b-0 md:border-l border-app-border-default bg-app-surface/40 flex flex-col">
-          <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-y-auto px-2 py-2 gap-1 scrollbar-hide">
+          <div className="h-16 border-b border-app-border-default"></div>
+          <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-y-auto px-2 pt-4 pb-2 scrollbar-hide">
             {sidebarTabs.map((tab) => {
               const isActive = currentTab === tab.id;
               const Icon = tab.icon;
