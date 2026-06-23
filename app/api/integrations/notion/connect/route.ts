@@ -9,7 +9,9 @@ export async function GET(req: Request) {
     }
 
     const clientId = process.env.NOTION_CLIENT_ID;
-    const redirectUri = "http://localhost:3000/api/integrations/notion/callback";
+    const host = req.headers.get("host") || "localhost:3000";
+    const protocol = host.includes("localhost") ? "http" : "https";
+    const redirectUri = `${protocol}://${host}/api/integrations/notion/callback`;
     
     if (!clientId) {
       return new NextResponse("Missing NOTION_CLIENT_ID", { status: 500 });
