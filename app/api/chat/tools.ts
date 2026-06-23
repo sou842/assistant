@@ -84,7 +84,14 @@ async function getDevtoApiKey() {
   return user.devtoApiKey;
 }
 
-
+async function getNotionToken() {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  await dbConnect();
+  const user = await User.findOne({ email: session.user.email });
+  if (!user?.notionAccessToken) throw new Error("Notion account not connected. Please connect it in the Integrations page.");
+  return user.notionAccessToken;
+}
 
 const memoryCategorySchema = z.enum(['profile', 'preference', 'project', 'fact', 'instruction']);
 const taskStatusSchema = z.enum(['todo', 'in-progress', 'done', 'backlog']);
@@ -799,7 +806,6 @@ export const tools = {
           const errData = await res.json().catch(() => ({}));
           return { error: `Gmail API error: ${res.statusText}. ${JSON.stringify(errData)}` };
         }
-
         const data = await res.json();
         return { success: true, messageId: data.id, threadId: data.threadId };
       } catch (error: any) {
@@ -807,6 +813,141 @@ export const tools = {
       }
     },
   }),
+
+  notionSearch: tool({
+    description: "Search for pages or databases in the user's connected Notion workspace.",
+    inputSchema: z.object({
+      query: z.string().describe("Search query to find specific pages or databases."),
+    }),
+    execute: async ({ query }) => {
+      try {
+        const token = await getNotionToken();
+        const { Client } = await import('@notionhq/client');
+        const notion = new Client({ auth: token });
+        const response = await notion.search({
+          query,
+          sort: { direction: 'descending', timestamp: 'last_edited_time' },
+        });
+        return response.results.map((item: any) => ({
+          id: item.id,
+          object: item.object,
+          url: item.url,
+          title: item.properties?.title?.title?.[0]?.plain_text || item.properties?.Name?.title?.[0]?.plain_text || 'Untitled',
+        }));
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  notionGetPage: tool({
+    description: "Retrieve details and properties of a specific Notion page or database.",
+    inputSchema: z.object({
+      pageId: z.string().describe("The UUID of the Notion page or database."),
+    }),
+    execute: async ({ pageId }) => {
+      try {
+        const token = await getNotionToken();
+        const { Client } = await import('@notionhq/client');
+        const notion = new Client({ auth: token });
+        const page = await notion.pages.retrieve({ page_id: pageId });
+        const blocks = await notion.blocks.children.list({ block_id: pageId });
+        return {
+          id: page.id,
+          url: (page as any).url,
+          properties: (page as any).properties,
+          blocks: blocks.results,
+        };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  notionCreatePage: tool({
+    description: "Create a new page in Notion. You must provide a parent database or page ID.",
+    inputSchema: z.object({
+      parentId: z.string().describe("The ID of the parent page or database."),
+      parentType: z.enum(["page_id", "database_id"]).describe("The type of the parent ID."),
+      title: z.string().describe("The title of the new page."),
+      content: z.string().optional().describe("Optional Markdown-like string to append as a text block."),
+    }),
+    execute: async ({ parentId, parentType, title, content }) => {
+      try {
+        const token = await getNotionToken();
+        const { Client } = await import('@notionhq/client');
+        const notion = new Client({ auth: token });
+        
+        const parent = parentType === "database_id" ? { database_id: parentId } : { page_id: parentId };
+        
+        // Define properties based on parent type
+        const properties: any = {};
+        if (parentType === "database_id") {
+          properties["Name"] = { title: [{ text: { content: title } }] };
+        } else {
+          properties["title"] = { title: [{ text: { content: title } }] };
+        }
+
+        const children: any[] = [];
+        if (content) {
+          children.push({
+            object: "block",
+            type: "paragraph",
+            paragraph: {
+              rich_text: [{ type: "text", text: { content } }]
+            }
+          });
+        }
+
+        const newPage = await notion.pages.create({
+          parent,
+          properties,
+          children,
+        });
+        
+        return {
+          id: newPage.id,
+          url: (newPage as any).url,
+          success: true,
+        };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+  notionAppendBlocks: tool({
+    description: "Append text blocks to an existing Notion page.",
+    inputSchema: z.object({
+      pageId: z.string().describe("The ID of the Notion page to append to."),
+      content: z.string().describe("The text content to append as a new paragraph."),
+    }),
+    execute: async ({ pageId, content }) => {
+      try {
+        const token = await getNotionToken();
+        const { Client } = await import('@notionhq/client');
+        const notion = new Client({ auth: token });
+        
+        const response = await notion.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: {
+                rich_text: [{ type: "text", text: { content } }]
+              }
+            }
+          ],
+        });
+        return { success: true, blocksAppended: response.results.length };
+      } catch (error: any) {
+        return { error: error.message };
+      }
+    },
+  }),
+
+
 
   gmailDeleteMessage: tool({
     description: "Move a specific Gmail message to the trash using its ID.",

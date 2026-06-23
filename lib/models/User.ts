@@ -10,6 +10,7 @@ export interface IUser extends Document {
   leetcodeUsername?: string;
   telegramChatId?: string;
   devtoApiKey?: string;
+  notionAccessToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,7 @@ const UserSchema = new Schema<IUser>(
     leetcodeUsername: { type: String },
     telegramChatId: { type: String },
     devtoApiKey: { type: String },
+    notionAccessToken: { type: String },
   },
   { timestamps: true }
 );

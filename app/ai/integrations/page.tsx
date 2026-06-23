@@ -121,6 +121,9 @@ function IntegrationCard({
   onTelegramDisconnect,
   onDevtoConnect,
   onDevtoDisconnect,
+  notionConnected,
+  onNotionConnect,
+  onNotionDisconnect,
 }: {
   item: Integration;
   githubConnected: boolean;
@@ -138,12 +141,16 @@ function IntegrationCard({
   onTelegramDisconnect: () => void;
   onDevtoConnect: () => void;
   onDevtoDisconnect: () => void;
+  notionConnected?: boolean;
+  onNotionConnect?: () => void;
+  onNotionDisconnect?: () => void;
 }) {
   const isGithub = item.id === "github";
   const isGoogle = item.id === "google";
   const isLeetcode = item.id === "leetcode";
   const isTelegram = item.id === "telegram";
   const isDevto = item.id === "devto";
+  const isNotion = item.id === "notion";
 
   let isConnected = item.connected;
   if (isGithub) isConnected = githubConnected;
@@ -151,6 +158,7 @@ function IntegrationCard({
   if (isLeetcode) isConnected = leetcodeConnected;
   if (isTelegram) isConnected = telegramConnected;
   if (isDevto) isConnected = devtoConnected;
+  if (isNotion) isConnected = notionConnected;
 
   const handleCardClick = () => {
     if (item.comingSoon) return;
@@ -165,10 +173,12 @@ function IntegrationCard({
       onTelegramConnect();
     } else if (isDevto && !devtoConnected) {
       onDevtoConnect();
+    } else if (isNotion && !notionConnected && onNotionConnect) {
+      onNotionConnect();
     }
   };
 
-  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected) || (isTelegram && !telegramConnected) || (isDevto && !devtoConnected);
+  const isInteractive = (isGithub && !githubConnected) || (isGoogle && !googleConnected) || (isLeetcode && !leetcodeConnected) || (isTelegram && !telegramConnected) || (isDevto && !devtoConnected) || (isNotion && !notionConnected);
 
   return (
     <div
@@ -217,7 +227,7 @@ function IntegrationCard({
         </div>
       </div>
 
-      {(isGithub || isGoogle || isLeetcode || isTelegram || isDevto) && (
+      {(isGithub || isGoogle || isLeetcode || isTelegram || isDevto || isNotion) && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -237,6 +247,9 @@ function IntegrationCard({
             } else if (isDevto) {
               if (devtoConnected) onDevtoDisconnect();
               else onDevtoConnect();
+            } else if (isNotion && onNotionConnect && onNotionDisconnect) {
+              if (notionConnected) onNotionDisconnect();
+              else onNotionConnect();
             }
           }}
           title={isConnected ? `Disconnect ${item.name}` : `Connect ${item.name}`}
@@ -268,6 +281,7 @@ export default function IntegrationsPage() {
   const [showDevtoDialog, setShowDevtoDialog] = useState(false);
   const [devtoApiKey, setDevtoApiKey] = useState("");
   const [isConnectingDevto, setIsConnectingDevto] = useState(false);
+  const [notionConnected, setNotionConnected] = useState(false);
 
   useEffect(() => {
     const fetchGithubStatus = async () => {
@@ -320,11 +334,22 @@ export default function IntegrationsPage() {
       }
     };
 
+    const fetchNotionStatus = async () => {
+      try {
+        const response = await fetch("/api/integrations/notion/status");
+        const data = await response.json();
+        setNotionConnected(data.connected);
+      } catch (error) {
+        console.error("Failed to fetch Notion status:", error);
+      }
+    };
+
     fetchGithubStatus();
     fetchGoogleStatus();
     fetchLeetcodeStatus();
     fetchTelegramStatus();
     fetchDevtoStatus();
+    fetchNotionStatus();
   }, []);
 
   const connectGithub = () => {
@@ -466,6 +491,21 @@ export default function IntegrationsPage() {
     }
   };
 
+  const connectNotion = () => {
+    window.location.href = "/api/integrations/notion/connect";
+  };
+
+  const disconnectNotion = async () => {
+    try {
+      await fetch("/api/integrations/notion/disconnect", { method: "POST" });
+      setNotionConnected(false);
+      toast.success("Notion disconnected");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to disconnect Notion");
+    }
+  };
+
   const activeIntegrations: Integration[] = useMemo(
     () => [
       {
@@ -537,6 +577,17 @@ export default function IntegrationsPage() {
           />
         ),
       },
+      {
+        id: "notion",
+        name: "Notion",
+        icon: (
+          <img
+            src="https://www.notion.so/images/logo-ios.png"
+            className="size-6 object-contain"
+            alt="Notion"
+          />
+        ),
+      },
     ],
     []
   );
@@ -552,18 +603,6 @@ export default function IntegrationsPage() {
             src="https://a.slack-edge.com/80588/marketing/img/meta/slack_hash_256.png"
             className="size-6 object-contain"
             alt="Slack"
-          />
-        ),
-      },
-      {
-        id: "notion",
-        name: "Notion",
-        comingSoon: true,
-        icon: (
-          <img
-            src="https://www.notion.so/images/logo-ios.png"
-            className="size-6 object-contain"
-            alt="Notion"
           />
         ),
       },
@@ -681,6 +720,9 @@ export default function IntegrationsPage() {
               onTelegramDisconnect={disconnectTelegram}
               onDevtoConnect={connectDevto}
               onDevtoDisconnect={disconnectDevto}
+              notionConnected={notionConnected}
+              onNotionConnect={connectNotion}
+              onNotionDisconnect={disconnectNotion}
             />
           ))}
         </div>
@@ -802,6 +844,7 @@ export default function IntegrationsPage() {
             />
           </div>
         </ConnectionDialog>
+
       </main>
     </div>
   );
