@@ -1795,10 +1795,10 @@ export const tools = {
 
   telegramSendMessage: tool({
     description: "Send a message to the user's Telegram account. Use this to notify the user of completed background tasks, alerts, or summaries.",
-    parameters: z.object({
+    inputSchema: z.object({
       message: z.string().describe("The text message to send to the user."),
     }),
-    execute: async ({ message }) => {
+    execute: async ({ message }: { message: string }) => {
       try {
         const chatId = await getTelegramChatId();
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -1827,15 +1827,26 @@ export const tools = {
 
   publishDevtoArticle: tool({
     description: "Create a new article or draft on Dev.to. The body should be formatted in Markdown. Front matter is not required but you must provide title and tags.",
-    parameters: z.object({
-      title: z.string().describe("The title of the article."),
-      body_markdown: z.string().describe("The markdown content of the article."),
+    inputSchema: z.object({
+      title: z.string().min(5).describe("The title of the article."),
+      body_markdown: z.string().min(250, "Dev.to API error: Body markdown too short. You MUST write at least 250 characters. Expand the content to be a full article with several paragraphs.").describe("The markdown content of the article."),
       published: z.boolean().describe("If true, the article will be published immediately. If false, it will be saved as a draft."),
-      tags: z.array(z.string()).optional().describe("An array of tags (e.g., ['react', 'nextjs', 'tutorial']). Maximum 4 tags allowed."),
+      tags: z.array(z.string()).max(4).optional().describe("An array of tags (e.g., ['react', 'nextjs', 'tutorial']). Maximum 4 tags allowed."),
     }),
-    execute: async ({ title, body_markdown, published, tags }) => {
+    execute: async ({ title, body_markdown, published, tags }: { title: string; body_markdown: string; published: boolean; tags?: string[] }) => {
       try {
         const apiKey = await getDevtoApiKey();
+        const frontMatter = [
+          '---',
+          `title: ${JSON.stringify(title)}`,
+          `published: ${published}`,
+          tags && tags.length ? `tags: ${tags.join(', ')}` : '',
+          '---',
+          ''
+        ].filter(line => line !== '').join('\n');
+
+        const finalBodyMarkdown = frontMatter + '\n' + body_markdown;
+
         const res = await fetch("https://dev.to/api/articles", {
           method: "POST",
           headers: {
@@ -1845,10 +1856,7 @@ export const tools = {
           },
           body: JSON.stringify({
             article: {
-              title,
-              body_markdown,
-              published,
-              tags,
+              body_markdown: finalBodyMarkdown,
             },
           }),
         });
@@ -1875,11 +1883,11 @@ export const tools = {
 
   fetchMyDevtoArticles: tool({
     description: "Fetch the user's published or drafted Dev.to articles. Useful for reading their past work or checking analytics (views, reactions).",
-    parameters: z.object({
+    inputSchema: z.object({
       page: z.number().optional().describe("Pagination page (default: 1)"),
       per_page: z.number().optional().describe("Items per page (default: 10, max: 1000)"),
     }),
-    execute: async ({ page = 1, per_page = 10 }) => {
+    execute: async ({ page = 1, per_page = 10 }: { page?: number; per_page?: number }) => {
       try {
         const apiKey = await getDevtoApiKey();
         const res = await fetch(`https://dev.to/api/articles/me?page=${page}&per_page=${per_page}`, {
@@ -1905,11 +1913,11 @@ export const tools = {
 
   fetchTrendingDevtoArticles: tool({
     description: "Fetch trending articles on Dev.to. Useful for research or staying up to date.",
-    parameters: z.object({
+    inputSchema: z.object({
       tag: z.string().optional().describe("Filter by a specific tag (e.g., 'react', 'python')"),
       top: z.number().optional().describe("Number of days to filter for top articles (e.g., 1, 7, 30)"),
     }),
-    execute: async ({ tag, top }) => {
+    execute: async ({ tag, top }: { tag?: string; top?: number }) => {
       try {
         const url = new URL("https://dev.to/api/articles");
         if (tag) url.searchParams.append("tag", tag);
@@ -1932,6 +1940,125 @@ export const tools = {
       }
     },
   }),
+
+  updateDevtoArticle: tool({
+    description: "Update an existing Dev.to article or draft. The body should be formatted in Markdown.",
+    inputSchema: z.object({
+      id: z.number().describe("The ID of the article to update"),
+      title: z.string().min(5).optional().describe("The new title of the article"),
+      body_markdown: z.string().min(250, "Dev.to API error: Body markdown too short. You MUST write at least 250 characters.").optional().describe("The new body of the article in Markdown format."),
+      tags: z.array(z.string()).max(4).optional().describe("Array of tags for the article (max 4)"),
+      published: z.boolean().optional().describe("Whether to publish the article or keep it as a draft"),
+    }),
+    execute: async ({ id, title, body_markdown, tags, published }: { id: number; title?: string; body_markdown?: string; tags?: string[]; published?: boolean }) => {
+      try {
+        const apiKey = await getDevtoApiKey();
+        
+        let finalBodyMarkdown = body_markdown;
+        
+        if (body_markdown && (title || published !== undefined || tags)) {
+          const frontMatter = [
+            '---',
+            title ? `title: ${JSON.stringify(title)}` : '',
+            published !== undefined ? `published: ${published}` : '',
+            tags && tags.length ? `tags: ${tags.join(', ')}` : '',
+            '---',
+            ''
+          ].filter(line => line !== '').join('\n');
+          finalBodyMarkdown = frontMatter + '\n' + body_markdown;
+        }
+
+        const articleData: any = { article: {} };
+        if (finalBodyMarkdown) {
+          articleData.article.body_markdown = finalBodyMarkdown;
+        } else {
+          if (title) articleData.article.title = title;
+          if (tags) articleData.article.tags = tags;
+          if (published !== undefined) articleData.article.published = published;
+        }
+
+        const res = await fetch(`https://dev.to/api/articles/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": apiKey,
+            "User-Agent": "Jarvis-Assistant/1.0",
+          },
+          body: JSON.stringify(articleData),
+        });
+
+        if (!res.ok) {
+          const textResponse = await res.text();
+          console.error("Dev.to Update Error Response:", textResponse);
+          throw new Error(`Failed to update article on Dev.to: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        return {
+          success: true,
+          articleUrl: data.url,
+          id: data.id,
+        };
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  fetchDevtoReadingList: tool({
+    description: "Fetch the user's reading list from Dev.to.",
+    inputSchema: z.object({
+      page: z.number().optional().describe("Pagination page (default: 1)"),
+      per_page: z.number().optional().describe("Items per page (default: 10, max: 1000)"),
+    }),
+    execute: async ({ page = 1, per_page = 10 }: { page?: number; per_page?: number }) => {
+      try {
+        const apiKey = await getDevtoApiKey();
+        const res = await fetch(`https://dev.to/api/readinglist?page=${page}&per_page=${per_page}`, {
+          headers: { "api-key": apiKey },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch reading list");
+        const data = await res.json();
+        return data.map((item: any) => ({
+          id: item.article.id,
+          title: item.article.title,
+          url: item.article.url,
+          reading_time_minutes: item.article.reading_time_minutes,
+          tags: item.article.tags,
+        }));
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
+  fetchDevtoArticleComments: tool({
+    description: "Fetch comments for a specific Dev.to article.",
+    inputSchema: z.object({
+      article_id: z.number().describe("The ID of the article to fetch comments for"),
+    }),
+    execute: async ({ article_id }: { article_id: number }) => {
+      try {
+        const res = await fetch(`https://dev.to/api/comments?a_id=${article_id}`);
+        if (!res.ok) throw new Error("Failed to fetch comments");
+        const data = await res.json();
+        return data.map((c: any) => ({
+          id: c.id_code,
+          body_html: c.body_html,
+          user: {
+            name: c.user.name,
+            username: c.user.username,
+          },
+          children_count: c.children.length,
+        }));
+      } catch (e: any) {
+        return { error: e.message };
+      }
+    },
+  }),
+
 };
+
 
 
