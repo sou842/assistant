@@ -1018,24 +1018,58 @@ export const tools = {
   }),
 
   saveContact: tool({
-    description: "Save a WhatsApp contact (name and phone number) to the database.",
+    description: "Save a contact (name and phone number and/or email) to the database. Use this when the user asks you to save someone's contact info.",
     inputSchema: z.object({
       name: z.string().describe("The name of the contact."),
-      phone: z.string().describe("The WhatsApp phone number with country code (e.g., '919903149299')."),
+      phone: z.string().optional().describe("The phone number with country code if applicable (e.g., '919903149299')."),
+      email: z.string().optional().describe("The email address of the contact.")
     }),
-    execute: async ({ name, phone }) => {
+    execute: async ({ name, phone, email }) => {
       try {
         const session = await auth();
         if (!session?.user?.id) return { error: "Unauthorized" };
+        
+        if (!phone && !email) {
+          return { error: "At least one of phone or email must be provided." };
+        }
+        if (phone && email) {
+          return { error: "Please provide either a phone number OR an email per contact, not both." };
+        }
+
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+          return { error: "Invalid email format." };
+        }
+        if (phone && !/^\+?\d{10,15}$/.test(phone.replace(/[^0-9+]/g, ''))) {
+          return { error: "Invalid phone number format." };
+        }
 
         await dbConnect();
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
-        const contact = await Contact.findOneAndUpdate(
-          { phone: cleanPhone, userId: session.user.id },
-          { name, phone: cleanPhone, userId: session.user.id },
-          { upsert: true, new: true }
-        );
-        return { success: true, contact };
+        
+        const existingQuery: any = { userId: session.user.id };
+        let cleanPhone;
+        if (phone) {
+          cleanPhone = phone.replace(/[^0-9]/g, '');
+          existingQuery.phone = cleanPhone;
+        }
+        if (email) {
+          existingQuery.email = email;
+        }
+
+        const existing = await Contact.findOne(existingQuery);
+
+        if (existing) {
+          existing.name = name;
+          await existing.save();
+          return { success: true, contact: existing };
+        } else {
+          const contact = await Contact.create({
+            name,
+            phone: cleanPhone || undefined,
+            email: email || undefined,
+            userId: session.user.id
+          });
+          return { success: true, contact };
+        }
       } catch (error: any) {
         return { error: error.message };
       }
@@ -1043,7 +1077,7 @@ export const tools = {
   }),
 
   listContacts: tool({
-    description: "List all saved WhatsApp contacts.",
+    description: "List all saved contacts (WhatsApp/email).",
     inputSchema: z.object({}),
     execute: async () => {
       try {
@@ -1060,18 +1094,29 @@ export const tools = {
   }),
 
   deleteContact: tool({
-    description: "Delete a WhatsApp contact by phone number.",
+    description: "Delete a contact by phone number or email.",
     inputSchema: z.object({
-      phone: z.string().describe("The WhatsApp phone number of the contact to delete."),
+      phone: z.string().optional().describe("The phone number of the contact to delete."),
+      email: z.string().optional().describe("The email address of the contact to delete.")
     }),
-    execute: async ({ phone }) => {
+    execute: async ({ phone, email }) => {
       try {
         const session = await auth();
         if (!session?.user?.id) return { error: "Unauthorized" };
+        
+        if (!phone && !email) {
+          return { error: "At least one of phone or email must be provided." };
+        }
 
         await dbConnect();
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
-        const result = await Contact.deleteOne({ phone: cleanPhone, userId: session.user.id });
+        const query: any = { userId: session.user.id };
+        if (phone) {
+          query.phone = phone.replace(/[^0-9]/g, '');
+        } else if (email) {
+          query.email = email;
+        }
+        
+        const result = await Contact.deleteOne(query);
         if (result.deletedCount === 0) return { error: "Contact not found" };
         return { success: true, message: "Contact deleted successfully" };
       } catch (error: any) {

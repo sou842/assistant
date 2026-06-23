@@ -50,6 +50,7 @@ import {
   SquareIcon,
   XIcon,
   MessageSquare,
+  User,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import type {
@@ -451,7 +452,7 @@ export const PromptInputActionContact = ({
 }: PromptInputActionContactProps) => {
   return (
     <DropdownMenuItem {...props} onSelect={onSelect}>
-      <MessageSquare className="mr-2 size-4" /> {label}
+      <User className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
 };
