@@ -11,6 +11,7 @@ import VaultItem from '@/lib/models/VaultItem';
 import StudioDocument from '@/lib/models/StudioDocument';
 import ScheduleTask from '@/lib/models/ScheduleTask';
 import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
+import { SCHEDULER_GUIDELINES } from '@/lib/ai/scheduler-guidelines';
 import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
 
 async function getGoogleAccessToken() {
@@ -123,7 +124,7 @@ const stepSchema = z.discriminatedUnion('type', [
     config: z.object({
       to: z.string().describe("Recipient email address"),
       subject: z.string().describe("Email subject line"),
-      bodyTemplate: z.string().describe("Email body content. ALWAYS use bodyTemplate, NEVER use body. Use {{context.stepId.key}} to inject data. fetch_weather provides keys: temperature, windspeed, time, weather.description, main.humidity."),
+      bodyTemplate: z.string().describe("Email body content. ALWAYS use bodyTemplate, NEVER use body. Email body MUST be pure HTML tags (e.g. <b> or <ul><li>). DO NOT USE MARKDOWN (like **bold** or - for lists). Use {{context.stepId.key}} to inject data. fetch_weather provides exactly these keys: temperature, windspeed, time, weather.description, main.humidity. DO NOT invent keys or add '.data'."),
     })
   }),
   baseStepSchema.extend({
@@ -1123,6 +1124,12 @@ export const tools = {
         return { error: error.message };
       }
     },
+  }),
+
+  getSchedulerGuidelines: tool({
+    description: "Get detailed technical guidelines for creating and modifying scheduled tasks (HTML email formatting, API validation rules, path parsing). You MUST call this before using createScheduleTask or updateScheduleTask.",
+    inputSchema: z.object({}),
+    execute: async () => ({ guidelines: SCHEDULER_GUIDELINES }),
   }),
 
   getVaultNoteGuidelines: tool({

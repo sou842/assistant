@@ -163,9 +163,9 @@ async function executeFetchWeather(config: any, context: any) {
       temp: current.temperature,
       humidity,
     },
-    weather: [
-      { description }
-    ],
+    weather: {
+      description
+    },
     wind: {
       speed: current.windspeed,
     }
@@ -197,9 +197,10 @@ async function executeSendEmail(config: any, context: any, task: any) {
       if (googleToken) {
         const emailLines = [];
         emailLines.push(`To: ${to}`);
-        emailLines.push('Content-type: text/html;charset=iso-8859-1');
+        emailLines.push('Content-type: text/html; charset=utf-8');
         emailLines.push('MIME-Version: 1.0');
-        emailLines.push(`Subject: ${resolvedSubject}`);
+        const encodedSubject = `=?utf-8?B?${Buffer.from(resolvedSubject).toString('base64')}?=`;
+        emailLines.push(`Subject: ${encodedSubject}`);
         emailLines.push('');
         emailLines.push(body.replace(/\n/g, '<br>'));
         const email = emailLines.join('\r\n').trim();
@@ -296,13 +297,18 @@ async function executeHttpRequest(config: any, context: any) {
     }
   }
 
-  const res = await fetch(url, { method, headers, body });
+  const res = await fetch(url, { method, headers, body, cache: 'no-store' });
   let responseData;
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
     responseData = await res.json().catch(() => ({}));
   } else {
     responseData = await res.text();
+  }
+
+  if (!res.ok) {
+    const errorText = typeof responseData === 'string' ? responseData.slice(0, 200) : JSON.stringify(responseData);
+    throw new Error(`HTTP request to ${url} failed with status ${res.status}: ${errorText}`);
   }
 
   return { status: res.status, ok: res.ok, data: responseData };
