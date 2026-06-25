@@ -48,7 +48,7 @@ function getPathValue(obj: any, path: string): any {
 // Helpers
 function fillTemplate(template: string, context: any): string {
   if (!template) return '';
-  return template.replace(/\{\{\s*(?:context\.)?([^}]+?)\s*\}\}/g, (match, path) => {
+  return template.replace(/\{\{\s*(?:context\.)?([^}]+?)\s*\}+/g, (match, path) => {
     let val = getPathValue(context, path);
     
     // Heuristic 1: If path includes .data. but not found, try removing it
