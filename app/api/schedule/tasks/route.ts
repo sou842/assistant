@@ -10,7 +10,7 @@ export async function GET() {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-    const tasks = await ScheduleTask.find({ userId: session.user.id }).sort({ updatedAt: -1 });
+    const tasks = await ScheduleTask.find({ userId: session.user.id }).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: tasks });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });

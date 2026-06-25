@@ -402,7 +402,7 @@ export const tools = {
         await dbConnect();
         const filter: any = { userId: session.user.id };
         if (status) filter.status = status;
-        const tasks = await ScheduleTask.find(filter).sort({ updatedAt: -1 }).limit(50);
+        const tasks = await ScheduleTask.find(filter).sort({ createdAt: -1 }).limit(50);
         return { success: true, tasks: JSON.parse(JSON.stringify(tasks)) };
       } catch (error: any) {
         return { success: false, error: error.message };
