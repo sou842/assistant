@@ -141,6 +141,20 @@ function AIPageContent() {
             ...prev,
             [toolCall.toolCallId]: { status: "success", result: finalResult }
           }));
+
+          setTimeout(async () => {
+            if (activeChatIdRef.current) {
+              try {
+                const fullChat = await loadChatDetails(activeChatIdRef.current);
+                if (fullChat && fullChat.messages) {
+                  setMessages(fullChat.messages);
+                }
+              } catch (e) {
+                console.error("Failed to refetch chat after browser control:", e);
+              }
+            }
+          }, 2500);
+
           return finalResult;
         } catch (err: any) {
           console.error("[Jarvis AI] Browser command failed to execute:", err);
@@ -564,6 +578,8 @@ function AIPageContent() {
         toast.info("On Firefox, please open the Sidebar manually using Cmd+Opt+Y (Mac) or Ctrl+Alt+Y (Windows/Linux).");
       });
   }, [openCompanion]);
+
+  console.log(renderMessages, "tara")
 
   return (
     <div className="flex-1 flex flex-row min-h-0 overflow-hidden relative w-full h-full">
