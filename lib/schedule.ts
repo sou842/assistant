@@ -6,10 +6,51 @@ import { generateText } from 'ai';
 import { createMistral } from '@ai-sdk/mistral';
 import vm from 'vm';
 
-const mistral = createMistral({
-  apiKey: process.env.MISTRAL_API_KEY,
-  baseURL: process.env.MISTRAL_BASE_URL,
-});
+const mistralApiKeys = (process.env.MISTRAL_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+if (mistralApiKeys.length === 0) {
+  mistralApiKeys.push('dummy_key');
+}
+const mistralProviders = mistralApiKeys.map(key =>
+  createMistral({
+    apiKey: key,
+    baseURL: process.env.MISTRAL_BASE_URL,
+  })
+);
+
+const withFallback = (models: any[]): any => {
+  const primary = models[0];
+  return {
+    ...primary,
+    async doGenerate(options: any) {
+      let lastError;
+      for (let i = 0; i < models.length; i++) {
+        const currentModel = models[i];
+        try {
+          return await currentModel.doGenerate(options);
+        } catch (error: any) {
+          if (error?.name === 'AbortError') throw error;
+          console.warn(`[Fallback] Model ${currentModel?.modelId || 'unknown'} (instance ${i + 1}/${models.length}) failed...`, error?.message || error);
+          lastError = error;
+        }
+      }
+      throw lastError;
+    },
+    async doStream(options: any) {
+      let lastError;
+      for (let i = 0; i < models.length; i++) {
+        const currentModel = models[i];
+        try {
+          return await currentModel.doStream(options);
+        } catch (error: any) {
+          if (error?.name === 'AbortError') throw error;
+          console.warn(`[Fallback] Model ${currentModel?.modelId || 'unknown'} (instance ${i + 1}/${models.length}) streaming failed...`, error?.message || error);
+          lastError = error;
+        }
+      }
+      throw lastError;
+    }
+  };
+};
 
 export function cleanPhone(value: string) {
   return value.replace(/[^0-9]/g, '');
@@ -176,12 +217,26 @@ async function executeAIPrompt(config: any, context: any) {
   const prompt = config.prompt || 'Summarize the context.';
   const contextString = JSON.stringify(context);
   
+  const models = mistralProviders.map(p => p('mistral-small-latest'));
   const { text } = await generateText({
-    model: mistral('mistral-small-latest'),
+    model: withFallback(models),
     prompt: `${prompt}\n\nContext Data:\n${contextString}`,
   });
   
-  return { generatedText: text, data: text };
+  let parsedData: any = text;
+  try {
+    let trimmed = text.trim();
+    if (trimmed.startsWith('```')) {
+      trimmed = trimmed.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '').trim();
+    }
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      parsedData = JSON.parse(trimmed);
+    }
+  } catch (e) {
+    // Keep raw string if parsing fails
+  }
+
+  return { generatedText: text, data: parsedData };
 }
 
 async function executeSendEmail(config: any, context: any, task: any) {
@@ -338,7 +393,11 @@ export async function executeScheduleTaskRun(task: any, run: any) {
   try {
     const steps = task.steps || [];
     let currentStepIndex = run.currentStepIndex || 0;
-    let localContext = run.context || {};
+    const googleToken = await getGoogleAccessTokenForUser(task.userId).catch(() => null);
+    let localContext = {
+      ...(run.context || {}),
+      googleAccessToken: googleToken,
+    };
     
     // Process all remaining steps sequentially
     while (currentStepIndex < steps.length) {

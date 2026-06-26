@@ -285,6 +285,13 @@ export async function POST(req: Request) {
       if (activeToolNames.some(t => vaultTools.includes(t))) {
         activeToolNames.push('listVaultItems', 'getVaultItem');
       }
+
+      // Auto-include all schedule tools if any schedule tool or guidelines are selected to support multi-step workflows
+      const scheduleTools = ['createScheduleTask', 'updateScheduleTask', 'listScheduleTasks', 'deleteScheduleTask', 'getSchedulerGuidelines'];
+      if (activeToolNames.some(t => scheduleTools.includes(t))) {
+        activeToolNames.push(...scheduleTools);
+      }
+
       activeToolNames = Array.from(new Set(activeToolNames));
       if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
         activeToolNames = activeToolNames.filter(name => name !== 'createStudioDocument');
