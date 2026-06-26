@@ -221,7 +221,7 @@ export async function POST(req: Request) {
       "11. For Google Meet/Google Calendar: You can manage meetings and schedule video calls via Google Meet. Use 'googleMeetSchedule' to book a new meeting and generate a video link (always specify the title, start time, end time, and attendees if mentioned). Use 'googleMeetListMeetings' to list upcoming meetings, 'googleMeetUpdate' to reschedule or edit details, and 'googleMeetCancel' to cancel a meeting.",
       "12. For Dev.to: You can publish, draft, or update articles for the user. Use 'publishDevtoArticle' to draft/publish, and 'updateDevtoArticle' to update them. Use 'fetchMyDevtoArticles' to fetch their articles, 'fetchTrendingDevtoArticles' to search trending articles, 'fetchDevtoReadingList' to access their saved reading list, and 'fetchDevtoArticleComments' to view article discussions.",
       "13. For Notion: You can read and write to the user's Notion workspace. Use 'notionSearch' to find pages or databases, 'notionGetPage' to read content, 'notionCreatePage' to create new pages, and 'notionAppendBlocks' to add text to existing pages. IMPORTANT: Notion integrations can ONLY see pages that have been explicitly shared with them. If 'notionSearch' returns an empty array `[]`, it means the user has not shared any pages with the integration yet. In this case, DO NOT say Notion is not connected. Instead, inform the user that they need to go to their Notion page, click the '...' menu at the top right, go to 'Add connections', and select the integration they just created.",
-      `14. For Browser Control: Use 'browserControl' to automate browser tasks like opening tabs/websites, searching on Google/YouTube, clicking links/buttons, or running scripts. Since this is executed in real-time on the client side, you can run multiple actions sequentially across several steps to complete a task. If the user asks to 'open a website and open the first video', do NOT try to do it all at once; first call 'open_tab' with the website URL, wait for the result to return loaded, and then call 'click_element' or 'execute_script' to open the first video. For YouTube video elements, common selectors include 'ytd-rich-grid-media a#video-title-link, ytd-video-renderer a#video-title, #video-title, a[href*="\\/watch\\"]'. If unsure of selectors, run an 'execute_script' query to inspect or search the DOM.\n` +
+      `14. For Browser Control: Use 'browserControl' to automate browser tasks. For complex or multi-step tasks (like "search for a video and like it"), you MUST use the 'run_agent' action and pass the FULL detailed instruction in the 'prompt' field so the browser subagent knows exactly what to do. For single simple actions, you can use 'open_tab', 'search', 'click_element', etc. Since this is executed in real-time on the client side, the result will be returned to you.\nCRITICAL: You MUST output a text message to the user (e.g., "I am forwarding this task to the browser agent now...") BEFORE making the 'browserControl' tool call. Do not just output the tool call.\n` +
       (browserExtensionConnected
         ? "The browser extension is currently CONNECTED. You can perform browser control tasks normally."
         : "CRITICAL: The browser extension is currently NOT connected. Do NOT attempt to use 'browserControl'. Instead, immediately inform the user that the browser extension is not connected and that they must make sure the browser extension is installed and the companion sidepanel is active before they can use this feature."),
@@ -329,7 +329,7 @@ export async function POST(req: Request) {
         console.log('\n--- Step Finished ---', step);
         stepsLogged.push(step);
       },
-      onFinish: async ({ text, toolResults, usage }) => {
+      onFinish: async ({ text, toolResults, toolCalls, usage }) => {
         if (!canPersist) {
           return;
         }
@@ -341,9 +341,14 @@ export async function POST(req: Request) {
             toolInvocations: m.toolInvocations || [],
           }));
 
+          let finalContent = text;
+          if (!finalContent && toolCalls?.some(tc => tc.toolName === 'browserControl')) {
+            finalContent = "I have forwarded your request to the browser agent.";
+          }
+
           const assistantMessage = {
             role: 'assistant',
-            content: text,
+            content: finalContent,
             toolInvocations: toolResults?.map(result => ({
               ...result,
               state: 'result' as const,

@@ -1627,9 +1627,9 @@ export const tools = {
   }),
 
   browserControl: tool({
-    description: "Control the user's browser via the extension. Use this when the user asks to open tabs, search on YouTube or Google, click page elements, or run custom JS scripts. Available actions: 'open_tab', 'search', 'click_element', 'execute_script', 'get_active_tab'.",
+    description: "Control the user's browser via the extension. Use this when the user asks to open tabs, search on YouTube or Google, click page elements, or run custom JS scripts. Available actions: 'open_tab', 'search', 'click_element', 'execute_script', 'get_active_tab', 'run_agent'. For multi-step or complex tasks, ALWAYS use 'run_agent'.",
     inputSchema: z.object({
-      action: z.enum(['open_tab', 'search', 'click_element', 'execute_script', 'get_active_tab'])
+      action: z.enum(['open_tab', 'search', 'click_element', 'execute_script', 'get_active_tab', 'run_agent'])
         .describe("The browser action to execute"),
       url: z.string().optional()
         .describe("The target URL (required for 'open_tab')"),
@@ -1639,6 +1639,8 @@ export const tools = {
         .describe("Search query (required for 'search')"),
       script: z.string().optional()
         .describe("JavaScript string to execute (required for 'execute_script')"),
+      prompt: z.string().optional()
+        .describe("A highly detailed task description for the browser subagent (required for 'run_agent'). Include all steps like what to search, what to click, etc."),
       description: z.string()
         .describe("User-friendly explanation of what this browser command is doing (e.g., 'Opening YouTube')"),
     }),

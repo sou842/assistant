@@ -79,8 +79,8 @@ function AIPageContent() {
     experimental_throttle: STREAM_RENDER_THROTTLE_MS,
     async onToolCall({ toolCall }) {
       if (toolCall.toolName === "browserControl") {
-        const { action, url, selector, query, script, description } = toolCall.input as any;
-        console.log("[Jarvis AI] Delegating Browser Control command:", { action, url, selector, query, script, description });
+        const { action, url, selector, query, script, description, prompt } = toolCall.input as any;
+        console.log("[Jarvis AI] Delegating Browser Control command:", { action, url, selector, query, script, description, prompt });
         setBrowserCommandStates((prev) => ({
           ...prev,
           [toolCall.toolCallId]: { status: "running" }
@@ -93,49 +93,55 @@ function AIPageContent() {
             console.warn("Could not open companion panel automatically:", e);
           }
 
-          const agentPrompt = description || `${action} ${url || query || ""}`.trim();
+          const agentPrompt = prompt || description || `${action} ${url || query || ""}`.trim();
+          const targetAction = action || "run_agent";
 
-          // Send run_agent command to extension
-          await sendBrowserCommand({
-            action: "run_agent",
+          // Send command to extension
+          const directResult = await sendBrowserCommand({
+            action: targetAction,
+            url, selector, query, script,
             prompt: agentPrompt,
             model: selectedModel,
-            description: `Delegating to extension: "${agentPrompt}"`
+            description: description || `Executing: "${agentPrompt}"`
           });
 
-          // Wait for extension to finish executing by listening to broadcast logs
-          const extensionResult = await new Promise((resolve, reject) => {
-            const handleBroadcast = (event: MessageEvent) => {
-              if (event.source !== window) return;
-              const data = event.data;
-              if (data && data.source === "jarvis-extension-event" && data.event === "log_updated") {
-                const log = data.payload;
-                if (log && log.action === "agent") {
-                  if (log.status === "success") {
-                    window.removeEventListener("message", handleBroadcast);
-                    resolve({ success: true, result: log.detail });
-                  } else if (log.status === "error") {
-                    window.removeEventListener("message", handleBroadcast);
-                    reject(new Error(log.error || log.detail || "Agent execution failed"));
+          let finalResult = directResult;
+
+          if (targetAction === "run_agent") {
+            // Wait for extension to finish executing by listening to broadcast logs
+            finalResult = await new Promise((resolve, reject) => {
+              const handleBroadcast = (event: MessageEvent) => {
+                if (event.source !== window) return;
+                const data = event.data;
+                if (data && data.source === "jarvis-extension-event" && data.event === "log_updated") {
+                  const log = data.payload;
+                  if (log && log.action === "agent") {
+                    if (log.status === "success") {
+                      window.removeEventListener("message", handleBroadcast);
+                      resolve({ success: true, result: log.detail });
+                    } else if (log.status === "error") {
+                      window.removeEventListener("message", handleBroadcast);
+                      reject(new Error(log.error || log.detail || "Agent execution failed"));
+                    }
                   }
                 }
-              }
-            };
-            window.addEventListener("message", handleBroadcast);
+              };
+              window.addEventListener("message", handleBroadcast);
 
-            // Safety timeout: 5 minutes
-            setTimeout(() => {
-              window.removeEventListener("message", handleBroadcast);
-              reject(new Error("Browser task execution timed out"));
-            }, 300000);
-          });
+              // Safety timeout: 5 minutes
+              setTimeout(() => {
+                window.removeEventListener("message", handleBroadcast);
+                reject(new Error("Browser task execution timed out"));
+              }, 300000);
+            });
+          }
 
-          console.log("[Jarvis AI] Browser command completed:", extensionResult);
+          console.log("[Jarvis AI] Browser command completed:", finalResult);
           setBrowserCommandStates((prev) => ({
             ...prev,
-            [toolCall.toolCallId]: { status: "success", result: extensionResult }
+            [toolCall.toolCallId]: { status: "success", result: finalResult }
           }));
-          return extensionResult;
+          return finalResult;
         } catch (err: any) {
           console.error("[Jarvis AI] Browser command failed to execute:", err);
           setBrowserCommandStates((prev) => ({
