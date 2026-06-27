@@ -135,6 +135,12 @@ TAILWIND CSS STYLING & DESIGN SKILLS (MULTIPLE DESIGN SYSTEMS):
     - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
     - Page wrapper: \`bg-slate-50 border border-slate-100 max-w-4xl mx-auto rounded-2xl p-8 md:p-16 shadow-2xl mt-4 mb-4\`.
   * Accessibility: WCAG 2.2 AA compliant contrast, high readability, no low-contrast text.
+  
+INTERACTIVE WEB APPS (HTML, CSS, JS):
+- You can create fully functional, interactive web pages and mini-apps (like calculators, tools, games, dynamic forms).
+- If the user requests interactive functionality, ALWAYS include Vanilla JavaScript within <script> tags at the end of the document.
+- Your generated JavaScript will be executed! Use document.querySelector or getElementById to hook into your rendered HTML elements.
+- Ensure the app logic is fully working and robust.
 
 PLANNING & DESIGN PROTOCOL:
 Before calling the 'updateStudioDocument' tool, you MUST explicitly write down your design plan in your thoughts or conversational response:
@@ -195,6 +201,12 @@ TAILWIND CSS STYLING & DESIGN SKILLS (MULTIPLE DESIGN SYSTEMS):
     - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
     - Page wrapper: \`bg-slate-50 border border-slate-100 max-w-4xl mx-auto rounded-2xl p-8 md:p-16 shadow-2xl mt-4 mb-4\`.
   * Accessibility: WCAG 2.2 AA compliant contrast, high readability, no low-contrast text.
+
+INTERACTIVE WEB APPS (HTML, CSS, JS):
+- You can create fully functional, interactive web pages and mini-apps (like calculators, tools, games, dynamic forms).
+- If the user requests interactive functionality, ALWAYS include Vanilla JavaScript within <script> tags at the end of the document.
+- Your generated JavaScript will be executed! Use document.querySelector or getElementById to hook into your rendered HTML elements.
+- Ensure the app logic is fully working and robust.
 
 PLANNING & DESIGN PROTOCOL:
 Before calling the 'updateStudioDocument' tool, you MUST explicitly write down your design plan in your thoughts or conversational response:

@@ -103,6 +103,16 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
       const currentHTML = editorRef.current.innerHTML.replace(/\sdata-inspector-(?:hover|selected)="true"/g, '');
       if (currentHTML !== safeData) {
         editorRef.current.innerHTML = safeData;
+
+        // Re-inject scripts so they execute in the iframe context
+        const iframeDoc = editorRef.current.ownerDocument;
+        const scripts = editorRef.current.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+          const newScript = iframeDoc.createElement('script');
+          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+          newScript.appendChild(iframeDoc.createTextNode(oldScript.innerHTML));
+          oldScript.parentNode?.replaceChild(newScript, oldScript);
+        });
       }
     }
   }, [initialData, iframeReady]);
