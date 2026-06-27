@@ -38,6 +38,7 @@ import {
 import { WeatherCard } from "@/components/ai/weather-card";
 import { BrowserCard } from "@/components/ai/browser-card";
 import { YouTubeCard } from "@/components/ai/youtube-card";
+import { VaultCard } from "@/components/ai/vault-card";
 import { Shimmer } from "../ai-elements/shimmer";
 
 interface MessageListProps {
@@ -292,6 +293,10 @@ const MessageRow = React.memo(function MessageRow({
     (ti: any) => ti.toolName === 'browserControl'
   );
 
+  const vaultInvocations = (message as any)?.toolInvocations?.filter(
+    (ti: any) => ti.state === 'result' && ['createVaultItem', 'updateVaultItem', 'getVaultItem'].includes(ti.toolName) && ti.result && !('error' in ti.result)
+  );
+
   const toolInvocations = (message as any)?.toolInvocations;
   const textVideoIds = React.useMemo(() => extractYouTubeVideoIds(text), [text]);
 
@@ -440,6 +445,10 @@ const MessageRow = React.memo(function MessageRow({
             {!isEditing && textVideoIds.length > 0 && (
               <YouTubeCard data={{ videos: textVideoIds.map(id => ({ videoId: id })) }} />
             )}
+
+            {!isEditing && vaultInvocations?.map((invocation: any) => (
+              <VaultCard key={invocation.toolCallId} data={invocation.result as any} action={invocation.toolName === 'updateVaultItem' ? 'update' : 'create'} />
+            ))}
 
             {!isEditing && browserInvocations?.map((invocation: any) => {
               const commandState = browserCommandStates?.[invocation.toolCallId] || {

@@ -1191,7 +1191,7 @@ export const tools = {
   }),
 
   createVaultItem: tool({
-    description: "Create a new item in the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
+    description: "Create a new item in the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format. The response will contain the URL route to access this item.",
     inputSchema: z.object({
       title: z.string().min(1).max(100).describe('Title of the vault item'),
       type: vaultItemTypeSchema.describe('Type: spreadsheet, note, gallery, or album'),
@@ -1205,7 +1205,7 @@ export const tools = {
 
         await dbConnect();
         const item = await VaultItem.create({ ...data, userId: session.user.id });
-        return { success: true, item: JSON.parse(JSON.stringify(item)) };
+        return { success: true, item: JSON.parse(JSON.stringify(item)), url: `/ai/vault/${item._id}` };
       } catch (error: any) {
         return { success: false, error: error.message };
       }
@@ -1213,7 +1213,7 @@ export const tools = {
   }),
 
   updateVaultItem: tool({
-    description: "Update an existing Vault item (spreadsheet, table, sheet, note, file, gallery, or album). Use 'getVaultItem' first to get the current content, then send the FULL updated content array/object here. IMPORTANT: Before updating a 'note', you MUST call 'getVaultNoteGuidelines'. Before updating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format.",
+    description: "Update an existing Vault item (spreadsheet, table, sheet, note, file, gallery, or album). Use 'getVaultItem' first to get the current content, then send the FULL updated content array/object here. IMPORTANT: Before updating a 'note', you MUST call 'getVaultNoteGuidelines'. Before updating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format. The response will contain the URL route to access this item.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Vault item to update'),
       title: z.string().optional().describe('New title'),
@@ -1228,7 +1228,7 @@ export const tools = {
         await dbConnect();
         const item = await VaultItem.findOneAndUpdate({ _id: id, userId: session.user.id }, updateData, { new: true });
         if (!item) return { success: false, error: "Vault item not found" };
-        return { success: true, item: JSON.parse(JSON.stringify(item)) };
+        return { success: true, item: JSON.parse(JSON.stringify(item)), url: `/ai/vault/${item._id}` };
       } catch (error: any) {
         return { success: false, error: error.message };
       }
