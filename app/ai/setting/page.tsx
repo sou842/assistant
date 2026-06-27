@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Brain, Settings as SettingsIcon, User } from "lucide-react";
+import { Brain, Settings as SettingsIcon, User, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "../_components/page-header";
 import { GeneralTab } from "./_components/general-tab";
 import { MemoryTab } from "./_components/memory-tab";
 import { ContactTab } from "./_components/contact-tab";
+import { HistoryTab } from "./_components/history-tab";
 
-type SettingTab = "general" | "memory" | "contact" | "personalization" | "apps" | "data" | "security";
+type SettingTab = "general" | "memory" | "contact" | "history" | "personalization" | "apps" | "data" | "security";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -36,6 +37,8 @@ export default function SettingsPage() {
         return <MemoryTab />
       case "contact":
         return <ContactTab />
+      case "history":
+        return <HistoryTab />
       default:
         return (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -51,6 +54,7 @@ export default function SettingsPage() {
     { id: "general", label: "General", icon: SettingsIcon },
     { id: "memory", label: "Memory", icon: Brain },
     { id: "contact", label: "Contacts", icon: User },
+    { id: "history", label: "History", icon: History },
     // { id: "personalization", label: "Personalization", icon: Palette },
     // { id: "apps", label: "Apps", icon: LayoutGrid },
     // { id: "data", label: "Data controls", icon: Database },

@@ -297,8 +297,8 @@ export function Sidebar({
               {initials}
             </div>
           ) : (
-            <div className="dropdown dropdown-top w-full">
-              <div tabIndex={0} role="button" className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-app-surface-glass transition-all w-full text-left">
+            <Link href="/ai/setting" className="w-full block">
+              <div className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-app-surface-glass transition-all w-full text-left rounded-xl">
                 <div className="relative">
                   <div className="w-9 h-9 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
                     {initials}
@@ -309,11 +309,7 @@ export function Sidebar({
                   <p className="text-[10px] text-app-text-muted truncate font-medium">{userEmail}</p>
                 </div>
               </div>
-              <ul tabIndex={0} className="dropdown-content menu bg-app-surface border border-app-border-default text-app-text-primary rounded-xl z-[1] w-full p-2 shadow-lg mb-2">
-                <li><Link href="/ai/setting" className="hover:bg-app-surface-glass-strong rounded-lg">Settings</Link></li>
-                <li><a onClick={() => signOut()} className="hover:bg-app-danger-soft text-app-danger-strong rounded-lg">Logout</a></li>
-              </ul>
-            </div>
+            </Link>
           )}
         </div>
       </aside>
