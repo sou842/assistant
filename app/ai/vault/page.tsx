@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Menu, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil } from "lucide-react";
+import { Database, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil, CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,8 @@ export default function VaultPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ id?: string, type: "note" | "spreadsheet" | "gallery" | "album" } | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -48,20 +50,21 @@ export default function VaultPage() {
     router.push(`/ai/vault/${item._id}`);
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this item?")) return;
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) return;
 
     try {
-      const res = await fetch(`/api/vault/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Item deleted");
-        mutate();
-      } else {
-        toast.error("Failed to delete item");
-      }
+      await Promise.all(
+        selectedIds.map((id) =>
+          fetch(`/api/vault/${id}`, { method: "DELETE" })
+        )
+      );
+      toast.success(`${selectedIds.length} item(s) deleted`);
+      setSelectedIds([]);
+      mutate();
     } catch (err) {
-      toast.error("An error occurred");
+      toast.error("Failed to delete some items");
     }
   };
 
@@ -104,6 +107,15 @@ export default function VaultPage() {
         subtitle="Manage your stored data and documents"
       >
         <div className="flex items-center justify-end gap-3 w-full">
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="flex h-9 items-center gap-2 rounded-full bg-red-400 px-4 text-xs font-semibold text-white transition-all hover:opacity-80 cursor-pointer"
+            >
+              <Trash2 size={14} />
+              Delete {selectedIds.length} Selected
+            </button>
+          )}
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-app-text-ghost" />
             <input
@@ -176,7 +188,7 @@ export default function VaultPage() {
             </div>
           ) : error ? (
             <div className="py-20 text-center text-app-danger-strong">Failed to load vault items.</div>
-          ) : items.length === 0 ? (
+          ) : items?.length === 0 ? (
             <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-app-border-default bg-app-canvas px-6 text-center">
               <div className="mb-5 flex size-16 items-center justify-center rounded-3xl border border-app-border-default bg-app-surface-glass-soft">
                 <Database className="size-7 text-app-text-ghost" />
@@ -188,11 +200,26 @@ export default function VaultPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {items.map((item: any) => (
+              {items?.map((item: any) => {
+                const isSelected = selectedIds?.includes(item._id);
+                return (
                 <div
                   key={item._id}
-                  onClick={() => handleEdit(item)}
-                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-app-border-subtle bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass"
+                  onClick={() => {
+                    if (selectedIds.length > 0) {
+                      setSelectedIds((prev) =>
+                        prev.includes(item._id)
+                          ? prev.filter((id) => id !== item._id)
+                          : [...prev, item._id]
+                      );
+                    } else {
+                      handleEdit(item);
+                    }
+                  }}
+                  className={cn(
+                    "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass",
+                    isSelected ? "border-brand-primary bg-app-primary/5" : "border-app-border-subtle"
+                  )}
                 >
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="rounded-full bg-app-surface-glass p-2.5">
@@ -204,7 +231,7 @@ export default function VaultPage() {
                         <ImageIcon size={24} className={item.type === 'album' ? "text-pink-400" : "text-purple-400"} />
                       )}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+                    <div className={cn("flex items-center gap-1 transition-all", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -216,10 +243,22 @@ export default function VaultPage() {
                         <Pencil size={16} />
                       </button>
                       <button
-                        onClick={(e) => handleDelete(e, item._id)}
-                        className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-danger-soft hover:text-app-danger-strong"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedIds((prev) =>
+                            prev.includes(item._id)
+                              ? prev.filter((id) => id !== item._id)
+                              : [...prev, item._id]
+                          );
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-full p-1.5",
+                          isSelected
+                            ? "text-app-primary hover:text-app-primary/80"
+                            : "text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                        )}
                       >
-                        <Trash2 size={16} />
+                        {isSelected ? <CheckCircle2 size={20} className="text-brand-primary" /> : <Circle size={18} />}
                       </button>
                     </div>
                   </div>
@@ -263,7 +302,7 @@ export default function VaultPage() {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
