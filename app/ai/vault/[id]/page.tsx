@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { downloadVaultItem } from "@/lib/download-vault-item";
+import { saveLocalChat, loadLocalChat, deleteLocalChat } from "@/lib/local-chat-storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "../_components/note-editor";
 import { SpreadsheetEditor } from "../_components/spreadsheet-editor";
@@ -46,6 +47,7 @@ export default function VaultItemPage() {
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [chatLoaded, setChatLoaded] = useState(false);
 
   const handleLinkCover = async () => {
     if (!coverLinkUrl.trim()) return;
@@ -151,6 +153,7 @@ Content: ${JSON.stringify(data.item.content, null, 2)}
       ...options,
       body: {
         ...options?.body,
+        skipSave: true,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, an AI assistant integrated into a Vault item viewer. 
 The user is currently viewing and working on the item provided in the CURRENT ITEM CONTEXT below.
@@ -183,6 +186,7 @@ Content: ${JSON.stringify(data.item.content, null, 2)}
       ...options,
       body: {
         ...options?.body,
+        skipSave: true,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, an AI assistant integrated into a Vault item viewer. 
 The user is currently viewing and working on the item provided in the CURRENT ITEM CONTEXT below.
@@ -196,9 +200,29 @@ ${itemContext}`,
     });
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     chat.setMessages([]);
+    await deleteLocalChat(`vault-chat-${id}`);
   };
+
+  useEffect(() => {
+    loadLocalChat(`vault-chat-${id}`).then((msgs) => {
+      if (msgs.length > 0) {
+        chat.setMessages(msgs);
+      }
+      setChatLoaded(true);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (chatLoaded) {
+      if (messages.length > 0) {
+        saveLocalChat(`vault-chat-${id}`, messages);
+      } else {
+        deleteLocalChat(`vault-chat-${id}`);
+      }
+    }
+  }, [messages, chatLoaded, id]);
 
   useEffect(() => {
     if (data?.item) {
@@ -635,6 +659,7 @@ ${itemContext}`,
               setSelectedModel={setSelectedModel}
               onClose={() => setShowChat(false)}
               onClearChat={handleClearChat}
+              setMessages={chat.setMessages}
               itemTitle={title || "Untitled Item"}
               itemType={data?.item?.type}
             />

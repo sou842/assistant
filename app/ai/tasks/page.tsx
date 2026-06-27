@@ -14,6 +14,7 @@ import { useChat } from "@ai-sdk/react";
 import { mistralModels } from "@/components/ai/chat-input";
 import { ChatSidePanel } from "./_components/chat-side-panel";
 import { toast } from "sonner";
+import { saveLocalChat, loadLocalChat, deleteLocalChat } from "@/lib/local-chat-storage";
 import {
   DndContext,
   DragOverlay,
@@ -45,6 +46,7 @@ export default function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [selectedChatTaskId, setSelectedChatTaskId] = React.useState<string | null>(null);
   const [activeDragTask, setActiveDragTask] = React.useState<any | null>(null);
+  const [chatLoaded, setChatLoaded] = React.useState(false);
 
   const { data: result, isLoading: isTasksLoading } = useSWR("/api/tasks", fetcher);
   const tasks = React.useMemo(() => result?.data || [], [result]);
@@ -118,6 +120,7 @@ export default function TasksPage() {
       ...options,
       body: {
         ...options?.body,
+        skipSave: true,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, assisting the user with their task manager. You have tools to list, create, update, and delete tasks. Help the user stay organized efficiently. ${selectedChatTask
           ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
@@ -137,6 +140,7 @@ export default function TasksPage() {
       ...options,
       body: {
         ...options?.body,
+        skipSave: true,
         memories: enabledMemories,
         systemPrompt: `You are Jarvis, assisting the user with their task manager. You have tools to list, create, update, and delete tasks. Help the user stay organized efficiently. ${selectedChatTask
           ? `\n\nCURRENT CONTEXT: The user is currently focusing on the task: "${selectedChatTask.title}" (ID: ${selectedChatTask._id}). Prioritize actions and responses related to this task.`
@@ -146,10 +150,30 @@ export default function TasksPage() {
     });
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     chat.setMessages([]);
     setSelectedChatTaskId(null);
+    await deleteLocalChat('tasks-chat');
   };
+
+  React.useEffect(() => {
+    loadLocalChat('tasks-chat').then((msgs) => {
+      if (msgs.length > 0) {
+        chat.setMessages(msgs);
+      }
+      setChatLoaded(true);
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (chatLoaded) {
+      if (messages.length > 0) {
+        saveLocalChat('tasks-chat', messages);
+      } else {
+        deleteLocalChat('tasks-chat');
+      }
+    }
+  }, [messages, chatLoaded]);
 
   const handleCreateTask = async (data: any) => {
     try {
@@ -475,6 +499,7 @@ export default function TasksPage() {
                 selectedTask={selectedChatTask}
                 setSelectedTask={setSelectedChatTaskId}
                 onClearChat={handleClearChat}
+                setMessages={chat.setMessages}
               />
             </motion.div>
           )}

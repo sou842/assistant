@@ -23,6 +23,7 @@ interface ChatSidePanelProps {
   selectedTask: any | null;
   setSelectedTask: (task: any | null) => void;
   onClearChat: () => void;
+  setMessages?: (messages: UIMessage[]) => void;
 }
 
 export function ChatSidePanel({
@@ -37,7 +38,8 @@ export function ChatSidePanel({
   onClose,
   selectedTask,
   setSelectedTask,
-  onClearChat
+  onClearChat,
+  setMessages
 }: ChatSidePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { setNodeRef, isOver } = useDroppable({
@@ -127,6 +129,10 @@ export function ChatSidePanel({
               onSaveMemory={() => { }}
               regenerate={regenerate}
               selectedModel={selectedModel}
+              onDeleteMessage={(id) => {
+                const index = messages.findIndex(m => m.id === id);
+                if (index !== -1) setMessages?.(messages.slice(0, index));
+              }}
               scrollContainerRef={scrollContainerRef}
             />
           </div>

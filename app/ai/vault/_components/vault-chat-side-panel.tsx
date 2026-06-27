@@ -24,6 +24,7 @@ interface VaultChatSidePanelProps {
   itemTitle: string;
   itemType?: string;
   selectedContext?: { text: string; html: string } | null;
+  setMessages?: (messages: UIMessage[]) => void;
 }
 
 export function VaultChatSidePanel({
@@ -39,7 +40,8 @@ export function VaultChatSidePanel({
   onClearChat,
   itemTitle,
   itemType,
-  selectedContext
+  selectedContext,
+  setMessages
 }: VaultChatSidePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = React.useState(true);
@@ -97,6 +99,10 @@ export function VaultChatSidePanel({
               onSaveMemory={() => { }}
               regenerate={regenerate}
               selectedModel={selectedModel}
+              onDeleteMessage={(id) => {
+                const index = messages.findIndex(m => m.id === id);
+                if (index !== -1) setMessages?.(messages.slice(0, index));
+              }}
               scrollContainerRef={scrollContainerRef}
             />
           </div>

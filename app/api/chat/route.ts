@@ -66,6 +66,7 @@ const google = createGoogleGenerativeAI({
 const chatRequestSchema = z.object({
   chatId: z.string().optional(),
   model: z.string().optional(),
+  skipSave: z.boolean().optional(),
   memories: z.array(z.object({
     title: z.string(),
     content: z.string(),
@@ -142,7 +143,7 @@ export async function POST(req: Request) {
       return new Response('Invalid request payload', { status: 400 });
     }
 
-    const { messages, chatId, memories = [], model: requestedModel, systemPrompt: clientSystemPrompt, browserExtensionConnected } = parsed.data;
+    const { messages, chatId, memories = [], model: requestedModel, systemPrompt: clientSystemPrompt, browserExtensionConnected, skipSave } = parsed.data;
 
     const validChatId = chatId;
 
@@ -356,21 +357,23 @@ export async function POST(req: Request) {
           };
           dbMessages.push(assistantMessage);
 
-          if (validChatId) {
-            await Chat.findByIdAndUpdate(validChatId, {
-              $set: { messages: dbMessages },
-              $setOnInsert: {
+          if (!skipSave) {
+            if (validChatId) {
+              await Chat.findByIdAndUpdate(validChatId, {
+                $set: { messages: dbMessages },
+                $setOnInsert: {
+                  title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...`,
+                  ...(session?.user?.id ? { userId: session.user.id } : {})
+                }
+              }, { upsert: true });
+            } else {
+              // Fallback for safety, though validChatId should be present
+              await Chat.create({
                 title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...`,
+                messages: dbMessages,
                 ...(session?.user?.id ? { userId: session.user.id } : {})
-              }
-            }, { upsert: true });
-          } else {
-            // Fallback for safety, though validChatId should be present
-            await Chat.create({
-              title: `${dbMessages[0]?.content?.slice(0, 50) || 'New Chat'}...`,
-              messages: dbMessages,
-              ...(session?.user?.id ? { userId: session.user.id } : {})
-            });
+              });
+            }
           }
 
           // Save LLM Call Log
