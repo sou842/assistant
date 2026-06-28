@@ -6,12 +6,12 @@ export function YouTubeCard({ data }: { data: any }) {
   if (videos.length === 0) return null;
 
   return (
-    <div className="flex overflow-x-auto gap-4 mt-4 w-full pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+    <div className="flex relative overflow-x-auto gap-4 mt-4 w-full min-h-[190px] pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
       {videos.map((video: any, i: number) => (
-        <div key={video.videoId || i} className="shrink-0 w-[280px] sm:w-[320px] rounded-xl overflow-hidden border border-app-border-subtle bg-app-surface/50 shadow-sm snap-start">
-          <div className="relative pt-[56.25%] w-full bg-black/10">
+        <div key={video.videoId || i} className="shrink-0 w-[280px] sm:w-[320px] h-full rounded-xl overflow-hidden border border-app-border-subtle bg-app-surface/50 shadow-sm snap-start">
+          <div className="w-full h-full bg-black/10">
             <iframe
-              className="absolute top-0 left-0 w-full h-full"
+              className=" w-full h-full"
               src={`https://www.youtube.com/embed/${video.videoId}`}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
