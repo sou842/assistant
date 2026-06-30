@@ -19,6 +19,7 @@ export function AIShell({ children }: { children: React.ReactNode }) {
     sidebarWidth,
     startResize,
     isSyncing,
+    togglePinChat,
   } = useAI();
 
   const [mounted, setMounted] = useState(false);
@@ -49,6 +50,7 @@ export function AIShell({ children }: { children: React.ReactNode }) {
           sidebarOpen={sidebarOpen}
           sidebarWidth={sidebarWidth}
           isSyncing={isSyncing}
+          togglePinChat={togglePinChat}
         />
 
         {sidebarOpen && (

@@ -13,6 +13,7 @@ export interface IChat extends Document {
   userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  isPinned?: boolean;
 }
 
 const MessageSchema = new Schema<IMessage>({
@@ -28,6 +29,7 @@ const ChatSchema = new Schema<IChat>(
     title: { type: String, default: 'New Chat' },
     messages: [MessageSchema],
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    isPinned: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

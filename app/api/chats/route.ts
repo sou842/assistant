@@ -27,7 +27,7 @@ export async function GET(req: Request) {
 
       const [chats, totalCount] = await Promise.all([
         Chat.find(query)
-          .select('title updatedAt createdAt')
+          .select('title updatedAt createdAt isPinned')
           .sort({ updatedAt: -1 })
           .skip(skip)
           .limit(limitNum),
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ chats, totalPages, totalCount });
     } else {
       const chats = await Chat.find(query)
-        .select('title updatedAt createdAt')
+        .select('title updatedAt createdAt isPinned')
         .sort({ updatedAt: -1 });
       
       return NextResponse.json(chats);
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
               updatedAt: new Date(chat.updatedAt || Date.now()),
               createdAt: new Date(chat.createdAt || Date.now()),
               userId: session.user.id,
+              isPinned: chat.isPinned,
             } 
           },
           upsert: true,
@@ -77,8 +78,8 @@ export async function POST(req: Request) {
       await Chat.bulkWrite(operations);
       return NextResponse.json({ message: 'Migration successful' });
     } else {
-      const { title, messages } = body;
-      const chat = await Chat.create({ title, messages, userId: session.user.id });
+      const { title, messages, isPinned } = body;
+      const chat = await Chat.create({ title, messages, userId: session.user.id, isPinned });
       return NextResponse.json(chat);
     }
   } catch (error) {

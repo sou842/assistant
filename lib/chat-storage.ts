@@ -10,6 +10,7 @@ export type StoredChat = {
   title: string;
   updatedAt: number;
   messages: UIMessage[];
+  isPinned?: boolean;
 };
 
 export const deriveChatTitle = (messages: (UIMessage | undefined | null)[]) => {

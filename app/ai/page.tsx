@@ -55,6 +55,7 @@ function AIPageContent() {
 
   const activeChatIdRef = useRef("");
   const lastLoadedQRef = useRef<string | null>(null);
+  const messagesChatIdRef = useRef<string | null>(null);
   const persistedToolCallsRef = useRef(new Set<string>());
   const chatSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamRenderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -281,11 +282,12 @@ function AIPageContent() {
         if (chat.id === activeChatId) {
           const hasExistingMessages = Array.isArray(chat.messages);
           const isSameLength = hasExistingMessages && chat.messages.length === nextMessages.length;
+          const isInitialLoad = hasExistingMessages && chat.messages.length === 0 && nextMessages.length > 0;
           return {
             ...chat,
             messages: nextMessages,
             title: deriveChatTitle(nextMessages),
-            updatedAt: (!hasExistingMessages || isSameLength) ? chat.updatedAt : Date.now(),
+            updatedAt: (!hasExistingMessages || isSameLength || isInitialLoad) ? chat.updatedAt : Date.now(),
           };
         }
         return chat;
@@ -299,6 +301,7 @@ function AIPageContent() {
     if (!q) {
       setMessages([]);
       lastLoadedQRef.current = null;
+      messagesChatIdRef.current = null;
       return;
     }
 
@@ -313,6 +316,7 @@ function AIPageContent() {
         } else {
           setMessages([]);
         }
+        messagesChatIdRef.current = q;
       } catch (error) {
         console.error("Failed to load chat details:", error);
       }
@@ -322,12 +326,14 @@ function AIPageContent() {
 
   useEffect(() => {
     if (!activeChatId || activeChatId !== activeChatIdRef.current) return;
+    if (activeChatId !== messagesChatIdRef.current) return;
     if (isLoading) return;
     syncActiveChatSummary(messages);
   }, [messages, activeChatId, isLoading, syncActiveChatSummary]);
 
   useEffect(() => {
     if (!activeChatId || activeChatId !== activeChatIdRef.current || !isLoading) return;
+    if (activeChatId !== messagesChatIdRef.current) return;
 
     if (chatSyncTimerRef.current) {
       clearTimeout(chatSyncTimerRef.current);
@@ -481,6 +487,7 @@ function AIPageContent() {
     const isNewChat = !chats.find(c => c.id === activeChatId);
     if (isNewChat && activeChatId) {
       lastLoadedQRef.current = activeChatId;
+      messagesChatIdRef.current = activeChatId;
       const newStoredChat = {
         id: activeChatId,
         title: "New Chat",

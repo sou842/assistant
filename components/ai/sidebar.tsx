@@ -14,7 +14,9 @@ import {
   Layers,
   Calendar,
   MessageSquare,
-  Briefcase
+  Briefcase,
+  Pin,
+  PinOff
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -34,6 +36,7 @@ interface SidebarProps {
   onSelectChat: (id: string) => void;
   onRenameChat: (id: string, title: string) => void;
   isSyncing?: boolean;
+  togglePinChat: (id: string) => void;
 }
 
 export function Sidebar({
@@ -49,6 +52,7 @@ export function Sidebar({
   onSelectChat,
   onRenameChat,
   isSyncing,
+  togglePinChat,
 }: SidebarProps) {
   const isCollapsed = !sidebarOpen;
   const searchParams = useSearchParams();
@@ -209,7 +213,11 @@ export function Sidebar({
                 ) : (
                   chats
                     .slice()
-                    .sort((a, b) => b.updatedAt - a.updatedAt)
+                    .sort((a, b) => {
+                      if (a.isPinned && !b.isPinned) return -1;
+                      if (!a.isPinned && b.isPinned) return 1;
+                      return b.updatedAt - a.updatedAt;
+                    })
                     .map((chat) => (
                       <div
                         className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 transition-all cursor-pointer ${chat.id === activeChatId ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
@@ -217,7 +225,11 @@ export function Sidebar({
                         key={chat.id}
                         onClick={() => onSelectChat(chat.id)}
                       >
-                        <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-40 group-hover:opacity-70"}`} />
+                        {chat.isPinned ? (
+                          <Pin size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-100 text-brand-primary"}`} />
+                        ) : (
+                          <MessageCircle size={18} className={`shrink-0 transition-opacity ${chat.id === activeChatId ? "opacity-100 text-brand-primary" : "opacity-40 group-hover:opacity-70"}`} />
+                        )}
 
                         {editingId === chat.id ? (
                           <input
@@ -250,6 +262,19 @@ export function Sidebar({
                               onClick={(e) => e.stopPropagation()}
                               tabIndex={0}
                             >
+                              <li>
+                                <button
+                                  className="flex items-center gap-2 py-2 text-xs hover:bg-app-surface-glass"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    togglePinChat(chat.id);
+                                  }}
+                                >
+                                  {chat.isPinned ? <PinOff size={12} /> : <Pin size={12} />}
+                                  {chat.isPinned ? "Unpin" : "Pin"}
+                                </button>
+                              </li>
                               <li>
                                 <button
                                   className="flex items-center gap-2 py-2 text-xs hover:bg-app-surface-glass"

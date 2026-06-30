@@ -39,6 +39,7 @@ interface AIContextType {
   onSelectChat: (id: string) => void;
   selectedModel: string;
   setSelectedModel: (id: string) => void;
+  togglePinChat: (id: string) => Promise<void>;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -164,6 +165,19 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, searchParams, router]);
 
+  const togglePinChat = useCallback(async (id: string) => {
+    setChats((prev) => {
+      const next = prev.map((chat) => 
+        chat.id === id ? { ...chat, isPinned: !chat.isPinned } : chat
+      );
+      const updatedChat = next.find(c => c.id === id);
+      if (updatedChat) {
+        saveStoredChat(updatedChat as any);
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <AIContext.Provider
       value={{
@@ -186,6 +200,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         onSelectChat,
         selectedModel,
         setSelectedModel,
+        togglePinChat,
       }}
     >
       {children}
