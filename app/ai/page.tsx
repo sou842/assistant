@@ -10,6 +10,7 @@ import { ChatInput, mistralModels } from "@/components/ai/chat-input";
 import { MessageList } from "@/components/ai/message-list";
 import { motion, AnimatePresence } from "motion/react";
 import { GallerySidePanel } from "@/components/ai/gallery-sidepanel";
+import { VaultItemSidePanel } from "@/components/ai/vault-item-sidepanel";
 import { ChatHeader } from "@/components/ai/chat-header";
 import { EmptyState } from "@/components/ai/empty-state";
 import { getSaveMemoryToolOutputs } from "@/app/ai/_lib/chat-tools";
@@ -65,6 +66,34 @@ function AIPageContent() {
   const lastAutoScrollTsRef = useRef(0);
   const perfSamplesRef = useRef({ streamUpdates: 0, longFrames: 0, lastTokenTs: 0 });
   const [renderMessages, setRenderMessages] = useState<UIMessage[]>([]);
+
+  const vaultItemId = searchParams.get("vaultItem");
+  const [vaultPanelWidth, setVaultPanelWidth] = useState(650);
+  const isDraggingVaultPanelRef = useRef(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingVaultPanelRef.current) return;
+      const newWidth = document.body.clientWidth - e.clientX;
+      if (newWidth >= 300 && newWidth <= 1200) {
+        setVaultPanelWidth(newWidth);
+      }
+    };
+    const handleMouseUp = () => {
+      if (isDraggingVaultPanelRef.current) {
+        isDraggingVaultPanelRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   // Gallery Side Panel states
   const [showGallerySidePanel, setShowGallerySidePanel] = useState(false);
@@ -243,7 +272,7 @@ function AIPageContent() {
         // Check if there are incomplete tool calls in it
         const hasActiveToolCall = lastAssistantMessage.parts?.some(
           part => part.type === "tool-call" && !messages.some(
-            m => m.role === "tool" && m.parts?.some(
+            m => m?.role === "tool" && m.parts?.some(
               p => p.type === "tool-result" && p.toolCallId === (part as any).toolCallId
             )
           )
@@ -668,6 +697,7 @@ function AIPageContent() {
       <AnimatePresence mode="wait">
         {showGallerySidePanel && (
           <motion.div
+            key="gallery-side-panel"
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
@@ -685,6 +715,40 @@ function AIPageContent() {
                   url: file.url,
                   mediaType: file.mediaType,
                 });
+              }}
+            />
+          </motion.div>
+        )}
+
+        {vaultItemId && (
+          <motion.div
+            key="vault-side-panel"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: vaultPanelWidth, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="relative z-40 h-full shrink-0 border-l border-app-border-subtle shadow-2xl bg-app-canvas"
+            style={{ width: vaultPanelWidth }}
+          >
+            {/* Drag Handle */}
+            <div 
+              className="absolute top-0 bottom-0 left-[-3px] w-2 cursor-col-resize z-50 flex items-center justify-center group"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                isDraggingVaultPanelRef.current = true;
+                document.body.style.cursor = "col-resize";
+                document.body.style.userSelect = "none";
+              }}
+            >
+              <div className="w-0.5 h-12 bg-app-border-subtle group-hover:bg-brand-primary/50 transition-colors rounded-full" />
+            </div>
+
+            <VaultItemSidePanel
+              itemId={vaultItemId}
+              onClose={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("vaultItem");
+                router.push(url.pathname + url.search);
               }}
             />
           </motion.div>

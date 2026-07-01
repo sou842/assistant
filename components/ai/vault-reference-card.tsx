@@ -30,7 +30,11 @@ export const VaultReferenceCard = memo(function VaultReferenceCard({ id, title, 
 
   return (
     <div
-      onClick={() => router.push(`/ai/vault/${id}`)}
+      onClick={() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("vaultItem", id);
+        router.push(url.pathname + url.search);
+      }}
       className="mt-4 flex w-fit cursor-pointer items-center gap-3 rounded-xl bg-app-surface-glass p-2 pr-3 shadow-sm transition-all hover:bg-white/5 active:scale-95"
     >
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBgClass} text-white`}>
