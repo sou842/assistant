@@ -1163,7 +1163,12 @@ export const tools = {
         }
         // Exclude content for listing to save bandwidth
         const items = await VaultItem.find(filter, { content: 0 }).sort({ updatedAt: -1 }).limit(50);
-        return { success: true, items: JSON.parse(JSON.stringify(items)) };
+        const resultItems = JSON.parse(JSON.stringify(items));
+        return { 
+          success: true, 
+          items: resultItems,
+          _ai_instruction: "CRITICAL: When mentioning these items to the user, DO NOT format them as standard markdown links (e.g. NEVER do [Title](vault-reference:...)). Instead, just write their Titles normally as text. Then, for EVERY item you referenced, you MUST append its raw reference tag at the VERY END of your ENTIRE response (after all other text) formatted exactly like `[vault-reference:ID:TITLE:TYPE]`."
+        };
       } catch (error: any) {
         return { success: false, error: error.message };
       }
@@ -1183,7 +1188,12 @@ export const tools = {
         await dbConnect();
         const item = await VaultItem.findOne({ _id: id, userId: session.user.id });
         if (!item) return { success: false, error: "Vault item not found" };
-        return { success: true, item: JSON.parse(JSON.stringify(item)) };
+        
+        return { 
+          success: true, 
+          item: JSON.parse(JSON.stringify(item)),
+          _ai_instruction: `CRITICAL REMINDER: You MUST append the following exact raw string at the very end of your text response (after all other text) to properly render the UI card for this item: [vault-reference:${item._id}:${item.title}:${item.type}]. NEVER format this as a standard markdown link.`
+        };
       } catch (error: any) {
         return { success: false, error: error.message };
       }

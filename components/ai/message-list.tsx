@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Dispatch, memo, RefObject, SetStateAction, useEffect, useMemo, useState } from "react";
 import { UIMessage } from "ai";
 import { Brain, Sparkles, Copy, RotateCcw, ThumbsUp, ThumbsDown, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ import { WeatherCard } from "@/components/ai/weather-card";
 import { BrowserCard } from "@/components/ai/browser-card";
 import { YouTubeCard } from "@/components/ai/youtube-card";
 import { VaultCard } from "@/components/ai/vault-card";
+import { VaultReferenceCard } from "@/components/ai/vault-reference-card";
 import { Shimmer } from "../ai-elements/shimmer";
 
 interface MessageListProps {
@@ -50,7 +51,7 @@ interface MessageListProps {
   selectedModel: string;
   onEditMessage?: (id: string, content: string) => void;
   onDeleteMessage?: (id: string) => void;
-  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
   debugPerf?: boolean;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
 }
@@ -68,16 +69,16 @@ export function MessageList({
   debugPerf = false,
   browserCommandStates,
 }: MessageListProps) {
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editingContent, setEditingContent] = React.useState("");
-  const [deletingMessageId, setDeletingMessageId] = React.useState<string | null>(null);
-  const [scrollTop, setScrollTop] = React.useState(0);
-  const [viewportHeight, setViewportHeight] = React.useState(900);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(900);
   const ITEM_ESTIMATE = 240;
   const OVERSCAN = 4;
   const ENABLE_WINDOWING_AT = 80;
 
-  React.useEffect(() => {
+  useEffect(() => {
     const el = scrollContainerRef?.current;
     if (!el) return;
     let rafId: number | null = null;
@@ -100,7 +101,7 @@ export function MessageList({
   }, [scrollContainerRef]);
 
   // Deduplicate messages by ID to prevent React duplicate key warnings
-  const uniqueMessages = React.useMemo(() => {
+  const uniqueMessages = useMemo(() => {
     const seen = new Set<string>();
     return messages.filter((message) => {
       if (seen.has(message.id)) return false;
@@ -125,7 +126,7 @@ export function MessageList({
     ? uniqueMessages.slice(startIndex, endIndex)
     : uniqueMessages;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!debugPerf || !isLoading) return;
     performance.mark("chat-message-list-render");
   }, [visibleMessages, debugPerf, isLoading]);
@@ -230,9 +231,9 @@ type MessageRowProps = {
   onDeleteMessage?: (id: string) => void;
   editingId: string | null;
   editingContent: string;
-  setEditingId: React.Dispatch<React.SetStateAction<string | null>>;
-  setEditingContent: React.Dispatch<React.SetStateAction<string>>;
-  setDeletingMessageId: React.Dispatch<React.SetStateAction<string | null>>;
+  setEditingId: Dispatch<SetStateAction<string | null>>;
+  setEditingContent: Dispatch<SetStateAction<string>>;
+  setDeletingMessageId: Dispatch<SetStateAction<string | null>>;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
 };
 
@@ -246,7 +247,7 @@ function extractYouTubeVideoIds(text: string): string[] {
   return Array.from(ids);
 }
 
-const MessageRow = React.memo(function MessageRow({
+const MessageRow = memo(function MessageRow({
   message,
   isLastStreaming,
   copyToClipboard,
@@ -262,7 +263,35 @@ const MessageRow = React.memo(function MessageRow({
   setDeletingMessageId,
   browserCommandStates,
 }: MessageRowProps) {
-  let text = getMessageText(message);
+  const { displayText, uniqueReferences } = useMemo(() => {
+    let currentText = getMessageText(message);
+    const parsedVaultReferences: Array<{id: string, title: string, type: string}> = [];
+    
+    // Format 1: [vault-reference:ID:TITLE:TYPE]
+    const vaultRefRegex = /\[vault-reference:([^:]+):([^:]+):([^\]]+)\]/g;
+    let match;
+    while ((match = vaultRefRegex.exec(currentText)) !== null) {
+      parsedVaultReferences.push({ id: match[1], title: match[2], type: match[3] });
+    }
+    
+    // Format 2: [Any Title](vault-reference:ID:TITLE:TYPE)
+    const vaultLinkRegex = /\[[^\]]+\]\(vault-reference:([^:]+):([^:]+):([^\)]+)\)/g;
+    while ((match = vaultLinkRegex.exec(currentText)) !== null) {
+      parsedVaultReferences.push({ id: match[1], title: match[2], type: match[3] });
+    }
+
+    const uniqueRefs = Array.from(new Map(parsedVaultReferences.map(item => [item.id, item])).values());
+
+    // Replace Format 1 with empty string
+    currentText = currentText.replace(/\[vault-reference:[^\]]+\]/g, '');
+    
+    // Replace Format 2 with just the bracketed label
+    currentText = currentText.replace(/\[([^\]]+)\]\(vault-reference:[^\)]+\)/g, '$1');
+
+    return { displayText: currentText, uniqueReferences: uniqueRefs };
+  }, [message]);
+
+  let text = displayText;
   if (message.role === "assistant" && !text.trim()) {
     const toolInvocations = (message as any)?.toolInvocations;
     const hasActive = toolInvocations?.some((ti: any) => ti.state === 'call');
@@ -293,12 +322,12 @@ const MessageRow = React.memo(function MessageRow({
     (ti: any) => ti.toolName === 'browserControl'
   );
 
-  const vaultInvocations = (message as any)?.toolInvocations?.filter(
-    (ti: any) => ti.state === 'result' && ['createVaultItem', 'updateVaultItem', 'getVaultItem'].includes(ti.toolName) && ti.result && !('error' in ti.result)
+  const vaultActionInvocations = (message as any)?.toolInvocations?.filter(
+    (ti: any) => ti.state === 'result' && ['createVaultItem', 'updateVaultItem'].includes(ti.toolName) && ti.result && !('error' in ti.result)
   );
 
   const toolInvocations = (message as any)?.toolInvocations;
-  const textVideoIds = React.useMemo(() => extractYouTubeVideoIds(text), [text]);
+  const textVideoIds = useMemo(() => extractYouTubeVideoIds(text), [text]);
 
   const getToolLabel = (toolName: string, state: string) => {
     const labels: Record<string, string> = {
@@ -446,8 +475,12 @@ const MessageRow = React.memo(function MessageRow({
               <YouTubeCard data={{ videos: textVideoIds.map(id => ({ videoId: id })) }} />
             )}
 
-            {!isEditing && vaultInvocations?.map((invocation: any) => (
+            {!isEditing && vaultActionInvocations?.map((invocation: any) => (
               <VaultCard key={invocation.toolCallId} data={invocation.result as any} action={invocation.toolName === 'updateVaultItem' ? 'update' : 'create'} />
+            ))}
+
+            {!isEditing && uniqueReferences.map((ref, idx) => (
+              <VaultReferenceCard key={`${ref.id}-${idx}`} id={ref.id} title={ref.title} type={ref.type} />
             ))}
 
             {!isEditing && browserInvocations?.map((invocation: any) => {
