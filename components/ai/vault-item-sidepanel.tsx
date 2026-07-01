@@ -5,9 +5,22 @@ import useSWR from "swr";
 import { X, ExternalLink, FileText, Table2, Image as ImageIcon, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { NoteEditor } from "@/app/ai/vault/_components/note-editor";
-import { SpreadsheetEditor } from "@/app/ai/vault/_components/spreadsheet-editor";
-import { GalleryViewer } from "@/app/ai/vault/_components/gallery-viewer";
+import dynamic from "next/dynamic";
+
+const NoteEditor = dynamic(
+  () => import("@/app/ai/vault/_components/note-editor").then(mod => mod.NoteEditor),
+  { ssr: false }
+);
+
+const SpreadsheetEditor = dynamic(
+  () => import("@/app/ai/vault/_components/spreadsheet-editor").then(mod => mod.SpreadsheetEditor),
+  { ssr: false }
+);
+
+const GalleryViewer = dynamic(
+  () => import("@/app/ai/vault/_components/gallery-viewer").then(mod => mod.GalleryViewer),
+  { ssr: false }
+);
 
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch');

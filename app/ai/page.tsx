@@ -10,8 +10,13 @@ import { ChatInput, mistralModels } from "@/components/ai/chat-input";
 import { MessageList } from "@/components/ai/message-list";
 import { motion, AnimatePresence } from "motion/react";
 import { GallerySidePanel } from "@/components/ai/gallery-sidepanel";
-import { VaultItemSidePanel } from "@/components/ai/vault-item-sidepanel";
+import dynamic from "next/dynamic";
 import { ChatHeader } from "@/components/ai/chat-header";
+
+const VaultItemSidePanel = dynamic(
+  () => import("@/components/ai/vault-item-sidepanel").then(mod => mod.VaultItemSidePanel),
+  { ssr: false }
+);
 import { EmptyState } from "@/components/ai/empty-state";
 import { getSaveMemoryToolOutputs } from "@/app/ai/_lib/chat-tools";
 import { getMessageText } from "@/lib/ai/message-utils";
@@ -46,6 +51,7 @@ function AIPageContent() {
     isSyncing,
     selectedModel,
     setSelectedModel,
+    setSidebarOpen,
   } = useAI();
 
   const router = useRouter();
@@ -70,6 +76,12 @@ function AIPageContent() {
   const vaultItemId = searchParams.get("vaultItem");
   const [vaultPanelWidth, setVaultPanelWidth] = useState(650);
   const isDraggingVaultPanelRef = useRef(false);
+
+  useEffect(() => {
+    if (vaultItemId) {
+      setSidebarOpen(false);
+    }
+  }, [vaultItemId, setSidebarOpen]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -628,7 +640,7 @@ function AIPageContent() {
         />
 
         <div className="flex-1 overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
-          <div className="mx-auto w-full max-w-3xl space-y-12 pb-40">
+          <div className="mx-auto w-full max-w-3xl space-y-12 pb-60">
             {renderMessages.length === 0 ? (
               <EmptyState setInput={setInput}>
                 <ChatInput

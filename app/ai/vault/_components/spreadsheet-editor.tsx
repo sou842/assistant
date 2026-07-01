@@ -182,7 +182,7 @@ export function SpreadsheetEditor({ initialData, onChange, readOnly = false }: S
   };
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="p-1.5 h-full flex flex-col">
       {!readOnly && (
         <div className="flex items-center gap-2 mb-4">
           <button
