@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams, usePathname, useParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   createEmptyChat,
@@ -108,15 +108,17 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     init();
   }, [init]);
 
+  const params = useParams();
+
   useEffect(() => {
     if (!isInitialized) return;
-    const q = searchParams.get("q");
+    const q = params?.chatId ? params.chatId[0] : searchParams.get("q");
     if (q) {
       setActiveChatId(q);
     } else if (pathname === "/ai" && !activeChatIdRef.current) {
       setActiveChatId(createEmptyChat().id);
     }
-  }, [searchParams, pathname, isInitialized]);
+  }, [searchParams, pathname, isInitialized, params]);
 
   const createNewChat = useCallback(() => {
     const next = createEmptyChat();
@@ -145,7 +147,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     if (id === activeChatId) {
       const nextChat = filtered[0];
       setActiveChatId(nextChat.id);
-      if (pathname === "/ai") router.replace(`/ai?q=${nextChat.id}`);
+      if (pathname === "/ai") router.replace(`/ai/${nextChat.id}`);
     }
 
     setChats(filtered);
@@ -160,10 +162,11 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const onSelectChat = useCallback((id: string) => {
     setActiveChatId(id);
     setMobileSidebarOpen(false);
-    if (pathname !== "/ai" || searchParams.get("q") !== id) {
-      router.push(`/ai?q=${id}`);
+    const currentId = params?.chatId ? params.chatId[0] : searchParams.get("q");
+    if (pathname !== "/ai" || currentId !== id) {
+      router.push(`/ai/${id}`);
     }
-  }, [pathname, searchParams, router]);
+  }, [pathname, searchParams, router, params]);
 
   const togglePinChat = useCallback(async (id: string) => {
     setChats((prev) => {
