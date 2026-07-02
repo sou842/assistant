@@ -1144,6 +1144,12 @@ export const tools = {
     execute: async () => ({ guidelines: VAULT_GUIDELINES.VAULT_SHEET_GUIDELINES }),
   }),
 
+  getVaultAlbumGuidelines: tool({
+    description: "Get detailed technical guidelines for formatting Vault 'album' items (Book-like collections of pages). You MUST call this before creating an album.",
+    inputSchema: z.object({}),
+    execute: async () => ({ guidelines: VAULT_GUIDELINES.VAULT_ALBUM_GUIDELINES }),
+  }),
+
   listVaultItems: tool({
     description: "List all items in the user's Vault. The Vault stores spreadsheets, tables, sheets, notes, documents, files, galleries, and albums. Use this whenever the user asks about their tables, sheets, files, or vault contents.",
     inputSchema: z.object({
@@ -1201,11 +1207,11 @@ export const tools = {
   }),
 
   createVaultItem: tool({
-    description: "Create a new item in the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use type='album' or type='gallery' to create an album of images or files. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Do not guess the format. The response will contain the URL route to access this item.",
+    description: "Create a new item in the Vault (spreadsheet, note, gallery, or album). Use type='gallery' for a collection of images. Use type='album' to create a Book-like collection of note pages. IMPORTANT: Before creating a 'note', you MUST call 'getVaultNoteGuidelines'. Before creating a 'spreadsheet', you MUST call 'getVaultSheetGuidelines'. Before creating an 'album', you MUST call 'getVaultAlbumGuidelines'. Do not guess the format. The response will contain the URL route to access this item.",
     inputSchema: z.object({
       title: z.string().min(1).max(100).describe('Title of the vault item'),
       type: vaultItemTypeSchema.describe('Type: spreadsheet, note, gallery, or album'),
-      content: z.any().describe('Initial content. Use Editor.js blocks for notes, array of objects for spreadsheets, or array of media objects for galleries/albums (each media object should have: id, filename, url, mediaType, size).'),
+      content: z.any().describe('Initial content. Use Editor.js blocks for notes, array of objects for spreadsheets, array of media objects for galleries, or array of page objects for albums.'),
       tags: z.array(z.string()).default([]).describe('Optional tags'),
     }),
     execute: async (data) => {
@@ -1214,6 +1220,26 @@ export const tools = {
         if (!session?.user?.id) return { success: false, error: "Unauthorized: Missing user session" };
 
         await dbConnect();
+        
+        if (data.type === 'album' && Array.isArray(data.content)) {
+          const AlbumPage = (await import('@/lib/models/AlbumPage')).default;
+          const item = await VaultItem.create({ ...data, content: [], userId: session.user.id });
+          const pageObjects = [];
+          for (let i = 0; i < data.content.length; i++) {
+            const pageData = data.content[i];
+            const page = await AlbumPage.create({
+              albumId: item._id,
+              title: pageData.title || `Page ${i + 1}`,
+              content: pageData.content || {},
+              order: i
+            });
+            pageObjects.push({ pageId: page._id.toString(), title: page.title });
+          }
+          item.content = pageObjects;
+          await item.save();
+          return { success: true, item: JSON.parse(JSON.stringify(item)), url: `/ai/vault/${item._id}` };
+        }
+        
         const item = await VaultItem.create({ ...data, userId: session.user.id });
         return { success: true, item: JSON.parse(JSON.stringify(item)), url: `/ai/vault/${item._id}` };
       } catch (error: any) {

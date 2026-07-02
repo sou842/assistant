@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteEditor } from "../_components/note-editor";
 import { SpreadsheetEditor } from "../_components/spreadsheet-editor";
 import { GalleryViewer } from "../_components/gallery-viewer";
+import { AlbumBookViewer } from "../_components/album-book-viewer";
 import { PageHeader } from "../../_components/page-header";
 import { useAI } from "../../_components/ai-provider";
 import { Button } from "@/components/ui/button";
@@ -116,7 +117,12 @@ export default function VaultItemPage() {
       toast.error("Failed to remove cover image");
     }
   };
-  const { memories, selectedModel, setSelectedModel } = useAI();
+  const { memories, selectedModel, setSelectedModel, setSidebarOpen } = useAI();
+
+  useEffect(() => {
+    // Auto-close the sidebar for maximum screen real estate when viewing a vault item
+    setSidebarOpen(false);
+  }, [setSidebarOpen]);
 
   const chat = useChat({
     id: `vault-item-${id}`,
@@ -317,7 +323,7 @@ ${itemContext}`,
   }
 
   const item = data?.item;
-  const isEditorRequired = data?.item?.type === 'note' || data?.item?.type === 'spreadsheet'
+  const isEditorRequired = data?.item?.type === 'note' || data?.item?.type === 'spreadsheet' || data?.item?.type === 'album';
 
   return (
     <div className="flex h-full flex-1 overflow-hidden bg-app-surface relative">
@@ -496,8 +502,12 @@ ${itemContext}`,
                   </div>
                 ) : isEditing ? (
                   <div className="max-w-4xl mx-auto px-8 sm:px-12 pt-8 -mb-4 flex justify-center items-center">
-                    <Button variant="ghost" onClick={() => setIsCoverDialogOpen(true)} className="opacity-0 group-hover:opacity-100 transition-opacity text-app-text-muted hover:text-app-text-primary h-8 px-3 rounded-md">
-                      <Plus size={14} className="mr-2" />
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsCoverDialogOpen(true)}
+                      className=" transition-opacity absolute right-4 top-2 z-40 bg-app-surface-glass hover:bg-app-surface-glass! text-app-text-muted hover:text-app-text-primary h-8 px-3 rounded-full"
+                    >
+                      <ImageIcon size={14} className="mr-0" />
                       Add Cover
                     </Button>
                   </div>
@@ -606,6 +616,11 @@ ${itemContext}`,
                     key={`${id}-${data.item.updatedAt}`}
                     initialData={data.item.content}
                     onChange={setContent}
+                    readOnly={!isEditing}
+                  />
+                ) : data.item.type === "album" ? (
+                  <AlbumBookViewer
+                    item={data.item}
                     readOnly={!isEditing}
                   />
                 ) : (

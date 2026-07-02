@@ -175,7 +175,52 @@ Rules:
 - Return valid JSON only.
 `;
 
+const VAULT_ALBUM_GUIDELINES = `
+Vault album content is a Book-like entity that stores multiple pages.
+When CREATING an album via AI (using createVaultItem), you MUST pass an array of new page objects in the 'content' field. Each object must have a 'title' and a 'content' field.
+
+Example for createVaultItem input:
+[
+  {
+    "title": "Page 1 Title",
+    "content": {
+      "blocks": [
+        {
+          "type": "paragraph",
+          "data": { "text": "This is the first page of the album." }
+        }
+      ]
+    }
+  },
+  {
+    "title": "Page 2 Title",
+    "content": {
+      "blocks": [
+        {
+          "type": "paragraph",
+          "data": { "text": "This is the second page." }
+        }
+      ]
+    }
+  }
+]
+
+Rules:
+- Each object in the array represents a Page in the Album.
+- The 'title' field is a string.
+- The 'content' field MUST use the Editor.js block format (just like Vault Notes).
+- DO NOT pass raw text strings as content.
+- Use this to create multi-page structured documents or collections of notes.
+- Return valid JSON only.
+
+CRITICAL ARCHITECTURE NOTE FOR AI:
+Once created, the Album's 'content' field is internally converted by the server into an array of lightweight metadata objects representing the Table of Contents: [{ "pageId": "...", "title": "..." }]. 
+If you read an existing album using getVaultItem, you will see this metadata array, NOT the full content blocks.
+Because of this lazy-loading optimization, you CANNOT use 'updateVaultItem' to add new pages or edit existing pages of an album. If the user asks to modify an existing album's pages, politely inform them that they must use the UI to add, rename, or edit pages.
+`;
+
 export const VAULT_GUIDELINES = {
   VAULT_NOTE_GUIDELINES,
   VAULT_SHEET_GUIDELINES,
+  VAULT_ALBUM_GUIDELINES,
 };

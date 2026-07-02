@@ -11,7 +11,7 @@ interface VaultItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
   itemId?: string; // If undefined, we are creating a new item
-  type: "note" | "spreadsheet";
+  type: "note" | "spreadsheet" | "album";
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -34,9 +34,9 @@ export function VaultItemDialog({ isOpen, onClose, itemId, type }: VaultItemDial
       setTitle(data.item.title);
       setContent(data.item.content);
     } else if (isNew) {
-      setTitle(type === 'note' ? 'New Note' : 'New Spreadsheet');
+      setTitle(type === 'note' ? 'New Note' : type === 'album' ? 'New Album' : 'New Spreadsheet');
       // Set empty initial content based on type
-      setContent(type === 'spreadsheet' ? [] : {});
+      setContent(type === 'spreadsheet' || type === 'album' ? [] : {});
     }
   }, [data, isNew, type]);
 
@@ -130,12 +130,18 @@ export function VaultItemDialog({ isOpen, onClose, itemId, type }: VaultItemDial
                   initialData={content} 
                   onChange={setContent} 
                 />
-              ) : (
+              ) : type === "spreadsheet" ? (
                 <SpreadsheetEditor 
                   key={itemId || "new"}
                   initialData={content} 
                   onChange={setContent} 
                 />
+              ) : (
+                <div className="flex items-center justify-center h-full text-app-text-muted p-8 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <p>Enter a title and save to open the Album Editor, where you can add and manage pages.</p>
+                  </div>
+                </div>
               )}
             </div>
           )}

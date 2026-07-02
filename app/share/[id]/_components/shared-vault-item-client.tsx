@@ -6,6 +6,7 @@ import Link from "next/link";
 import { NoteEditor } from "@/app/ai/vault/_components/note-editor";
 import { SpreadsheetEditor } from "@/app/ai/vault/_components/spreadsheet-editor";
 import { GalleryViewer } from "@/app/ai/vault/_components/gallery-viewer";
+import { AlbumBookViewer } from "@/app/ai/vault/_components/album-book-viewer";
 
 const fetcher = (url: string) =>
   fetch(url).then((response) => {
@@ -88,6 +89,12 @@ export default function SharedVaultItemClient({ id }: { id: string }) {
                 initialData={item.content}
                 onChange={() => { }}
                 readOnly={true}
+              />
+            ) : item.type === "album" ? (
+              <AlbumBookViewer
+                item={item}
+                readOnly={true}
+                isShared={true}
               />
             ) : (
               <GalleryViewer

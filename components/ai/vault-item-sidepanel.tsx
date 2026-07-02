@@ -22,6 +22,11 @@ const GalleryViewer = dynamic(
   { ssr: false }
 );
 
+const AlbumBookViewer = dynamic(
+  () => import("@/app/ai/vault/_components/album-book-viewer").then(mod => mod.AlbumBookViewer),
+  { ssr: false }
+);
+
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch');
   return res.json();
@@ -122,6 +127,11 @@ export function VaultItemSidePanel({ itemId, onClose }: VaultItemSidePanelProps)
                 key={`${itemId}-${item.updatedAt}`}
                 initialData={item.content}
                 onChange={setContent}
+                readOnly={true}
+              />
+            ) : item.type === "album" ? (
+              <AlbumBookViewer
+                item={item}
                 readOnly={true}
               />
             ) : (
