@@ -203,13 +203,13 @@ export function MessageList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent hover:bg-white/5 text-white border-app-border-subtle">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-transparent hover:bg-white/5 text-white border-app-border-subtle rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingMessageId) onDeleteMessage?.(deletingMessageId);
                 setDeletingMessageId(null);
               }}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full"
             >
               Delete
             </AlertDialogAction>

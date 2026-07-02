@@ -237,6 +237,14 @@ ${itemContext}`,
     }
   }, [data]);
 
+  const handleCancel = () => {
+    if (data?.item) {
+      setTitle(data.item.title);
+      setContent(data.item.content);
+    }
+    setIsEditing(false);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -354,22 +362,34 @@ ${itemContext}`,
                 </Button>
               )}
               {isEditorRequired && isEditing && (
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  size="sm"
-                  className="rounded-full text-xs h-8 min-w-[64px]"
-                  title="Save changes"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 size={12} className="mr-1.5 animate-spin" />
-                      Saving
-                    </>
-                  ) : (
-                    "Save"
-                  )}
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs h-8 min-w-[64px] bg-transparent border-app-border-subtle"
+                    title="Cancel changes"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    size="sm"
+                    className="rounded-full text-xs h-8 min-w-[64px]"
+                    title="Save changes"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 size={12} className="mr-1.5 animate-spin" />
+                        Saving
+                      </>
+                    ) : (
+                      "Save"
+                    )}
+                  </Button>
+                </div>
               )}
 
               {/* More Options Dropdown */}

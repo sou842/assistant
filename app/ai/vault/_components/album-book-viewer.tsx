@@ -113,7 +113,7 @@ interface AlbumBookViewerProps {
 export function AlbumBookViewer({ item, readOnly = false, isShared = false }: AlbumBookViewerProps) {
   const initialPages = useMemo(() => {
     if (!item?.content || !Array.isArray(item.content)) return [];
-    return item.content.map((p: any) => 
+    return item.content.map((p: any) =>
       typeof p === 'string' ? { _id: p, title: 'Untitled Page' } : { _id: p.pageId, title: p.title }
     );
   }, [item?.content]);
@@ -132,9 +132,10 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
+  const [isAddingPage, setIsAddingPage] = useState(false);
 
   const activePage = useMemo(() => {
-    const basePage = pages.find(p => p._id === activePageId);
+    const basePage = pages?.find(p => p._id === activePageId);
     if (!basePage) return null;
     if (activePageData?.page) {
       return { ...basePage, ...activePageData.page };
@@ -148,6 +149,8 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
   );
 
   const handleAddPage = async () => {
+    if (isAddingPage) return;
+    setIsAddingPage(true);
     try {
       const res = await fetch(`/api/vault/${item._id}/pages`, {
         method: "POST",
@@ -161,6 +164,8 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
       toast.success("Page added");
     } catch (err) {
       toast.error("Error adding page");
+    } finally {
+      setIsAddingPage(false);
     }
   };
 
@@ -229,7 +234,7 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
 
   const handleRenamePage = async (pageId: string, newTitle: string) => {
     try {
-      setPages(pages.map(p => p._id === pageId ? { ...p, title: newTitle } : p));
+      setPages(pages?.map(p => p._id === pageId ? { ...p, title: newTitle } : p));
       await fetch(`/api/vault/${item._id}/pages/${pageId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -285,15 +290,6 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
     <div className="flex h-full overflow-hidden bg-background">
       {/* Sidebar for pages */}
       <div className="w-64 border-r flex flex-col bg-app-surface-glass shrink-0">
-        {!readOnly && (
-          <div className="p-3 border-b flex items-center justify-between bg-app-surface/50">
-            <h3 className="text-sm font-semibold text-app-text-primary">Pages</h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-app-accent hover:text-app-accent hover:bg-app-accent/10" onClick={handleAddPage}>
-              <Plus size={16} />
-            </Button>
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto p-2">
           {pages?.length === 0 ? (
             <div className="text-center text-xs text-app-text-muted mt-10">No pages yet</div>
@@ -313,6 +309,16 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
               </SortableContext>
             </DndContext>
           )}
+
+        <Button
+          onClick={handleAddPage}
+          disabled={isAddingPage}
+          size="sm"
+          variant="ghost"
+          className="w-full mt-2 p-4 rounded-full border border-app-surface-glass hover:bg-app-surface-glass! text-xs text-app-accent hover:text-app-accent hover:bg-app-accent/10">
+          {isAddingPage ? <Loader2 size={16} className="animate-spin mr-1.5" /> : <Plus size={16} />} 
+          {isAddingPage ? "Adding..." : "Add Page"}
+        </Button>
         </div>
       </div>
 
@@ -342,7 +348,7 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
                 Add Cover
               </Button>
             )}
-            <div className="flex-1 overflow-y-auto p-4 relative">
+            <div className="flex-1 p-4 relative">
               {isActivePageLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-app-text-muted" />

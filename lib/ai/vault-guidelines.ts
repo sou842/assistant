@@ -216,7 +216,11 @@ Rules:
 CRITICAL ARCHITECTURE NOTE FOR AI:
 Once created, the Album's 'content' field is internally converted by the server into an array of lightweight metadata objects representing the Table of Contents: [{ "pageId": "...", "title": "..." }]. 
 If you read an existing album using getVaultItem, you will see this metadata array, NOT the full content blocks.
-Because of this lazy-loading optimization, you CANNOT use 'updateVaultItem' to add new pages or edit existing pages of an album. If the user asks to modify an existing album's pages, politely inform them that they must use the UI to add, rename, or edit pages.
+Because of this lazy-loading optimization, you CANNOT use 'updateVaultItem' to edit existing pages of an album. 
+Instead, to read an individual page's content, use the 'getAlbumPage' tool with the 'pageId'.
+To edit an individual page's content or title or coverImage, use the 'updateAlbumPage' tool with the 'pageId'.
+When updating an album page's content, you MUST format it as Editor.js blocks, exactly as described in VAULT_NOTE_GUIDELINES.
+You also have the capability to generate and set a 'coverImage' for the page using the generateImage tool if appropriate.
 `;
 
 export const VAULT_GUIDELINES = {

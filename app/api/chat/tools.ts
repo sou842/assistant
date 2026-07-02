@@ -8,6 +8,7 @@ import Task from '@/lib/models/Task';
 import User from '@/lib/models/User';
 import Contact from '@/lib/models/Contact';
 import VaultItem from '@/lib/models/VaultItem';
+import AlbumPage from '@/lib/models/AlbumPage';
 import StudioDocument from '@/lib/models/StudioDocument';
 import ScheduleTask from '@/lib/models/ScheduleTask';
 import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
@@ -1271,6 +1272,73 @@ export const tools = {
     },
   }),
 
+  getAlbumPage: tool({
+    description: "Get the full content of a specific Album page by its ID. Use this when you need to read or edit an individual page within an album.",
+    inputSchema: z.object({
+      pageId: z.string().describe('The MongoDB ID of the AlbumPage'),
+    }),
+    execute: async ({ pageId }) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+        await dbConnect();
+        const AlbumPage = (await import('@/lib/models/AlbumPage')).default;
+        const page = await AlbumPage.findById(pageId);
+        if (!page) return { success: false, error: "Album page not found" };
+
+        const VaultItem = (await import('@/lib/models/VaultItem')).default;
+        const album = await VaultItem.findOne({ _id: page.albumId, userId: session.user.id });
+        if (!album) return { success: false, error: "Unauthorized or album not found" };
+
+        return { success: true, page: JSON.parse(JSON.stringify(page)) };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
+  updateAlbumPage: tool({
+    description: "Update an existing Album page's content, title, or coverImage. IMPORTANT: 'content' MUST be in Editor.js format. Read VAULT_NOTE_GUIDELINES for the format.",
+    inputSchema: z.object({
+      pageId: z.string().describe('The MongoDB ID of the AlbumPage to update'),
+      title: z.string().optional().describe('New title for the page'),
+      content: z.any().optional().describe('New content. completely replaces existing content. MUST use Editor.js blocks.'),
+      coverImage: z.string().optional().describe('URL for the cover image (e.g. generated via generateImage tool)'),
+    }),
+    execute: async ({ pageId, ...updateData }) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+
+        await dbConnect();
+        const AlbumPage = (await import('@/lib/models/AlbumPage')).default;
+        const page = await AlbumPage.findById(pageId);
+        if (!page) return { success: false, error: "Album page not found" };
+
+        const VaultItem = (await import('@/lib/models/VaultItem')).default;
+        const album = await VaultItem.findOne({ _id: page.albumId, userId: session.user.id });
+        if (!album) return { success: false, error: "Unauthorized or album not found" };
+
+        const updatedPage = await AlbumPage.findByIdAndUpdate(pageId, updateData, { new: true });
+        
+        // Update the album's TOC if title changed
+        if (updateData.title && album.content && Array.isArray(album.content)) {
+           const tocItem = album.content.find((t: any) => t.pageId === pageId);
+           if (tocItem) {
+              tocItem.title = updateData.title;
+              album.markModified('content');
+              await album.save();
+           }
+        }
+
+        return { success: true, page: JSON.parse(JSON.stringify(updatedPage)) };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
   deleteVaultItem: tool({
     description: "Delete an item from the Vault (spreadsheet, table, sheet, note, file, gallery, or album). Use with caution.",
     inputSchema: z.object({
@@ -1284,6 +1352,10 @@ export const tools = {
         await dbConnect();
         const result = await VaultItem.deleteOne({ _id: id, userId: session.user.id });
         if (result.deletedCount === 0) return { success: false, error: "Vault item not found" };
+        
+        // Also delete any AlbumPages associated with this album
+        await AlbumPage.deleteMany({ albumId: id });
+        
         return { success: true, message: "Vault item deleted successfully" };
       } catch (error: any) {
         return { success: false, error: error.message };
