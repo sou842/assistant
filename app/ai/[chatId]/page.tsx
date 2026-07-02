@@ -640,15 +640,7 @@ function AIPageContent() {
 
         <div className="flex-1 overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
           <div className="mx-auto w-full max-w-3xl space-y-12 pb-60">
-            <AnimatePresence mode="wait">
               {renderMessages.length === 0 && !params?.chatId && !isLoading ? (
-                <motion.div
-                  key="empty-state"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                >
                   <EmptyState setInput={setInput}>
                     <ChatInput
                       className="w-full relative z-20"
@@ -670,14 +662,7 @@ function AIPageContent() {
                       onCustomFileAttached={() => setCustomFileToAttach(null)}
                     />
                   </EmptyState>
-                </motion.div>
               ) : (
-                <motion.div
-                  key="message-list"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                >
                   <MessageList
                     messages={renderMessages}
                     isLoading={isLoading}
@@ -691,9 +676,7 @@ function AIPageContent() {
                     debugPerf={PERF_DEBUG}
                     browserCommandStates={browserCommandStates}
                   />
-                </motion.div>
               )}
-            </AnimatePresence>
           </div>
         </div>
 

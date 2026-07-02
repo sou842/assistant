@@ -112,7 +112,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isInitialized) return;
-    const q = params?.chatId ? params.chatId[0] : searchParams.get("q");
+    const q = params?.chatId ? (Array.isArray(params.chatId) ? params.chatId[0] : params.chatId) : searchParams.get("q");
     if (q) {
       setActiveChatId(q);
     } else if (pathname === "/ai" && !activeChatIdRef.current) {
@@ -162,7 +162,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const onSelectChat = useCallback((id: string) => {
     setActiveChatId(id);
     setMobileSidebarOpen(false);
-    const currentId = params?.chatId ? params.chatId[0] : searchParams.get("q");
+    const currentId = params?.chatId ? (Array.isArray(params.chatId) ? params.chatId[0] : params.chatId) : searchParams.get("q");
     if (pathname !== "/ai" || currentId !== id) {
       router.push(`/ai/${id}`);
     }
