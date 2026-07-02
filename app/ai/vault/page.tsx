@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil, CheckCircle2, Circle } from "lucide-react";
+import { Database, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil, CheckCircle2, Circle, Book, NotebookPen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -226,18 +226,20 @@ export default function VaultPage() {
                         className={`rounded-full p-2.5 ${item.type === "note"
                           ? "bg-blue-500"
                           : item.type === "spreadsheet"
-                            ? "bg-green-500"
+                            ? "bg-emerald-500"
                             : item.type === "album"
-                              ? "bg-pink-500"
-                              : "bg-purple-500"
+                              ? "bg-amber-600"
+                              : "bg-cyan-600"
                           }`}
                       >
                         {item.type === "note" ? (
-                          <FileText size={24} className="text-gray-50" />
+                          <FileText size={22} className="text-gray-50" />
                         ) : item.type === "spreadsheet" ? (
-                          <Table2 size={24} className="text-gray-50" />
+                          <Table2 size={22} className="text-gray-50" />
+                        ) : item.type === "album" ? (
+                          <NotebookPen size={22} className="text-gray-50" />
                         ) : (
-                          <ImageIcon size={24} className="text-gray-50" />
+                          <ImageIcon size={22} className="text-gray-50" />
                         )}
                       </div>
                       <div className={cn("flex items-center gap-1 transition-all", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
