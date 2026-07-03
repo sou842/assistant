@@ -15,6 +15,11 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
   const editorRef = useRef<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -315,7 +320,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             },
             onChange: async (api) => {
               const data = await api.saver.save();
-              onChange(data);
+              onChangeRef.current(data);
             },
             onReady: () => {
               setIsReady(true);

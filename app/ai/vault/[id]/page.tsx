@@ -642,6 +642,9 @@ ${itemContext}`,
                   <AlbumBookViewer
                     item={data.item}
                     readOnly={!isEditing}
+                    onChange={(newContent) => {
+                      setContent(newContent);
+                    }}
                   />
                 ) : (
                   <GalleryViewer

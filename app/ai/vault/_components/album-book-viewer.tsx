@@ -108,9 +108,10 @@ interface AlbumBookViewerProps {
   item: any;
   readOnly?: boolean;
   isShared?: boolean;
+  onChange?: (content: any) => void;
 }
 
-export function AlbumBookViewer({ item, readOnly = false, isShared = false }: AlbumBookViewerProps) {
+export function AlbumBookViewer({ item, readOnly = false, isShared = false, onChange }: AlbumBookViewerProps) {
   const initialPages = useMemo(() => {
     if (!item?.content || !Array.isArray(item.content)) return [];
     return item.content.map((p: any) =>
@@ -119,6 +120,20 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
   }, [item?.content]);
 
   const [pages, setPages] = useState<any[]>(initialPages);
+
+  const previousContentRef = useRef<string>("");
+
+  useEffect(() => {
+    if (onChange) {
+      const newContent = pages.map(p => ({ pageId: p._id, title: p.title }));
+      const newContentStr = JSON.stringify(newContent);
+      if (newContentStr !== previousContentRef.current) {
+        onChange(newContent);
+        previousContentRef.current = newContentStr;
+      }
+    }
+  }, [pages, onChange]);
+
   const [activePageId, setActivePageId] = useState<string | null>(initialPages.length > 0 ? initialPages[0]._id : null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -310,7 +325,7 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
             </DndContext>
           )}
 
-        <Button
+        {!readOnly && <Button
           onClick={handleAddPage}
           disabled={isAddingPage}
           size="sm"
@@ -318,7 +333,7 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false }: Al
           className="w-full mt-2 p-4 rounded-full border border-app-surface-glass hover:bg-app-surface-glass! text-xs text-app-accent hover:text-app-accent hover:bg-app-accent/10">
           {isAddingPage ? <Loader2 size={16} className="animate-spin mr-1.5" /> : <Plus size={16} />} 
           {isAddingPage ? "Adding..." : "Add Page"}
-        </Button>
+        </Button>}
         </div>
       </div>
 
