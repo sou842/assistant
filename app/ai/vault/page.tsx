@@ -41,9 +41,25 @@ export default function VaultPage() {
 
   const items = data?.items || [];
 
-  const handleCreate = (type: "note" | "spreadsheet" | "gallery" | "album") => {
-    setSelectedItem({ type });
-    setDialogOpen(true);
+  const handleCreate = async (type: "note" | "spreadsheet" | "gallery" | "album") => {
+    const title = type === 'note' ? 'New Note' : type === 'album' ? 'New Album' : type === 'spreadsheet' ? 'New Spreadsheet' : 'New Item';
+    const content = type === 'spreadsheet' || type === 'album' ? [] : {};
+    
+    const promise = fetch("/api/vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, type, content }),
+    }).then(async (res) => {
+      if (!res.ok) throw new Error("Failed to create");
+      const data = await res.json();
+      router.push(`/ai/vault/${data.item._id}?edit=true`);
+      return data;
+    });
+
+    toast.promise(promise, {
+      loading: "Creating...",
+      error: "Failed to create item"
+    });
   };
 
   const handleEdit = (item: any) => {

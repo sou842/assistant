@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download, Plus, NotebookPen } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,7 @@ const fetcher = (url: string) => fetch(url).then((res) => {
 export default function VaultItemPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -47,7 +48,7 @@ export default function VaultItemPage() {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(searchParams.get("edit") === "true");
   const [chatLoaded, setChatLoaded] = useState(false);
 
   const handleLinkCover = async () => {
