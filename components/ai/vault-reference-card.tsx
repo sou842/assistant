@@ -1,4 +1,4 @@
-import { FileText, Table, Image, FolderHeart } from "lucide-react";
+import { FileText, Table, Image, FolderHeart, NotebookPen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo, useMemo } from "react";
 
@@ -18,7 +18,7 @@ export const VaultReferenceCard = memo(function VaultReferenceCard({ id, title, 
       case "gallery":
         return { Icon: Image, typeLabel: "Gallery", iconBgClass: "bg-[#A142F4]" };
       case "album":
-        return { Icon: FolderHeart, typeLabel: "Album", iconBgClass: "bg-[#A142F4]" };
+        return { Icon: NotebookPen, typeLabel: "Album", iconBgClass: "bg-amber-600" };
       default:
         return { Icon: FileText, typeLabel: "Note", iconBgClass: "bg-[#4285F4]" };
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Layers, Menu, Radio } from "lucide-react";
@@ -264,93 +265,34 @@ function IntegrationCard({
   );
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function IntegrationsPage() {
   const { setMobileSidebarOpen } = useAI();
 
-  const [githubConnected, setGithubConnected] = useState(false);
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [leetcodeConnected, setLeetcodeConnected] = useState(false);
+  const { data: githubData, mutate: mutateGithub } = useSWR("/api/integrations/github/status", fetcher);
+  const { data: googleData, mutate: mutateGoogle } = useSWR("/api/integrations/google/status", fetcher);
+  const { data: leetcodeData, mutate: mutateLeetcode } = useSWR("/api/integrations/leetcode/status", fetcher);
+  const { data: telegramData, mutate: mutateTelegram } = useSWR("/api/integrations/telegram/status", fetcher);
+  const { data: devtoData, mutate: mutateDevto } = useSWR("/api/integrations/devto/status", fetcher);
+  const { data: notionData, mutate: mutateNotion } = useSWR("/api/integrations/notion/status", fetcher);
+
+  const githubConnected = githubData?.connected || false;
+  const googleConnected = googleData?.connected || false;
+  const leetcodeConnected = leetcodeData?.connected || false;
+  const telegramConnected = telegramData?.isConnected || false;
+  const devtoConnected = devtoData?.connected || false;
+  const notionConnected = notionData?.connected || false;
+
   const [showLeetcodeDialog, setShowLeetcodeDialog] = useState(false);
   const [leetcodeUsername, setLeetcodeUsername] = useState("");
   const [isConnectingLeetcode, setIsConnectingLeetcode] = useState(false);
-  const [telegramConnected, setTelegramConnected] = useState(false);
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [telegramChatId, setTelegramChatId] = useState("");
   const [isConnectingTelegram, setIsConnectingTelegram] = useState(false);
-  const [devtoConnected, setDevtoConnected] = useState(false);
   const [showDevtoDialog, setShowDevtoDialog] = useState(false);
   const [devtoApiKey, setDevtoApiKey] = useState("");
   const [isConnectingDevto, setIsConnectingDevto] = useState(false);
-  const [notionConnected, setNotionConnected] = useState(false);
-
-  useEffect(() => {
-    const fetchGithubStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/github/status");
-        const data = await response.json();
-        setGithubConnected(data.connected);
-      } catch (error) {
-        console.error("Failed to fetch GitHub status:", error);
-      }
-    };
-
-    const fetchGoogleStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/google/status");
-        const data = await response.json();
-        setGoogleConnected(data.connected);
-      } catch (error) {
-        console.error("Failed to fetch Google status:", error);
-      }
-    };
-
-    const fetchLeetcodeStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/leetcode/status");
-        const data = await response.json();
-        setLeetcodeConnected(data.connected);
-      } catch (error) {
-        console.error("Failed to fetch LeetCode status:", error);
-      }
-    };
-
-    const fetchTelegramStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/telegram/status");
-        const data = await response.json();
-        setTelegramConnected(data.isConnected);
-      } catch (error) {
-        console.error("Failed to fetch Telegram status:", error);
-      }
-    };
-
-    const fetchDevtoStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/devto/status");
-        const data = await response.json();
-        setDevtoConnected(data.connected);
-      } catch (error) {
-        console.error("Failed to fetch Dev.to status:", error);
-      }
-    };
-
-    const fetchNotionStatus = async () => {
-      try {
-        const response = await fetch("/api/integrations/notion/status");
-        const data = await response.json();
-        setNotionConnected(data.connected);
-      } catch (error) {
-        console.error("Failed to fetch Notion status:", error);
-      }
-    };
-
-    fetchGithubStatus();
-    fetchGoogleStatus();
-    fetchLeetcodeStatus();
-    fetchTelegramStatus();
-    fetchDevtoStatus();
-    fetchNotionStatus();
-  }, []);
 
   const connectGithub = () => {
     window.location.href = "/api/integrations/github/connect";
@@ -359,7 +301,7 @@ export default function IntegrationsPage() {
   const disconnectGithub = async () => {
     try {
       await fetch("/api/integrations/github/disconnect", { method: "POST" });
-      setGithubConnected(false);
+      mutateGithub();
       toast.success("GitHub disconnected");
     } catch (error) {
       console.error(error);
@@ -374,7 +316,7 @@ export default function IntegrationsPage() {
   const disconnectGoogle = async () => {
     try {
       await fetch("/api/integrations/google/disconnect", { method: "POST" });
-      setGoogleConnected(false);
+      mutateGoogle();
       toast.success("Google disconnected");
     } catch (error) {
       console.error(error);
@@ -396,7 +338,7 @@ export default function IntegrationsPage() {
         body: JSON.stringify({ username: leetcodeUsername }),
       });
       if (!res.ok) throw new Error("Failed");
-      setLeetcodeConnected(true);
+      mutateLeetcode();
       setShowLeetcodeDialog(false);
       setLeetcodeUsername("");
       toast.success("LeetCode connected");
@@ -411,7 +353,7 @@ export default function IntegrationsPage() {
   const disconnectLeetcode = async () => {
     try {
       await fetch("/api/integrations/leetcode/disconnect", { method: "POST" });
-      setLeetcodeConnected(false);
+      mutateLeetcode();
       toast.success("LeetCode disconnected");
     } catch (error) {
       console.error(error);
@@ -433,7 +375,7 @@ export default function IntegrationsPage() {
         body: JSON.stringify({ chatId: telegramChatId }),
       });
       if (!res.ok) throw new Error("Failed");
-      setTelegramConnected(true);
+      mutateTelegram();
       setShowTelegramDialog(false);
       setTelegramChatId("");
       toast.success("Telegram connected");
@@ -448,7 +390,7 @@ export default function IntegrationsPage() {
   const disconnectTelegram = async () => {
     try {
       await fetch("/api/integrations/telegram/disconnect", { method: "POST" });
-      setTelegramConnected(false);
+      mutateTelegram();
       toast.success("Telegram disconnected");
     } catch (error) {
       console.error(error);
@@ -468,7 +410,7 @@ export default function IntegrationsPage() {
         body: JSON.stringify({ apiKey: devtoApiKey }),
       });
       if (!res.ok) throw new Error("Failed");
-      setDevtoConnected(true);
+      mutateDevto();
       setShowDevtoDialog(false);
       setDevtoApiKey("");
       toast.success("Dev.to connected");
@@ -483,7 +425,7 @@ export default function IntegrationsPage() {
   const disconnectDevto = async () => {
     try {
       await fetch("/api/integrations/devto/disconnect", { method: "POST" });
-      setDevtoConnected(false);
+      mutateDevto();
       toast.success("Dev.to disconnected");
     } catch (error) {
       console.error(error);
@@ -498,7 +440,7 @@ export default function IntegrationsPage() {
   const disconnectNotion = async () => {
     try {
       await fetch("/api/integrations/notion/disconnect", { method: "POST" });
-      setNotionConnected(false);
+      mutateNotion();
       toast.success("Notion disconnected");
     } catch (error) {
       console.error(error);

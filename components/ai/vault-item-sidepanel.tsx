@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import useSWR from "swr";
-import { X, ExternalLink, FileText, Table2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { X, ExternalLink, FileText, Table2, Image as ImageIcon, Loader2, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import dynamic from "next/dynamic";
@@ -61,7 +61,8 @@ export function VaultItemSidePanel({ itemId, onClose }: VaultItemSidePanelProps)
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="flex items-center justify-center size-8 rounded-lg bg-app-surface-glass-strong text-app-text-primary shrink-0">
             {item?.type === "spreadsheet" ? <Table2 size={16} className="text-[#0F9D58]" /> :
-             item?.type === "gallery" || item?.type === "album" ? <ImageIcon size={16} className="text-[#A142F4]" /> :
+             item?.type === "gallery" ? <ImageIcon size={16} className="text-[#A142F4]" /> :
+             item?.type === "album" ? <NotebookPen size={16} className="text-amber-600" /> :
              <FileText size={16} className="text-[#4285F4]" />}
           </div>
           <div className="flex flex-col min-w-0">

@@ -1,4 +1,4 @@
-import { FileText, Table, Image, FolderHeart, ExternalLink } from "lucide-react";
+import { FileText, Table, Image, FolderHeart, ExternalLink, NotebookPen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function VaultCard({ data, action }: VaultCardProps) {
 
   const Icon = type === "spreadsheet" ? Table :
     type === "gallery" ? Image :
-      type === "album" ? FolderHeart : FileText;
+      type === "album" ? NotebookPen : FileText;
 
   const typeLabel = type === "spreadsheet" ? "Spreadsheet" :
     type === "gallery" ? "Gallery" :

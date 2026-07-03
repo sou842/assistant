@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download, Plus } from "lucide-react";
+import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download, Plus, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -338,7 +338,7 @@ ${itemContext}`,
       <div className="flex h-full flex-1 flex-col min-w-0 relative z-10">
         <PageHeader
           backHref="/ai/vault"
-          icon={item?.type === "note" ? <FileText /> : item?.type === "spreadsheet" ? <Table2 /> : <ImageIcon />}
+          icon={item?.type === "note" ? <FileText /> : item?.type === "spreadsheet" ? <Table2 /> : item?.type === "album" ? <NotebookPen className="text-amber-600" /> : <ImageIcon />}
           title={
             <input
               value={title}

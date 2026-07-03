@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { FileText, Table2, Image as ImageIcon, Lock, ArrowLeft } from "lucide-react";
+import { FileText, Table2, Image as ImageIcon, Lock, ArrowLeft, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { NoteEditor } from "@/app/ai/vault/_components/note-editor";
 import { SpreadsheetEditor } from "@/app/ai/vault/_components/spreadsheet-editor";
@@ -56,7 +56,7 @@ export default function SharedVaultItemClient({ id }: { id: string }) {
         <div className="mx-auto max-w-8xl px-5 h-full">
           <div className="flex items-center gap-4 h-full">
             <div className="size-9 shrink-0 rounded-xl border border-app-border-default bg-app-surface-glass flex items-center justify-center">
-              {item.type === "note" ? <FileText className="size-4 text-indigo-200" /> : item.type === "spreadsheet" ? <Table2 className="size-4 text-indigo-200" /> : <ImageIcon className="size-4 text-indigo-200" />}
+              {item.type === "note" ? <FileText className="size-4 text-indigo-200" /> : item.type === "spreadsheet" ? <Table2 className="size-4 text-indigo-200" /> : item.type === "album" ? <NotebookPen className="size-4 text-amber-600" /> : <ImageIcon className="size-4 text-indigo-200" />}
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-medium tracking-tight">{item.title}</h1>
