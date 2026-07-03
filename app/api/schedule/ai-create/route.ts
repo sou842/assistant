@@ -54,6 +54,23 @@ Rules:
 - Break down the request into steps (e.g. fetch_weather -> ai_prompt -> send_email).
 - Pass data between steps using template variables like {{context.fetch_weather.temperature}}.
 - Step Types available: fetch_weather, ai_prompt, send_email, send_whatsapp.
+- Email Templates MUST be pure HTML. DO NOT use Markdown. 
+- IMPORTANT: DO NOT wrap the HTML output in \`\`\`html ... \`\`\` code blocks. Provide ONLY the raw HTML string.
+- DO NOT insert excessive <br> tags for spacing. Use proper margin/padding on block elements (<p>, <div>).
+- Use this exact HTML structure, replacing [Title] and [Body] as needed:
+<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #333333; border: 1px solid #eeeeee; border-radius: 8px; overflow: hidden;">
+  <div style="background-color: #0d0d0d; padding: 16px;">
+    <h2 style="margin: 0; font-weight: 500; font-size: 20px; color: #ffffff; text-align: center;">[Title]</h2>
+  </div>
+  <div style="padding: 24px; line-height: 1.5; font-size: 15px;">
+    <p style="margin-top: 0;">Hello there,</p>
+    <p>[Body with template variables like {{context.step.key}}]</p>
+    <br><p style="margin-bottom: 0;">Best,<br>Your AI Assistant</p>
+  </div>
+  <div style="background-color: #f9f9f9; padding: 12px; border-top: 1px solid #eeeeee; font-size: 12px; color: #999999; text-align: center;">
+    <p style="margin: 0;">Sent automatically via Scheduler AI</p>
+  </div>
+</div>
 User input: ${prompt}`,
     });
 

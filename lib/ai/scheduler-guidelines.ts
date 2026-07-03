@@ -3,15 +3,28 @@ Scheduler Task Formatting and Validation Guidelines.
 
 When creating or modifying scheduled tasks, follow these strict rules to prevent runtime failures and broken outputs (such as template resolution errors, markdown rendering in emails, or garbled emojis in subject lines).
 
-1. NO MARKDOWN IN EMAIL BODY TEMPLATES
+1. STRICT EMAIL TEMPLATE STRUCTURE (NO MARKDOWN)
 - Email bodies MUST be pure HTML. DO NOT use markdown like **bold**, *italic*, or "-" for list items.
-- Always use standard raw HTML tags instead:
-  - For bold text: Use <b> or <strong>
-  - For line breaks: Use <br> or wrap paragraphs in <p>
-  - For lists: Use <ul> and <li>
-- Example:
-  Correct: "Hello <b>Sourav</b>,<br>Here is the update."
-  Incorrect: "Hello **Sourav**,\nHere is the update."
+- IMPORTANT: DO NOT wrap the HTML output in \`\`\`html ... \`\`\` code blocks. Provide ONLY the raw HTML string.
+- DO NOT insert excessive <br> tags for spacing in the full template. Use proper margin/padding on block elements (<p>, <div>).
+- You MUST use the following exact HTML structure for all emails, replacing [Title] and [Body] as needed.
+- Do NOT deviate from this layout or inline CSS:
+
+\`\`\`html
+<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #333333; border: 1px solid #eeeeee; border-radius: 8px; overflow: hidden;">
+  <div style="background-color: #0d0d0d; padding: 16px;">
+    <h2 style="margin: 0; font-weight: 500; font-size: 20px; color: #ffffff; text-align: center;">[Title]</h2>
+  </div>
+  <div style="padding: 24px; line-height: 1.5; font-size: 15px;">
+    <p style="margin-top: 0;">Hello there,</p>
+    <p>[Body content with template variables like {{context.stepId.key}}]</p>
+    <p style="margin-bottom: 0;">Best,<br>Your AI Assistant</p>
+  </div>
+  <div style="background-color: #f9f9f9; padding: 12px; border-top: 1px solid #eeeeee; font-size: 12px; color: #999999; text-align: center;">
+    <p style="margin: 0;">Sent automatically via Scheduler AI</p>
+  </div>
+</div>
+\`\`\`
 
 2. DYNAMIC TEMPLATE VARIABLES & PATH RESOLUTION
 - When reference data from a previous step (e.g., fetch_weather or http_request):
