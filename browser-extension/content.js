@@ -43,6 +43,26 @@ window.addEventListener("message", (event) => {
 
 // Listen for messages from background/sidepanel and forward to webpage
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message && message.action === "ajax_post") {
+    fetch(message.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message.data)
+    })
+    .then(res => res.json())
+    .then(data => sendResponse({ success: true, data }))
+    .catch(err => sendResponse({ success: false, error: err.message }));
+    return true; // Keep channel open for async response
+  }
+
+  if (message && message.action === "ajax_get") {
+    fetch(message.url)
+    .then(res => res.json())
+    .then(data => sendResponse({ success: true, data }))
+    .catch(err => sendResponse({ success: false, error: err.message }));
+    return true; // Keep channel open for async response
+  }
+
   if (message && message.source === "jarvis-extension-event") {
     window.postMessage({
       source: "jarvis-extension-event",

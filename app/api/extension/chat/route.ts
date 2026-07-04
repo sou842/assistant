@@ -37,14 +37,23 @@ export async function POST(req: Request) {
     let modelsToTry: any[] = [];
 
     if (isGemini) {
-      modelsToTry = [google(model)];
+      modelsToTry = [
+        google(model),
+        openai("gpt-4o-mini"),
+        ...mistralProviders.map(p => p("mistral-small-latest"))
+      ].filter(Boolean);
     } else if (isOpenAI) {
-      modelsToTry = [openai(model)];
+      modelsToTry = [
+        openai(model),
+        google("gemini-2.5-flash"),
+        ...mistralProviders.map(p => p("mistral-small-latest"))
+      ].filter(Boolean);
     } else if (isMistral) {
       modelsToTry = [
         ...mistralProviders.map(p => p(model)),
-        google("gemini-2.5-flash")
-      ];
+        google("gemini-2.5-flash"),
+        openai("gpt-4o-mini")
+      ].filter(Boolean);
     } else {
       return NextResponse.json({ error: `Unsupported model: ${model}` }, { status: 400 });
     }

@@ -11,6 +11,7 @@ import VaultItem from '@/lib/models/VaultItem';
 import AlbumPage from '@/lib/models/AlbumPage';
 import StudioDocument from '@/lib/models/StudioDocument';
 import ScheduleTask from '@/lib/models/ScheduleTask';
+import Workflow from '@/lib/models/Workflow';
 import { VAULT_GUIDELINES } from '@/lib/ai/vault-guidelines';
 import { SCHEDULER_GUIDELINES } from '@/lib/ai/scheduler-guidelines';
 import { cleanPhone, computeNextRunAt } from '@/lib/schedule';
@@ -157,6 +158,37 @@ const stepSchema = z.discriminatedUnion('type', [
 ]);
 
 export const tools = {
+  createWorkflow: tool({
+    description: "Create and save a browser automation workflow (script as code). The script should be written in JavaScript using the pseudo-Playwright API (browser.newPage(url), page.locator(selector).click(), page.locator(selector).waitFor(), page.locator(selector).getAttribute()). Always write robust code wrapping locators in waitFor blocks if they require waiting.",
+    inputSchema: z.object({
+      title: z.string().describe("Descriptive title of the workflow. E.g. 'YouTube Video Liker'"),
+      description: z.string().describe("A brief explanation of what the workflow does."),
+      script: z.string().describe("The JavaScript code of the workflow script."),
+    }),
+    execute: async ({ title, description, script }) => {
+      const session = await auth();
+      if (!session?.user?.email) throw new Error("Unauthorized");
+      
+      await dbConnect();
+      
+      const user = await User.findOne({ email: session.user.email });
+      if (!user) throw new Error("User not found");
+
+      const workflow = await Workflow.create({
+        title,
+        description,
+        script,
+        userId: user._id,
+      });
+
+      return {
+        success: true,
+        workflowId: workflow._id.toString(),
+        title: workflow.title,
+      };
+    }
+  }),
+
   saveMemory: tool({
     description:
       "Save durable user memory when the user explicitly asks you to remember, memorize, store, save, or note something for future chats. Choose the most accurate category. Do not call this for ordinary facts unless the user asks you to remember them.",

@@ -3,6 +3,9 @@
   "name": "Jarvis Browser Companion",
   "version": "1.0.0",
   "description": "Control your browser using Jarvis AI Assistant",
+  "sandbox": {
+    "pages": ["sandbox.html"]
+  },
   "permissions": [
     "activeTab",
     "tabs",

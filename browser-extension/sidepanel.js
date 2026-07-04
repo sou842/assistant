@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Load saved model selection
-  chrome.storage.local.get({ selectedModel: "gemini-2.5-flash", isAgentRunning: false }, (res) => {
+  chrome.storage.local.get({ selectedModel: "mistral-small-latest", isAgentRunning: false }, (res) => {
     if (res.selectedModel) {
       modelSelect.value = res.selectedModel;
     }
@@ -494,4 +494,300 @@ btnStop.addEventListener("click", async () => {
   await chrome.storage.local.set({ agentStopRequested: true });
   btnStop.disabled = true;
   btnStop.innerText = "Stopping...";
+});
+
+// Tab Switching DOM Elements
+const btnTabChat = document.getElementById("btnTabChat");
+const btnTabWorkflows = document.getElementById("btnTabWorkflows");
+const chatView = document.getElementById("chatView");
+const workflowsView = document.getElementById("workflowsView");
+
+// Switch to Chat Tab
+btnTabChat.addEventListener("click", () => {
+  btnTabChat.style.background = "rgba(157, 78, 221, 0.1)";
+  btnTabChat.style.borderColor = "rgba(157, 78, 221, 0.2)";
+  btnTabChat.style.color = "var(--text)";
+  btnTabChat.style.fontWeight = "600";
+
+  btnTabWorkflows.style.background = "transparent";
+  btnTabWorkflows.style.borderColor = "transparent";
+  btnTabWorkflows.style.color = "var(--text-muted)";
+  btnTabWorkflows.style.fontWeight = "500";
+
+  chatView.style.display = "flex";
+  workflowsView.style.display = "none";
+});
+
+// Switch to Workflows Tab
+btnTabWorkflows.addEventListener("click", async () => {
+  btnTabWorkflows.style.background = "rgba(157, 78, 221, 0.1)";
+  btnTabWorkflows.style.borderColor = "rgba(157, 78, 221, 0.2)";
+  btnTabWorkflows.style.color = "var(--text)";
+  btnTabWorkflows.style.fontWeight = "600";
+
+  btnTabChat.style.background = "transparent";
+  btnTabChat.style.borderColor = "transparent";
+  btnTabChat.style.color = "var(--text-muted)";
+  btnTabChat.style.fontWeight = "500";
+
+  chatView.style.display = "none";
+  workflowsView.style.display = "flex";
+
+  await loadWorkflowsList();
+});
+
+// Load Workflows List
+// Load Workflows List
+async function loadWorkflowsList() {
+  workflowsView.innerHTML = `<div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 12px;">Loading workflows...</div>`;
+
+  let workflows = [];
+  let loaded = false;
+
+  // Try 1: Direct fetch from sidepanel context (shares active session cookies)
+  try {
+    const directRes = await fetch("http://localhost:3000/api/workflows");
+    if (directRes.ok) {
+      const data = await directRes.json();
+      if (data && Array.isArray(data.data)) {
+        workflows = data.data;
+        loaded = true;
+      }
+    }
+  } catch (e) {
+    console.warn("Direct workflows fetch failed, falling back to proxy...", e);
+  }
+
+  // Try 2: Background script proxy (fallback if direct fetch fails)
+  if (!loaded) {
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          action: "proxy_get",
+          url: "/api/workflows"
+        }, (res) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(res);
+          }
+        });
+      });
+
+      if (response && response.success && response.data?.success && Array.isArray(response.data.data)) {
+        workflows = response.data.data;
+        loaded = true;
+      } else {
+        const errMsg = response?.error || response?.data?.error || "Could not retrieve workflows list.";
+        workflowsView.innerHTML = `
+          <div style="color: #ff4d6d; text-align: center; margin-top: 40px; font-size: 12px; padding: 10px; border: 1px dashed rgba(255, 77, 109, 0.2); border-radius: 8px; background: rgba(255, 77, 109, 0.05);">
+            Failed to load workflows: ${errMsg}<br>
+            <span style="font-size: 10.5px; opacity: 0.8; display: block; margin-top: 5px;">Make sure your dashboard at http://localhost:3000 is open and logged in.</span>
+          </div>
+        `;
+        return;
+      }
+    } catch (err) {
+      workflowsView.innerHTML = `
+        <div style="color: #ff4d6d; text-align: center; margin-top: 40px; font-size: 12px; padding: 10px; border: 1px dashed rgba(255, 77, 109, 0.2); border-radius: 8px; background: rgba(255, 77, 109, 0.05);">
+          Error loading workflows: ${err.message}
+        </div>
+      `;
+      return;
+    }
+  }
+
+  if (workflows.length === 0) {
+    workflowsView.innerHTML = `
+      <div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 12px; padding: 15px; border: 1px dashed var(--border); border-radius: 12px;">
+        No saved workflows found. Ask Jarvis to create one!
+      </div>
+    `;
+    return;
+  }
+
+  workflowsView.innerHTML = "";
+
+  // List Container
+  const listContainer = document.createElement("div");
+  listContainer.id = "workflowsListContainer";
+  listContainer.style.cssText = "display: flex; flex-direction: column; gap: 10px;";
+
+  // Details Container
+  const detailsContainer = document.createElement("div");
+  detailsContainer.id = "workflowDetailsContainer";
+  detailsContainer.style.cssText = "display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 12px; padding: 14px;";
+
+  workflowsView.appendChild(listContainer);
+  workflowsView.appendChild(detailsContainer);
+
+  workflows.forEach(w => {
+    const card = document.createElement("div");
+    card.style.cssText = "background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: all 0.2s;";
+    card.addEventListener("mouseover", () => card.style.background = "rgba(255,255,255,0.04)");
+    card.addEventListener("mouseout", () => card.style.background = "rgba(255,255,255,0.02)");
+
+    const title = document.createElement("h3");
+    title.innerText = w.title;
+    title.style.cssText = "font-size: 13px; font-weight: 600; color: var(--text); margin: 0;";
+    card.appendChild(title);
+
+    const desc = document.createElement("p");
+    desc.innerText = w.description || "No description provided.";
+    desc.style.cssText = "font-size: 11.5px; color: var(--text-muted); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+    card.appendChild(desc);
+
+    card.addEventListener("click", () => {
+      showWorkflowDetails(w, listContainer, detailsContainer);
+    });
+
+    listContainer.appendChild(card);
+  });
+}
+
+// Show details panel for a workflow
+function showWorkflowDetails(w, listContainer, detailsContainer) {
+  listContainer.style.display = "none";
+  detailsContainer.style.display = "flex";
+  detailsContainer.innerHTML = "";
+
+  // Back Button
+  const btnBack = document.createElement("button");
+  btnBack.innerHTML = `&larr; Back to list`;
+  btnBack.style.cssText = "align-self: flex-start; padding: 4px 8px; font-size: 11px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 6px; cursor: pointer; font-family: 'Outfit';";
+  btnBack.addEventListener("click", () => {
+    detailsContainer.style.display = "none";
+    listContainer.style.display = "flex";
+  });
+  detailsContainer.appendChild(btnBack);
+
+  // Title
+  const title = document.createElement("h2");
+  title.innerText = w.title;
+  title.style.cssText = "font-size: 14px; font-weight: 700; color: var(--text); margin: 6px 0 0 0;";
+  detailsContainer.appendChild(title);
+
+  // Description
+  const desc = document.createElement("p");
+  desc.innerText = w.description || "No description provided.";
+  desc.style.cssText = "font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4;";
+  detailsContainer.appendChild(desc);
+
+  // Inputs Label
+  const inputsLabel = document.createElement("label");
+  inputsLabel.innerText = "Inputs (JSON):";
+  inputsLabel.style.cssText = "font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 8px;";
+  detailsContainer.appendChild(inputsLabel);
+
+  // Inputs Area
+  const inputsArea = document.createElement("textarea");
+  inputsArea.placeholder = `{\n  "url": "https://youtube.com..."\n}`;
+  inputsArea.style.cssText = "background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px; min-height: 60px; resize: vertical; outline: none; line-height: 1.4;";
+  inputsArea.value = `{\n  "url": ""\n}`;
+  detailsContainer.appendChild(inputsArea);
+
+  // Script Preview Header
+  const scriptLabel = document.createElement("label");
+  scriptLabel.style.cssText = "font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; align-items: center;";
+  scriptLabel.innerHTML = `<span>Script Code:</span>`;
+  
+  const scriptCode = document.createElement("pre");
+  scriptCode.innerText = w.script;
+  scriptCode.style.cssText = "background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: #a2d2ff; font-family: 'JetBrains Mono', monospace; font-size: 10px; overflow-x: auto; max-height: 120px; margin: 0; display: none; line-height: 1.3;";
+
+  const toggleScript = document.createElement("span");
+  toggleScript.innerText = "Show Code";
+  toggleScript.style.cssText = "cursor: pointer; text-decoration: underline; font-size: 10.5px; color: #9d4edd; font-weight: 500;";
+  toggleScript.addEventListener("click", () => {
+    if (scriptCode.style.display === "none") {
+      scriptCode.style.display = "block";
+      toggleScript.innerText = "Hide Code";
+    } else {
+      scriptCode.style.display = "none";
+      toggleScript.innerText = "Show Code";
+    }
+  });
+
+  scriptLabel.appendChild(toggleScript);
+  detailsContainer.appendChild(scriptLabel);
+  detailsContainer.appendChild(scriptCode);
+
+  // Run Button
+  const btnRun = document.createElement("button");
+  btnRun.innerText = "Execute Workflow";
+  btnRun.style.cssText = "padding: 8px 16px; font-size: 12px; background: var(--primary); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Outfit'; margin-top: 8px; transition: background 0.2s;";
+  btnRun.addEventListener("mouseover", () => btnRun.style.background = "var(--primary-hover)");
+  
+  btnRun.addEventListener("click", async () => {
+    let inputs = {};
+    try {
+      if (inputsArea.value.trim()) {
+        inputs = JSON.parse(inputsArea.value.trim());
+      }
+    } catch (e) {
+      alert("Invalid JSON format in inputs: " + e.message);
+      return;
+    }
+
+    btnRun.disabled = true;
+    btnRun.innerText = "Executing...";
+
+    // Switch to Chat tab to see execution progress logs
+    btnTabChat.click();
+
+    // Trigger workflow run via sandbox iframe
+    const sandboxFrame = document.getElementById("sandboxFrame");
+    const messageId = Date.now().toString();
+
+    // Send a message to background to announce starting
+    await chrome.runtime.sendMessage({
+      action: "log_sandbox_start"
+    });
+
+    const resultListener = (event) => {
+      if (event.data && event.data.action === "result" && event.data.messageId === messageId) {
+        window.removeEventListener("message", resultListener);
+        btnRun.disabled = false;
+        btnRun.innerText = "Execute Workflow";
+
+        // Post result status message to background logs
+        chrome.runtime.sendMessage({
+          action: "log_sandbox_result",
+          success: event.data.success,
+          result: event.data.result,
+          error: event.data.error
+        });
+      }
+    };
+    window.addEventListener("message", resultListener);
+
+    sandboxFrame.contentWindow.postMessage({
+      action: "execute",
+      script: w.script,
+      inputs: inputs,
+      messageId: messageId
+    }, "*");
+  });
+
+  detailsContainer.appendChild(btnRun);
+}
+
+// Sandbox Iframe Communication Listener
+window.addEventListener("message", (event) => {
+  if (event.data && event.data.action === "command") {
+    const { command, args } = event.data;
+    const port = event.ports[0];
+
+    chrome.runtime.sendMessage({
+      action: "execute_sandbox_command",
+      command,
+      args
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        port.postMessage({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        port.postMessage(response);
+      }
+    });
+  }
 });
