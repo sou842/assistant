@@ -26,13 +26,13 @@ When creating or modifying scheduled tasks, follow these strict rules to prevent
 </div>
 \`\`\`
 
-2. DYNAMIC TEMPLATE VARIABLES & PATH RESOLUTION
-- When reference data from a previous step (e.g., fetch_weather or http_request):
-  - Always use the syntax {{context.stepId.path.to.key}}.
-  - Verify if "context." prefix is needed. For the email/whatsapp templating engine, always use {{context.stepId.key}}.
-  - Double-check the exact path. For example, if fetch_weather returns:
-    { "temp": 28.5, "weather": { "description": "clear sky" } }
-    The correct template is {{context.fetch_weather.weather.description}}.
+2. DAG EXECUTION, DEPENDENCIES & DYNAMIC TEMPLATE VARIABLES
+- Every step MUST define its dependencies using the 'dependsOn' array. If a step uses data from a previous step, add the parent step's 'id' to 'dependsOn'. If it has no dependencies, use an empty array [].
+- Every step MUST explicitly save its output using the 'output' field. For example: "output": { "saveAs": "latestEmail" }.
+- When referencing data from a previous step, ALWAYS use the standard bracket notation and reference the 'saveAs' variable name: {{context.latestEmail.messages[0].id}}
+  - DO NOT use dot notation for array indices like .0.id, always use bracket notation like [0].id.
+  - Double-check the exact path. For example, if a fetch_weather step saves as "weatherData" and returns: { "temp": 28.5, "weather": { "description": "clear sky" } }
+    The correct template is {{context.weatherData.weather.description}}.
   - DO NOT make up metadata fields like 'time' or 'timestamp' on external APIs unless you have verified they exist.
 
 3. STAGE-1 PRE-VERIFICATION FOR EXTERNAL APIs
@@ -63,17 +63,17 @@ When creating or modifying scheduled tasks, follow these strict rules to prevent
 7. DYNAMIC AI PROMPT OUTPUTS (RECOMMENDED: GENERATE FULL BODIES DIRECTLY)
 - Instead of trying to parse complex JSON structures and bind multiple sub-properties (which often fails due to hallucinated keys or parsing issues), the MOST RELIABLE pattern is to have the AI generate the final message bodies directly.
 - Create channel-specific AI steps:
-  1. An 'ai_prompt' step for Email (e.g. ID: 'generate_email_body'): Instruct the prompt to output the complete, final email body in pure HTML (using <b>, <br>, <ul>, etc.).
-  2. An 'ai_prompt' step for WhatsApp (e.g. ID: 'generate_whatsapp_body'): Instruct the prompt to output the complete, final WhatsApp message in plain text with WhatsApp markdown (using *bold*, \n, etc., and NO HTML).
+  1. An 'ai_prompt' step for Email (e.g. saveAs: 'generatedEmailBody'): Instruct the prompt to output the complete, final email body in pure HTML (using <b>, <br>, <ul>, etc.).
+  2. An 'ai_prompt' step for WhatsApp (e.g. saveAs: 'generatedWhatsappBody'): Instruct the prompt to output the complete, final WhatsApp message in plain text with WhatsApp markdown (using *bold*, \n, etc., and NO HTML).
 - In the final action steps, simply inject the complete generated text block:
-  - Email bodyTemplate: "{{context.generate_email_body.generatedText}}"
-  - WhatsApp messageTemplate: "{{context.generate_whatsapp_body.generatedText}}"
+  - Email bodyTemplate: "{{context.generatedEmailBody.generatedText}}"
+  - WhatsApp messageTemplate: "{{context.generatedWhatsappBody.generatedText}}"
 - This is simple, extremely robust, and guarantees that variables will never be left unreplaced.
 
 8. MANDATORY TEMPLATE VALIDATION
 - Before calling 'createScheduleTask', you MUST carefully review all your steps and verify:
-  1. Every single {{context.stepId...}} placeholder refers to a step ID that is actually defined earlier in the SAME task. Do not reference non-existent steps (e.g. do not invent a 'get_time' step).
-  2. For AI prompt steps, always use {{context.stepId.generatedText}} to inject the complete output.
+  1. Every single {{context.varName...}} placeholder refers to a 'saveAs' variable name that is actually defined earlier in the SAME task. Do not reference non-existent variables.
+  2. For AI prompt steps, always use {{context.varName.generatedText}} to inject the complete output.
   3. If you need the current time inside the email or message body, fetch it before creating the task or add an explicit step to retrieve the time.
 
 9. WHATSAPP FORMATTING VS EMAIL HTML FORMATTING

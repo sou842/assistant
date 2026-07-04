@@ -31,9 +31,17 @@ export async function POST(
       context: {},
     });
 
-    const result = await executeScheduleTaskRun(task, run);
-
-    return NextResponse.json({ success: result.success, data: result });
+    try {
+      const result = await executeScheduleTaskRun(task, run);
+      return NextResponse.json({ success: result.success, data: result });
+    } catch (execError: any) {
+      run.status = 'failed';
+      run.error = execError.message;
+      run.endedAt = new Date();
+      await run.save();
+      await ScheduleTask.findByIdAndUpdate(id, { isRunning: false, lastError: execError.message });
+      return NextResponse.json({ success: false, error: execError.message }, { status: 500 });
+    }
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

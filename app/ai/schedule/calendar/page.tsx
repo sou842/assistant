@@ -31,10 +31,12 @@ type ScheduleTask = {
   _id: string;
   title: string;
   steps: any[];
-  scheduleType: "one_time" | "recurring";
-  runAt?: string;
-  intervalMinutes?: number;
-  nextRunAt?: string;
+  schedule?: {
+    type: "one_time" | "recurring";
+    runAt?: string;
+    intervalMinutes?: number;
+    nextRunAt?: string;
+  };
   createdAt?: string;
   status: "active" | "paused" | "failed" | "completed";
 };
@@ -44,8 +46,8 @@ function estimateRunsForDay(task: ScheduleTask, day: Date) {
   const dayEnd = endOfDay(day);
   const dayKey = format(day, "yyyy-MM-dd");
 
-  if (task.scheduleType === "one_time") {
-    const at = task.runAt || task.nextRunAt || task.createdAt;
+  if (task.schedule?.type === "one_time") {
+    const at = task.schedule.runAt || task.schedule.nextRunAt || task.createdAt;
     if (!at) return 0;
     const run = new Date(at);
     if (Number.isNaN(run.getTime())) return 0;
@@ -53,9 +55,9 @@ function estimateRunsForDay(task: ScheduleTask, day: Date) {
   }
 
   if (task.status !== "active") return 0;
-  if (!task.intervalMinutes || task.intervalMinutes <= 0) return 0;
+  if (!task.schedule?.intervalMinutes || task.schedule.intervalMinutes <= 0) return 0;
 
-  const seed = task.nextRunAt || task.runAt || task.createdAt;
+  const seed = task.schedule.nextRunAt || task.schedule.runAt || task.createdAt;
   if (!seed) return 0;
 
   const first = new Date(seed);
@@ -65,7 +67,7 @@ function estimateRunsForDay(task: ScheduleTask, day: Date) {
   const minutes = differenceInMinutes(dayEnd, effectiveStart);
   if (minutes < 0) return 0;
 
-  return Math.floor(minutes / task.intervalMinutes) + 1;
+  return Math.floor(minutes / task.schedule.intervalMinutes) + 1;
 }
 
 function occursOnDay(task: ScheduleTask, day: Date) {
@@ -74,15 +76,15 @@ function occursOnDay(task: ScheduleTask, day: Date) {
   const dayEnd = endOfDay(day);
   const dayKey = format(day, "yyyy-MM-dd");
 
-  if (task.scheduleType === "one_time") {
-    const at = task.runAt || task.nextRunAt || task.createdAt;
+  if (task.schedule?.type === "one_time") {
+    const at = task.schedule.runAt || task.schedule.nextRunAt || task.createdAt;
     if (!at) return false;
     const run = new Date(at);
     if (Number.isNaN(run.getTime())) return false;
     return format(run, "yyyy-MM-dd") === dayKey;
   }
 
-  const seed = task.runAt || task.createdAt || task.nextRunAt;
+  const seed = task.schedule?.runAt || task.createdAt || task.schedule?.nextRunAt;
   if (!seed) return false;
   const first = new Date(seed);
   if (Number.isNaN(first.getTime())) return false;

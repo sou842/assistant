@@ -13,6 +13,7 @@ const ScheduleTaskRunSchema = new mongoose.Schema(
     status: { type: String, enum: ['running', 'success', 'failed', 'paused'], required: true },
     error: { type: String },
     currentStepIndex: { type: Number, default: 0 },
+    completedSteps: { type: Array, default: [] },
     context: { type: Object, default: {} },
   },
   { timestamps: true }

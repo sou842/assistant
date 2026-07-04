@@ -105,44 +105,54 @@ const scheduleTypeSchema = z.enum(['one_time', 'recurring']);
 const baseStepSchema = z.object({
   id: z.string().describe("A unique string ID for this step, like 'step1' or 'fetch_weather'"),
   condition: z.string().optional().describe("Optional JS expression. If it evaluates to false, the step is skipped. E.g. 'context.fetch_price.data.bitcoin.usd < 60000'"),
+  dependsOn: z.array(z.string()).default([]).describe("Array of step IDs that must complete before this step runs"),
+});
+
+const stepOutputSchema = z.object({
+  saveAs: z.string().describe("The variable name to save this step's output into the context. E.g., 'weatherData'")
 });
 
 const stepSchema = z.discriminatedUnion('type', [
   baseStepSchema.extend({
     type: z.literal('fetch_weather'),
-    config: z.object({
+    input: z.object({
       city: z.string().describe("City name to fetch weather for"),
-    })
+    }),
+    output: stepOutputSchema
   }),
   baseStepSchema.extend({
     type: z.literal('ai_prompt'),
-    config: z.object({
-      prompt: z.string().describe("The prompt to send to the AI. Use {{context.stepId.key}} to inject data. The output is stored in both the 'data' and 'generatedText' fields."),
-    })
+    input: z.object({
+      prompt: z.string().describe("The prompt to send to the AI. Use {{context.varName.key}} to inject data."),
+    }),
+    output: stepOutputSchema
   }),
   baseStepSchema.extend({
     type: z.literal('send_email'),
-    config: z.object({
+    input: z.object({
       to: z.string().describe("Recipient email address"),
       subject: z.string().describe("Email subject line"),
-      bodyTemplate: z.string().describe("Email body content. ALWAYS use bodyTemplate, NEVER use body. Email body MUST be pure HTML tags (e.g. <b> or <ul><li>). DO NOT USE MARKDOWN (like **bold** or - for lists). Use {{context.stepId.key}} to inject data. fetch_weather provides exactly these keys: temperature, windspeed, time, weather.description, main.humidity. DO NOT invent keys or add '.data'."),
-    })
+      bodyTemplate: z.string().describe("Email body content. ALWAYS use bodyTemplate, NEVER use body. Email body MUST be pure HTML tags. Use {{context.varName.key}} to inject data."),
+    }),
+    output: stepOutputSchema.optional()
   }),
   baseStepSchema.extend({
     type: z.literal('send_whatsapp'),
-    config: z.object({
+    input: z.object({
       phone: z.string().describe("Recipient phone number"),
-      messageTemplate: z.string().describe("Message content. Use {{context.stepId.key}} to inject data."),
-    })
+      messageTemplate: z.string().describe("Message content. Use {{context.varName.key}} to inject data."),
+    }),
+    output: stepOutputSchema.optional()
   }),
   baseStepSchema.extend({
     type: z.literal('http_request'),
-    config: z.object({
-      url: z.string().describe("URL to fetch. Can use {{context.stepId.key}}"),
+    input: z.object({
+      url: z.string().describe("URL to fetch. Can use {{context.varName.key}}"),
       method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).default('GET'),
       headers: z.record(z.string()).optional().describe("Key-value pairs for HTTP headers"),
-      body: z.string().optional().describe("JSON string body for POST/PUT. Use templates like {{context.step1.key}}"),
-    })
+      body: z.string().optional().describe("JSON string body for POST/PUT. Use templates like {{context.varName.key}}"),
+    }),
+    output: stepOutputSchema
   }),
 ]);
 
@@ -415,11 +425,15 @@ export const tools = {
     description: "Create a schedule task (one-time or recurring) containing multiple steps. Break down complex requests into steps. Use 'http_request' to hit external APIs and 'send_email' or 'send_whatsapp' to notify the user. Use 'fetch_weather' to get weather data, and 'ai_prompt' to analyze text/context using an AI. IMPORTANT: Context variables are passed via {{context.stepId.key}}. You MUST use the 'condition' field on a step if you want to skip it dynamically.",
     inputSchema: z.object({
       title: z.string().min(1).max(140),
+      description: z.string().optional(),
+      contextSchema: z.record(z.string()).optional(),
       steps: z.array(stepSchema).min(1),
-      scheduleType: scheduleTypeSchema,
-      runAt: z.string().optional(),
-      intervalMinutes: z.number().int().positive().optional(),
-      timezone: z.string().default('Asia/Kolkata'),
+      schedule: z.object({
+        type: scheduleTypeSchema,
+        intervalMinutes: z.number().int().positive().optional(),
+        timezone: z.string().default('Asia/Kolkata'),
+        runAt: z.string().optional(),
+      }),
       status: scheduleStatusSchema.default('active'),
     }),
     execute: async (data) => {
@@ -429,14 +443,14 @@ export const tools = {
 
         await dbConnect();
 
-        // Normalize any phone numbers inside config of send_whatsapp steps
+        // Normalize any phone numbers inside input of send_whatsapp steps
         const normalizedSteps = data.steps.map(s => {
-          if (s.type === 'send_whatsapp' && s.config.phone) {
+          if (s.type === 'send_whatsapp' && s.input.phone) {
             return {
               ...s,
-              config: {
-                ...s.config,
-                phone: cleanPhone(String(s.config.phone)),
+              input: {
+                ...s.input,
+                phone: cleanPhone(String(s.input.phone)),
               }
             };
           }
@@ -446,10 +460,13 @@ export const tools = {
         const normalized = {
           ...data,
           steps: normalizedSteps,
-          runAt: data.runAt ? new Date(data.runAt) : undefined,
+          schedule: {
+            ...data.schedule,
+            runAt: data.schedule.runAt ? new Date(data.schedule.runAt) : undefined,
+          }
         };
-        const nextRunAt = computeNextRunAt(normalized as any);
-        const task = await ScheduleTask.create({ ...normalized, nextRunAt, userId: session.user.id });
+        const nextRunAt = computeNextRunAt({ ...normalized, scheduleType: normalized.schedule.type, intervalMinutes: normalized.schedule.intervalMinutes, runAt: normalized.schedule.runAt } as any);
+        const task = await ScheduleTask.create({ ...normalized, schedule: { ...normalized.schedule, nextRunAt }, userId: session.user.id });
         return { success: true, task: JSON.parse(JSON.stringify(task)) };
       } catch (error: any) {
         return { success: false, error: error.message };
@@ -462,11 +479,15 @@ export const tools = {
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the schedule task to update'),
       title: z.string().min(1).max(140).optional(),
+      description: z.string().optional(),
+      contextSchema: z.record(z.string()).optional(),
       steps: z.array(stepSchema).optional(),
-      scheduleType: scheduleTypeSchema.optional(),
-      runAt: z.string().optional(),
-      intervalMinutes: z.number().int().positive().optional(),
-      timezone: z.string().optional(),
+      schedule: z.object({
+        type: scheduleTypeSchema.optional(),
+        intervalMinutes: z.number().int().positive().optional(),
+        timezone: z.string().optional(),
+        runAt: z.string().optional(),
+      }).optional(),
       status: scheduleStatusSchema.optional(),
     }),
     execute: async ({ id, ...updateData }) => {
@@ -478,15 +499,15 @@ export const tools = {
         const existing = await ScheduleTask.findOne({ _id: id, userId: session.user.id });
         if (!existing) return { success: false, error: "Schedule task not found" };
 
-        // Normalize any phone numbers inside config of send_whatsapp steps if provided
+        // Normalize any phone numbers inside input of send_whatsapp steps if provided
         const normalizedSteps = updateData.steps
           ? updateData.steps.map(s => {
-              if (s.type === 'send_whatsapp' && s.config.phone) {
+              if (s.type === 'send_whatsapp' && s.input.phone) {
                 return {
                   ...s,
-                  config: {
-                    ...s.config,
-                    phone: cleanPhone(String(s.config.phone)),
+                  input: {
+                    ...s.input,
+                    phone: cleanPhone(String(s.input.phone)),
                   }
                 };
               }
@@ -494,20 +515,25 @@ export const tools = {
             })
           : undefined;
 
+        const mergedSchedule: any = existing.schedule || {};
+        if (updateData.schedule) {
+          Object.assign(mergedSchedule, updateData.schedule);
+          if (updateData.schedule.runAt) {
+            mergedSchedule.runAt = new Date(updateData.schedule.runAt);
+          }
+        }
+
         const merged: any = {
           ...existing.toObject(),
           ...updateData,
           ...(normalizedSteps ? { steps: normalizedSteps } : {}),
-          ...(updateData.runAt !== undefined ? { runAt: updateData.runAt ? new Date(updateData.runAt) : undefined } : {}),
+          schedule: mergedSchedule,
         };
 
-        const shouldRecomputeNextRun =
-          updateData.scheduleType !== undefined ||
-          updateData.runAt !== undefined ||
-          updateData.intervalMinutes !== undefined;
+        const shouldRecomputeNextRun = updateData.schedule !== undefined;
 
         if (shouldRecomputeNextRun) {
-          merged.nextRunAt = computeNextRunAt(merged);
+          merged.schedule.nextRunAt = computeNextRunAt({ ...merged, scheduleType: merged.schedule.type, intervalMinutes: merged.schedule.intervalMinutes, runAt: merged.schedule.runAt });
         }
 
         const task = await ScheduleTask.findByIdAndUpdate(id, merged, {

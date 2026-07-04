@@ -392,30 +392,43 @@ export async function executeScheduleTaskRun(task: any, run: any) {
 
   try {
     const steps = task.steps || [];
-    let currentStepIndex = run.currentStepIndex || 0;
+    const completedStepIds: string[] = run.completedSteps || [];
     const googleToken = await getGoogleAccessTokenForUser(task.userId).catch(() => null);
     let localContext = {
       ...(run.context || {}),
       googleAccessToken: googleToken,
     };
     
-    // Process all remaining steps sequentially
-    while (currentStepIndex < steps.length) {
-      const step = steps[currentStepIndex];
+    // Process steps in a loop until all are done or no more can be processed
+    while (completedStepIds.length < steps.length) {
+      // Find steps that are not completed and whose dependencies are met
+      const readySteps = steps.filter((step: any) => 
+        !completedStepIds.includes(step.id) &&
+        (step.dependsOn || []).every((depId: string) => completedStepIds.includes(depId))
+      );
+
+      if (readySteps.length === 0) {
+        throw new Error("Workflow is deadlocked. Circular dependency or missing step ID in dependsOn.");
+      }
+
+      // For simplicity, we process one ready step at a time sequentially
+      const step = readySteps[0];
       let stepOutput: any = {};
+
+      const saveKey = step.output?.saveAs || step.id;
 
       if (step.condition) {
         try {
           const fn = new Function('context', `return ${step.condition};`);
           const shouldRun = fn(localContext);
           if (!shouldRun) {
-            localContext = { ...localContext, [step.id]: { skipped: true } };
+            localContext = { ...localContext, [saveKey]: { skipped: true } };
             run.context = localContext;
+            completedStepIds.push(step.id);
+            run.completedSteps = completedStepIds;
             if (typeof run.markModified === 'function') run.markModified('context');
-            currentStepIndex++;
-            run.currentStepIndex = currentStepIndex;
             await run.save();
-            continue; // Skip to next step
+            continue; // Skip to next iteration
           }
         } catch (err) {
             console.warn(`Failed to evaluate condition for step ${step.id}:`, err);
@@ -423,24 +436,25 @@ export async function executeScheduleTaskRun(task: any, run: any) {
       }
 
       try {
+        const inputArgs = step.input || step.config || {};
         switch (step.type) {
           case 'fetch_weather':
-            stepOutput = await withRetry(() => executeFetchWeather(step.config, localContext));
+            stepOutput = await withRetry(() => executeFetchWeather(inputArgs, localContext));
             break;
           case 'ai_prompt':
-            stepOutput = await executeAIPrompt(step.config, localContext);
+            stepOutput = await executeAIPrompt(inputArgs, localContext);
             break;
           case 'send_email':
-            stepOutput = await withRetry(() => executeSendEmail(step.config, localContext, task));
+            stepOutput = await withRetry(() => executeSendEmail(inputArgs, localContext, task));
             break;
           case 'send_whatsapp':
-            stepOutput = await withRetry(() => executeSendWhatsapp(step.config, localContext));
+            stepOutput = await withRetry(() => executeSendWhatsapp(inputArgs, localContext));
             break;
           case 'http_request':
-            stepOutput = await withRetry(() => executeHttpRequest(step.config, localContext));
+            stepOutput = await withRetry(() => executeHttpRequest(inputArgs, localContext));
             break;
           case 'run_script':
-            stepOutput = await executeRunScript(step.config, localContext);
+            stepOutput = await executeRunScript(inputArgs, localContext);
             break;
           default:
             throw new Error(`Unsupported step type: ${step.type}`);
@@ -449,17 +463,17 @@ export async function executeScheduleTaskRun(task: any, run: any) {
         throw new Error(`[Step: ${step.id}] ${stepError.message || 'Unknown error'}`);
       }
 
-      // Update context and increment index
+      // Update context and increment completed steps
       localContext = {
         ...localContext,
-        [step.id]: stepOutput,
+        [saveKey]: stepOutput,
       };
       run.context = localContext;
+      completedStepIds.push(step.id);
+      run.completedSteps = completedStepIds;
       if (typeof run.markModified === 'function') {
         run.markModified('context');
       }
-      currentStepIndex++;
-      run.currentStepIndex = currentStepIndex;
       await run.save();
     }
 
@@ -469,8 +483,9 @@ export async function executeScheduleTaskRun(task: any, run: any) {
     run.endedAt = endedAt;
     await run.save();
     
-    const nextRunAt = computeNextRunAt(task, endedAt);
-    const isOneTime = task.scheduleType === 'one_time';
+    const scheduleType = task.schedule?.type || task.scheduleType;
+    const nextRunAt = computeNextRunAt({ ...task, scheduleType, intervalMinutes: task.schedule?.intervalMinutes }, endedAt);
+    const isOneTime = scheduleType === 'one_time';
     
     await ScheduleTask.findByIdAndUpdate(task._id, {
       lastRunAt: endedAt,
@@ -488,12 +503,13 @@ export async function executeScheduleTaskRun(task: any, run: any) {
     run.endedAt = new Date();
     await run.save();
 
+    const scheduleType = task.schedule?.type || task.scheduleType;
     await ScheduleTask.findByIdAndUpdate(task._id, {
       lastRunAt: new Date(),
       isRunning: false,
       status: 'failed',
       lastError: error?.message || 'Unknown error',
-      nextRunAt: task.scheduleType === 'recurring' ? computeNextRunAt(task, new Date()) : null,
+      nextRunAt: scheduleType === 'recurring' ? computeNextRunAt({ ...task, scheduleType, intervalMinutes: task.schedule?.intervalMinutes }, new Date()) : null,
     });
 
     return { success: false, error: error?.message || 'Unknown error' };
