@@ -629,20 +629,7 @@ async function handleBrowserCommand(command, sender) {
 
       case "run_agent": {
         if (!prompt) throw new Error("Agent prompt is required");
-        // Append user prompt to chat history so it shows in companion panel
-        try {
-          const data = await chrome.storage.local.get({ chatHistory: [] });
-          const chatHistory = data.chatHistory;
-          chatHistory.push({
-            role: "user",
-            text: prompt,
-            timestamp: Date.now()
-          });
-          if (chatHistory.length > 50) chatHistory.shift();
-          await chrome.storage.local.set({ chatHistory });
-        } catch (err) {
-          console.error("Failed to append run_agent message to chat history:", err);
-        }
+        // User prompt is already appended to chatHistory by sidepanel.js for instant UI responsiveness
 
         // Start agent loop asynchronously so it doesn't block the response
         runAgentLoop(prompt, model || "mistral-small-latest").catch(err => {
@@ -698,6 +685,9 @@ async function runAgentLoop(prompt, model) {
 
     // Pre-check: Determine if this is a general query/chat, a workflow creation request, or a browser action
     try {
+      const data = await chrome.storage.local.get({ chatHistory: [] });
+      const recentHistory = data.chatHistory.slice(-5).map(m => `${m.role}: ${m.text}`).join('\n');
+      
       const baseUrl = await getBackendBaseUrl();
       const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
         method: "POST",
@@ -705,6 +695,9 @@ async function runAgentLoop(prompt, model) {
         body: JSON.stringify({
           model,
           systemInstruction: `Analyze the user's request: "${prompt}".
+Recent conversation context:
+${recentHistory}
+
 Decide if this is:
 1. A general/conversational question (e.g. asking about capabilities, general knowledge, greetings) that does NOT require active browser automation.
 2. A request to write, build, create, or save a browser automation workflow script (e.g. "create a workflow to...", "write an automation script for X").
@@ -734,13 +727,16 @@ If type is 'create_workflow', you must write a robust, error-tolerant JavaScript
    - await locator.waitFor({ state: 'visible', timeout: 15000 }) -> Waits up to timeout (ms) for the element to appear.
    - await locator.click() -> Clicks the element.
    - await locator.getAttribute(attrName) -> Returns the value of the attribute, or null.
-3. Input Handling: Always safely resolve variables from '__inputs'. (e.g., 'const url = __inputs.url; if (!url) return { success: false, error: \"URL is required\" };')
-4. Waiting/Timing: Web interfaces are dynamic. ALWAYS call 'await locator.waitFor()' before clicking or reading attributes to prevent race conditions.
-5. Error Handling: Wrap selectors and actions in try/catch blocks where failure is possible.
-6. Execution Return: The script MUST return a JSON object indicating status:
+   - await page.waitForTimeout(ms) -> Waits for the specified milliseconds.
+   - await page.close() -> Closes the current page. Always do this in a finally block if you opened a new page.
+3. IMPORTANT: NEVER use the 'data-agent-id' attribute as a selector! It is dynamically generated and changes on every page load. Use stable selectors like id, class, aria-label, text content, title, or generic standard HTML structures.
+4. Input Handling: Always safely resolve variables from '__inputs'. (e.g., 'const url = __inputs.url; if (!url) return { success: false, error: "URL is required" };')
+5. Waiting/Timing: Web interfaces are dynamic. ALWAYS call 'await locator.waitFor()' before clicking or reading attributes to prevent race conditions.
+6. Error Handling: Wrap selectors and actions in try/catch blocks where failure is possible.
+7. Execution Return: The script MUST return a JSON object indicating status:
    - On success: return { success: true, ...additionalData }
    - On failure: return { success: false, error: \"Reason for failure\" }
-7. Example Script:
+8. Example Script:
    \`\`\`javascript
    const url = __inputs.url;
    if (!url) return { success: false, error: \"URL is required\" };
@@ -1462,11 +1458,17 @@ async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory =
     return s;
   }).join('\n');
 
+  const data = await chrome.storage.local.get({ chatHistory: [] });
+  const recentHistory = data.chatHistory.slice(-5).map(m => `${m.role}: ${m.text}`).join('\n');
+
   const historyText = actionHistory.length > 0 
     ? `\nPrevious actions taken:\n${actionHistory.join('\n')}\n`
     : "";
 
   const systemInstruction = `You are an expert browser automation and control agent. Your goal is: "${prompt}"
+Recent conversation context:
+${recentHistory}
+
 Step: ${step}/${maxSteps}
 Current page URL: ${pageData.url}
 Current page title: ${pageData.title}

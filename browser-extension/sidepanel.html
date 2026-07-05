@@ -4,130 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jarvis Browser Companion</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="sidepanel.css">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0a0a0a;
+    }
+    #nextjsFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    #sandboxFrame {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <div class="bg-light light-1"></div>
-  <div class="bg-light light-2"></div>
+  <!-- Next.js Hosted UI -->
+  <iframe id="nextjsFrame" src="http://localhost:3000/extension-panel" allow="clipboard-read; clipboard-write"></iframe>
   
-  <div class="container">
-    <!-- Header -->
-    <header>
-      <div class="logo-area">
-        <div class="logo-glow" id="statusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); transition: all 0.3s ease;"></div>
-        <h1>Jarvis Agent</h1>
-      </div>
-      <div style="display: flex; gap: 6px; align-items: center;">
-        <span id="tokenUsage" style="display: none; padding: 4px 8px; font-size: 10px; border-radius: 6px; border: 1px solid rgba(157, 78, 221, 0.2); background: rgba(157, 78, 221, 0.05); color: #c8b6ff; font-weight: 500;">0 tokens</span>
-        <button id="btnNewChat" title="New Chat" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); display: flex; align-items: center; gap: 4px;">
-          + New
-        </button>
-        <button id="btnToggleHistory" title="Chat History" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); display: flex; align-items: center; gap: 4px;">
-          History
-        </button>
-      </div>
-    </header>
-
-    <!-- History Panel Overlay -->
-    <div class="history-panel" id="historyPanel" style="display: none; position: absolute; top: 56px; right: 16px; left: 16px; bottom: 84px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(15px); z-index: 50; flex-direction: column; overflow: hidden; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;">
-        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Conversations</span>
-        <button id="btnCloseHistory" style="padding: 2px 6px; font-size: 9px; border-radius: 4px;">Close</button>
-      </div>
-      <div id="historyList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin;">
-        <div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 12.5px;">No saved conversations yet.</div>
-      </div>
-    </div>
-
-    <!-- Active Tab Info -->
-    <div class="active-tab-banner" id="activeTabBanner">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      <span id="activeTabInfo">Detecting tab...</span>
-    </div>
-
-    <!-- Tab Buttons -->
-    <div id="tabNav" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-      <button id="btnTabChat" style="flex: 1; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(157, 78, 221, 0.2); background: rgba(157, 78, 221, 0.1); color: var(--text); font-family: 'Outfit', sans-serif; font-size: 11.5px; font-weight: 600; cursor: pointer; outline: none;">Chat</button>
-      <button id="btnTabWorkflows" style="flex: 1; padding: 6px 12px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-muted); font-family: 'Outfit', sans-serif; font-size: 11.5px; font-weight: 500; cursor: pointer; outline: none;">Workflows</button>
-    </div>
-
-    <!-- Chat View Container -->
-    <div id="chatView" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; gap: 12px;">
-      <!-- Chat Messages Area -->
-      <div class="chat-area" id="chatArea">
-        <!-- Chat bubbles dynamically loaded here -->
-        <div class="chat-bubble agent">
-          Hello! I am your Jarvis Browser Agent. Type any command below (e.g. "search Google for cat pictures") to control this browser tab.
-          <span class="timestamp">System</span>
-        </div>
-      </div>
-
-      <!-- Live Console logs (Toggleable) -->
-      <div class="console-section" id="consoleLogsSection">
-        <div class="console-header">
-          <span class="panel-title" style="font-size: 11px; font-weight:600; color: var(--text-muted);">Console Logs</span>
-          <button id="btnClearLogs" style="padding: 2px 6px; font-size: 9px; border-radius: 4px;">Clear</button>
-        </div>
-        <div class="console-body" id="consoleLogs">
-          <div style="color: var(--text-muted); text-align: center; margin-top: 10px;">No logs recorded yet.</div>
-        </div>
-      </div>
-
-      <!-- Chat Input container -->
-      <div class="chat-input-container">
-        <div class="input-row">
-          <textarea id="cmdInput" placeholder="Type a message or browser command..."></textarea>
-        </div>
-        <div class="action-row">
-          <div class="left-actions">
-            <button id="btnToggleLog" title="Toggle Execution Log">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="21" x2="18" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              Logs
-            </button>
-            <button id="btnRunScript" title="Run as JS Script">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              Run Script
-            </button>
-            <select id="modelSelect" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 8px; font-family: 'Outfit', sans-serif; font-size: 11.5px; outline: none; cursor: pointer; transition: all 0.2s ease;" title="Select LLM Model">
-              <optgroup label="Gemini" style="background: #0f0f0f; color: var(--text);">
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-              </optgroup>
-              <optgroup label="OpenAI" style="background: #0f0f0f; color: var(--text);">
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
-              </optgroup>
-              <optgroup label="Mistral" style="background: #0f0f0f; color: var(--text);">
-                <option value="mistral-large-latest">Mistral Large</option>
-                <option value="mistral-small-latest" selected>Mistral Small</option>
-              </optgroup>
-            </select>
-          </div>
-          <div class="right-actions">
-            <button id="btnSend" class="btn-send">
-              Send
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-            <button id="btnStop" class="btn-stop" style="display: none;">
-              Stop
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Workflows List View Container -->
-    <div id="workflowsView" style="display: none; flex-direction: column; flex: 1; overflow-y: auto; gap: 10px; padding: 4px 0; scrollbar-width: thin;">
-      <!-- Saved workflows list dynamically loaded here -->
-    </div>
-  </div>
-
-  <iframe id="sandboxFrame" src="sandbox.html" style="display: none;"></iframe>
+  <!-- Sandbox Execution Environment -->
+  <iframe id="sandboxFrame" src="sandbox.html"></iframe>
+  
   <script src="sidepanel.js"></script>
 </body>
 </html>
