@@ -40,6 +40,11 @@ window.addEventListener("message", async (event) => {
             },
             waitForTimeout: async (ms) => {
               return await callParent("waitForTimeout", { ms });
+            },
+            keyboard: {
+              press: async (key) => {
+                return await callParent("keyboardPress", { key });
+              }
             }
           };
         }

@@ -2,9 +2,9 @@
 
 import React from "react";
 import useSWR from "swr";
-import { 
-  Cpu, 
-  Trash2, 
+import {
+  Cpu,
+  Trash2,
   Code,
   Search,
   X,
@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAI } from "../_components/ai-provider";
 
 interface Workflow {
   _id: string;
@@ -30,7 +33,12 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function WorkflowsPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedWorkflow, setSelectedWorkflow] = React.useState<Workflow | null>(null);
+  const router = useRouter();
+  const { setSidebarOpen } = useAI();
+
+  React.useEffect(() => {
+    setSidebarOpen(false);
+  }, [setSidebarOpen]);
 
   const { data: result, isLoading, mutate } = useSWR("/api/workflows", fetcher);
   const workflows = React.useMemo(() => result?.data || [], [result]);
@@ -38,8 +46,8 @@ export default function WorkflowsPage() {
   const filteredWorkflows = React.useMemo(() => {
     if (!searchQuery.trim()) return workflows;
     const q = searchQuery.toLowerCase();
-    return workflows.filter((w: Workflow) => 
-      w.title.toLowerCase().includes(q) || 
+    return workflows.filter((w: Workflow) =>
+      w.title.toLowerCase().includes(q) ||
       w.description.toLowerCase().includes(q)
     );
   }, [workflows, searchQuery]);
@@ -54,9 +62,6 @@ export default function WorkflowsPage() {
       if (data.success) {
         toast.success("Workflow deleted successfully");
         mutate();
-        if (selectedWorkflow?._id === id) {
-          setSelectedWorkflow(null);
-        }
       } else {
         toast.error(data.error || "Failed to delete workflow");
       }
@@ -120,7 +125,7 @@ export default function WorkflowsPage() {
               {filteredWorkflows.map((workflow: Workflow) => (
                 <div
                   key={workflow._id}
-                  onClick={() => setSelectedWorkflow(workflow)}
+                  onClick={() => router.push(`/ai/workflows/${workflow._id}`)}
                   className="group relative rounded-2xl bg-app-surface-glass border border-app-border-default p-5 hover:bg-app-surface-glass-strong cursor-pointer transition-all duration-300 flex flex-col justify-between h-44 shadow-lg hover:shadow-xl"
                 >
                   <div className="space-y-2">
@@ -130,7 +135,7 @@ export default function WorkflowsPage() {
                       </h3>
                       <button
                         onClick={(e) => handleDelete(workflow._id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-app-text-muted hover:text-app-danger-strong hover:bg-app-danger-soft rounded-lg transition-all absolute right-4 top-4"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-app-text-muted hover:text-app-danger-strong hover:bg-app-danger-soft rounded-lg transition-all absolute right-4 top-4 z-10"
                         title="Delete workflow"
                       >
                         <Trash2 className="size-4" />
@@ -157,62 +162,6 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      {/* Detail Modal Side-panel */}
-      {selectedWorkflow && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="fixed inset-0" onClick={() => setSelectedWorkflow(null)} />
-          <div className="relative w-full max-w-2xl h-screen bg-app-canvas border-l border-app-border-default flex flex-col shadow-2xl z-10 animate-slide-in">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-app-border-default shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl border border-app-border-default bg-app-surface-glass flex items-center justify-center">
-                  <FileCode className="size-4 text-indigo-200" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-app-text-primary">{selectedWorkflow.title}</h2>
-                  <span className="text-xs text-app-text-faint">
-                    Created on {new Date(selectedWorkflow.createdAt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedWorkflow(null)}
-                className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {selectedWorkflow.description && (
-                <div className="space-y-1.5">
-                  <h4 className="text-xs font-semibold text-app-text-faint uppercase tracking-wider">Description</h4>
-                  <p className="text-sm text-app-text-secondary leading-relaxed bg-app-surface-glass border border-app-border-default p-4 rounded-xl">
-                    {selectedWorkflow.description}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2 flex flex-col h-[calc(100%-120px)] min-h-[400px]">
-                <h4 className="text-xs font-semibold text-app-text-faint uppercase tracking-wider">Workflow Script</h4>
-                <div className="flex-1 bg-zinc-950 border border-app-border-default rounded-xl p-4 overflow-auto font-mono text-xs text-zinc-300 relative group">
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(selectedWorkflow.script);
-                      toast.success("Script copied to clipboard");
-                    }}
-                    className="absolute right-4 top-4 px-2.5 py-1.5 text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Copy Code
-                  </button>
-                  <pre className="whitespace-pre-wrap">{selectedWorkflow.script}</pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -203,3 +203,17 @@ window.addEventListener("message", async (event) => {
     }
   }
 });
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "RUN_WORKFLOW_SANDBOX") {
+    chrome.runtime.sendMessage({ action: "log_sandbox_start" });
+    sandboxFrame.contentWindow.postMessage({
+      action: "execute",
+      script: message.script,
+      inputs: message.inputs || {},
+      messageId: message.messageId
+    }, "*");
+    sendResponse({ success: true, message: "Workflow dispatched to sandbox" });
+  }
+});
+

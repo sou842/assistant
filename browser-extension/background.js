@@ -365,10 +365,31 @@ async function handleBrowserCommand(command, sender) {
               const isVisible = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: (sel) => {
-                  const el = document.querySelector(sel);
-                  if (!el) return false;
-                  const rect = el.getBoundingClientRect();
-                  return rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                  const queryAll = (s) => {
+                    const list = [];
+                    const traverse = (node) => {
+                      if (!node) return;
+                      if (node.nodeType === 1) {
+                        if (node.matches(s)) list.push(node);
+                        const ch = node.children;
+                        if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                        if (node.shadowRoot) traverse(node.shadowRoot);
+                      } else if (node.nodeType === 11 || node === document) {
+                        const ch = node.children;
+                        if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      }
+                    };
+                    traverse(document);
+                    return list;
+                  };
+                  const els = queryAll(sel);
+                  for (let i = 0; i < els.length; i++) {
+                    const el = els[i];
+                    const rect = el.getBoundingClientRect();
+                    const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                    if (visible) return true;
+                  }
+                  return false;
                 },
                 args: [selector]
               }).then(res => res[0]?.result).catch(() => false);
@@ -381,8 +402,35 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel) => {
-                const el = document.querySelector(sel);
-                if (el) el.click();
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const els = queryAll(sel);
+                for (let i = 0; i < els.length; i++) {
+                  const el = els[i];
+                  const rect = el.getBoundingClientRect();
+                  const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                  if (visible) {
+                    el.scrollIntoView({ block: 'center' });
+                    el.click();
+                    return;
+                  }
+                }
+                if (els[0]) els[0].click();
               },
               args: [selector]
             });
@@ -391,7 +439,24 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, v) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
                   el.value = v;
@@ -414,7 +479,24 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, v) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
                   el.value = v;
@@ -429,7 +511,24 @@ async function handleBrowserCommand(command, sender) {
             const res = await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, a) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 return el ? el.getAttribute(a) : null;
               },
               args: [selector, attr]
@@ -446,6 +545,29 @@ async function handleBrowserCommand(command, sender) {
             await waitTabLoaded(tab.id);
             await addAgentChatMessage(`📄 Page loaded successfully.`);
             return {
+              waitForTimeout: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
+              close: async () => chrome.tabs.remove(tab.id),
+              keyboard: {
+                press: async (key) => {
+                  await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: (k) => {
+                      const activeEl = document.activeElement;
+                      if (activeEl) {
+                        const eventOpts = { key: k, code: k, bubbles: true };
+                        if (k === 'Enter') {
+                          eventOpts.keyCode = 13;
+                          eventOpts.which = 13;
+                        }
+                        activeEl.dispatchEvent(new KeyboardEvent("keydown", eventOpts));
+                        activeEl.dispatchEvent(new KeyboardEvent("keypress", eventOpts));
+                        activeEl.dispatchEvent(new KeyboardEvent("keyup", eventOpts));
+                      }
+                    },
+                    args: [key]
+                  });
+                }
+              },
               locator: (selector) => {
                 const loc = createLocatorImpl(tab.id, selector);
                 return {
@@ -501,6 +623,23 @@ async function handleBrowserCommand(command, sender) {
           await addAgentChatMessage(`❌ **Workflow error:** ${err.message}`);
           throw new Error(`Workflow error: ${err.message}`);
         }
+      }
+
+      case "run_workflow_sandbox": {
+        return new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({
+            action: "RUN_WORKFLOW_SANDBOX",
+            script: script,
+            inputs: command.inputs || {},
+            messageId: Date.now().toString()
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error("Please open the Jarvis side panel to execute this workflow. The sandbox environment is required."));
+            } else {
+              resolve({ success: true, message: "Workflow dispatched to sandbox" });
+            }
+          });
+        });
       }
 
       case "execute_script": {
@@ -604,10 +743,31 @@ async function handleBrowserCommand(command, sender) {
               const isVisible = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: (sel) => {
-                  const el = document.querySelector(sel);
-                  if (!el) return false;
-                  const rect = el.getBoundingClientRect();
-                  return rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                  const queryAll = (s) => {
+                    const list = [];
+                    const traverse = (node) => {
+                      if (!node) return;
+                      if (node.nodeType === 1) {
+                        if (node.matches(s)) list.push(node);
+                        const ch = node.children;
+                        if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                        if (node.shadowRoot) traverse(node.shadowRoot);
+                      } else if (node.nodeType === 11 || node === document) {
+                        const ch = node.children;
+                        if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      }
+                    };
+                    traverse(document);
+                    return list;
+                  };
+                  const els = queryAll(sel);
+                  for (let i = 0; i < els.length; i++) {
+                    const el = els[i];
+                    const rect = el.getBoundingClientRect();
+                    const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                    if (visible) return true;
+                  }
+                  return false;
                 },
                 args: [selector]
               }).then(res => res[0]?.result).catch(() => false);
@@ -638,12 +798,35 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel) => {
-                const el = document.querySelector(sel);
-                if (el) {
-                  el.click();
-                } else {
-                  throw new Error(`Element not found for click: ${sel}`);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const els = queryAll(sel);
+                for (let i = 0; i < els.length; i++) {
+                  const el = els[i];
+                  const rect = el.getBoundingClientRect();
+                  const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+                  if (visible) {
+                    el.scrollIntoView({ block: 'center' });
+                    el.click();
+                    return;
+                  }
                 }
+                if (els[0]) els[0].click();
               },
               args: [selector]
             });
@@ -665,7 +848,24 @@ async function handleBrowserCommand(command, sender) {
             const res = await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, a) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 return el ? el.getAttribute(a) : null;
               },
               args: [selector, attr]
@@ -688,7 +888,24 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, v) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
                   el.value = v;
@@ -726,7 +943,24 @@ async function handleBrowserCommand(command, sender) {
             await chrome.scripting.executeScript({
               target: { tabId },
               func: (sel, v) => {
-                const el = document.querySelector(sel);
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
                   el.value = v;
@@ -737,6 +971,34 @@ async function handleBrowserCommand(command, sender) {
                 }
               },
               args: [selector, val]
+            });
+            return { success: true };
+          }
+
+          case "keyboardPress": {
+            const key = subArgs.key;
+            let tabId = lastInteractedTabId;
+            if (!tabId) {
+              const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+              if (!tab) throw new Error("No active tab found");
+              tabId = tab.id;
+            }
+            await chrome.scripting.executeScript({
+              target: { tabId },
+              func: (k) => {
+                const activeEl = document.activeElement;
+                if (activeEl) {
+                  const eventOpts = { key: k, code: k, bubbles: true };
+                  if (k === 'Enter') {
+                    eventOpts.keyCode = 13;
+                    eventOpts.which = 13;
+                  }
+                  activeEl.dispatchEvent(new KeyboardEvent("keydown", eventOpts));
+                  activeEl.dispatchEvent(new KeyboardEvent("keypress", eventOpts));
+                  activeEl.dispatchEvent(new KeyboardEvent("keyup", eventOpts));
+                }
+              },
+              args: [key]
             });
             return { success: true };
           }
