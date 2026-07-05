@@ -32,13 +32,14 @@ async function syncChatToSaved(history) {
 }
 
 async function sendInitialState() {
-  const data = await chrome.storage.local.get({ chatHistory: [], savedChats: [] });
+  const data = await chrome.storage.local.get({ chatHistory: [], savedChats: [], isAgentRunning: false });
   if (nextjsFrame && nextjsFrame.contentWindow) {
     nextjsFrame.contentWindow.postMessage({
       type: "FROM_EXTENSION",
       action: "UPDATE_STATE",
       history: data.chatHistory,
       savedChats: data.savedChats,
+      isAgentRunning: data.isAgentRunning,
       currentChatId: currentChatId
     }, "*");
   }
@@ -62,6 +63,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           savedChats: changes.savedChats.newValue
+        }, "*");
+      }
+    }
+    if (changes.isAgentRunning) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          isAgentRunning: changes.isAgentRunning.newValue
         }, "*");
       }
     }
@@ -158,6 +168,25 @@ window.addEventListener("message", async (event) => {
         });
         break;
 
+      case "DELETE_MESSAGE": {
+        const histData = await chrome.storage.local.get({ chatHistory: [] });
+        const history = histData.chatHistory;
+        history.splice(data.index, 1);
+        await chrome.storage.local.set({ chatHistory: history });
+        break;
+      }
+
+      case "EDIT_MESSAGE": {
+        const histData = await chrome.storage.local.get({ chatHistory: [] });
+        const history = histData.chatHistory;
+        if (history[data.index]) {
+          history[data.index].text = data.text;
+          history[data.index].timestamp = Date.now();
+        }
+        await chrome.storage.local.set({ chatHistory: history });
+        break;
+      }
+
       case "RUN_WORKFLOW":
         await chrome.runtime.sendMessage({ action: "log_sandbox_start" });
         sandboxFrame.contentWindow.postMessage({
@@ -166,6 +195,10 @@ window.addEventListener("message", async (event) => {
           inputs: data.inputs,
           messageId: data.messageId
         }, "*");
+        break;
+
+      case "STOP_AGENT":
+        await chrome.storage.local.set({ agentStopRequested: true });
         break;
     }
   }

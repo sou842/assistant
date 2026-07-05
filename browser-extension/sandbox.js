@@ -2,8 +2,14 @@ window.addEventListener("message", async (event) => {
   const { action, script, inputs, messageId } = event.data;
   if (action === "execute") {
     try {
+      let runnerCode = script;
+      if (/async\s+function\s+workflow\b/.test(script) || /function\s+workflow\b/.test(script)) {
+        runnerCode += "\nreturn await workflow(browser, __inputs);";
+      } else if (/async\s+function\s+main\b/.test(script) || /function\s+main\b/.test(script)) {
+        runnerCode += "\nreturn await main(browser, __inputs);";
+      }
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-      const runner = new AsyncFunction("browser", "__inputs", script);
+      const runner = new AsyncFunction("browser", "__inputs", runnerCode);
 
       const createLocatorProxy = (selector) => ({
         first: () => createLocatorProxy(selector),
@@ -12,6 +18,12 @@ window.addEventListener("message", async (event) => {
         },
         click: async () => {
           return await callParent("click", { selector });
+        },
+        type: async (val) => {
+          return await callParent("type", { selector, val });
+        },
+        fill: async (val) => {
+          return await callParent("fill", { selector, val });
         },
         getAttribute: async (attr) => {
           return await callParent("getAttribute", { selector, attr });

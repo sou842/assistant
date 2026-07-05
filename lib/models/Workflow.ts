@@ -15,6 +15,7 @@ const WorkflowSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide the JavaScript script for the workflow'],
     },
+    inputs: [mongoose.Schema.Types.Mixed],
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
