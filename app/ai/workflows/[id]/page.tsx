@@ -69,6 +69,41 @@ export default function WorkflowDetailPage() {
   // Local state for execution
   const [executionInputs, setExecutionInputs] = useState<Record<string, string>>({});
 
+  const preRef = React.useRef<HTMLPreElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    if (preRef.current) {
+      preRef.current.scrollTop = target.scrollTop;
+      preRef.current.scrollLeft = target.scrollLeft;
+    }
+  };
+
+  const simpleHighlight = (code: string) => {
+    if (!code) return "";
+    let html = code
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Strings
+    html = html.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/gs, '<span style="color: #a6e22e;">$1</span>');
+    // Comments
+    html = html.replace(/(\/\/.*|\/\*[\s\S]*?\*\/)/g, '<span style="color: #6272a4;">$1</span>');
+    // Keywords
+    const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'new', 'this', 'throw', 'typeof'];
+    const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+    html = html.replace(keywordRegex, '<span style="color: #ff79c6;">$1</span>');
+    // Methods/Functions
+    html = html.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span style="color: #50fa7b;">$1</span>');
+    // Numbers
+    html = html.replace(/\b(\d+(\.\d+)?)\b/g, '<span style="color: #bd93f9;">$1</span>');
+    // Booleans/Null
+    html = html.replace(/\b(true|false|null|undefined)\b/g, '<span style="color: #bd93f9;">$1</span>');
+
+    return html;
+  };
+
   useEffect(() => {
     if (workflow) {
       setTitle(workflow.title || "");
@@ -357,12 +392,19 @@ export default function WorkflowDetailPage() {
               Copy
             </button>
           </div>
-          <div className="flex-1 relative">
+          <div className="flex-1 relative overflow-hidden">
+            <pre
+              ref={preRef}
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full p-6 bg-transparent text-[#f8f8f2] font-mono text-sm leading-relaxed pointer-events-none overflow-auto whitespace-pre select-none"
+              dangerouslySetInnerHTML={{ __html: simpleHighlight(script) + (script.endsWith('\n') ? ' ' : '') }}
+            />
             <textarea
               value={script}
               onChange={(e) => setScript(e.target.value)}
+              onScroll={handleScroll}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full p-6 bg-transparent text-emerald-400 font-mono text-sm leading-relaxed resize-none outline-none focus:outline-none selection:bg-indigo-500/30"
+              className="absolute inset-0 w-full h-full p-6 bg-transparent text-transparent caret-[#f8f8f2] font-mono text-sm leading-relaxed resize-none outline-none focus:outline-none selection:bg-indigo-500/30 overflow-auto whitespace-pre"
               placeholder="// Write your JavaScript automation here..."
               style={{
                 tabSize: 2,

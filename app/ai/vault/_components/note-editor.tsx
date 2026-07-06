@@ -125,25 +125,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             dots.classList.add('custom-code-block__dots');
             dots.innerHTML = '<span></span><span></span><span></span>';
             
-            const languageSelector = document.createElement('div');
-            languageSelector.classList.add('custom-code-block__language');
-            
-            if (this.readOnly) {
-              languageSelector.textContent = this.data.language.toUpperCase();
-            } else {
-              const select = document.createElement('select');
-              ['javascript', 'typescript', 'python', 'html', 'css', 'json', 'bash', 'rust', 'go', 'c++'].forEach(lang => {
-                const option = document.createElement('option');
-                option.value = lang;
-                option.text = lang.toUpperCase();
-                if (this.data.language === lang) option.selected = true;
-                select.appendChild(option);
-              });
-              select.addEventListener('change', (e) => {
-                this.data.language = (e.target as HTMLSelectElement).value;
-              });
-              languageSelector.appendChild(select);
-            }
+
 
             const copyBtn = document.createElement('button');
             copyBtn.classList.add('custom-code-block__copy');
@@ -157,7 +139,6 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             });
 
             header.appendChild(dots);
-            header.appendChild(languageSelector);
             header.appendChild(copyBtn);
 
             const body = document.createElement('div');
@@ -783,6 +764,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             padding: 4px !important;
             border-radius: 6px !important;
             transition: all 0.2s ease !important;
+            margin-left: auto !important; /* Push to the right */
           }
           .custom-code-block__copy:hover {
             color: #ffffff !important;
