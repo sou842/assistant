@@ -18,6 +18,7 @@ export default function ExtensionPanel() {
   const [model, setModel] = useState("mistral-small-latest");
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
   const [workflowInputs, setWorkflowInputs] = useState<Record<string, any>>({});
+  const [tokenUsage, setTokenUsage] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -48,6 +49,7 @@ export default function ExtensionPanel() {
           if (data.history) setChatHistory(data.history);
           if (data.savedChats) setSavedChats(data.savedChats);
           if (data.isAgentRunning !== undefined) setIsAgentRunning(data.isAgentRunning);
+          if (data.currentTokenUsage !== undefined) setTokenUsage(data.currentTokenUsage);
         } else if (data.action === "WORKFLOW_RESULT") {
           if (data.success) {
             toast.success("Workflow completed successfully!");
@@ -429,26 +431,31 @@ export default function ExtensionPanel() {
             />
             <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1">
               <div className="flex items-center gap-2">
-                {!isAgentRunning && (
-                  <div className="relative">
-                    <select
-                      className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-3 py-1.5 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-8"
-                      value={model}
-                      onChange={e => setModel(e.target.value)}
-                    >
-                      <option value="gpt-4o-mini">GPT-4o Mini</option>
-                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                      <option value="mistral-small-latest">Mistral Small</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
-                      <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
+                <div className="relative">
+                  <select
+                    className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-3 py-1.5 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-8"
+                    value={model}
+                    disabled={isAgentRunning}
+                    onChange={e => setModel(e.target.value)}
+                  >
+                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="mistral-small-latest">Mistral Small</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
+                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
+                {tokenUsage && (
+                  <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 shadow-sm shrink-0">
+                    <span className="text-zinc-500">Token:</span>
+                    <span className="text-zinc-200 font-semibold">{tokenUsage.total.toLocaleString()}</span>
                   </div>
                 )}
               </div>
-              
+
               <div>
                 {isAgentRunning ? (
                   <button

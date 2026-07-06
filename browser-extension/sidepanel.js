@@ -32,7 +32,7 @@ async function syncChatToSaved(history) {
 }
 
 async function sendInitialState() {
-  const data = await chrome.storage.local.get({ chatHistory: [], savedChats: [], isAgentRunning: false });
+  const data = await chrome.storage.local.get({ chatHistory: [], savedChats: [], isAgentRunning: false, currentTokenUsage: null });
   if (nextjsFrame && nextjsFrame.contentWindow) {
     nextjsFrame.contentWindow.postMessage({
       type: "FROM_EXTENSION",
@@ -40,6 +40,7 @@ async function sendInitialState() {
       history: data.chatHistory,
       savedChats: data.savedChats,
       isAgentRunning: data.isAgentRunning,
+      currentTokenUsage: data.currentTokenUsage,
       currentChatId: currentChatId
     }, "*");
   }
@@ -72,6 +73,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           isAgentRunning: changes.isAgentRunning.newValue
+        }, "*");
+      }
+    }
+    if (changes.currentTokenUsage) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          currentTokenUsage: changes.currentTokenUsage.newValue
         }, "*");
       }
     }
@@ -131,7 +141,7 @@ window.addEventListener("message", async (event) => {
 
       case "NEW_CHAT":
         currentChatId = Date.now().toString();
-        await chrome.storage.local.set({ chatHistory: [] });
+        await chrome.storage.local.set({ chatHistory: [], currentTokenUsage: null });
         sendInitialState();
         break;
 
@@ -142,6 +152,8 @@ window.addEventListener("message", async (event) => {
         if (chatToLoad) {
           await chrome.storage.local.set({ chatHistory: chatToLoad.messages || [] });
         }
+        const usageData = await chrome.storage.local.get(`tokenUsage_${data.chatId}`);
+        await chrome.storage.local.set({ currentTokenUsage: usageData[`tokenUsage_${data.chatId}`] || null });
         sendInitialState();
         break;
 
@@ -164,7 +176,8 @@ window.addEventListener("message", async (event) => {
         chrome.runtime.sendMessage({
           action: "run_agent",
           prompt: data.prompt,
-          model: data.model || "mistral-small-latest"
+          model: data.model || "mistral-small-latest",
+          chatId: currentChatId
         });
         break;
 

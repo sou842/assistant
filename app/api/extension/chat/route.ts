@@ -104,9 +104,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       text: cleanedText,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
-      totalTokens: usage.totalTokens,
+      promptTokens: usage?.promptTokens ?? usage?.prompt_tokens ?? 0,
+      completionTokens: usage?.completionTokens ?? usage?.completion_tokens ?? 0,
+      totalTokens: usage?.totalTokens ?? usage?.total_tokens ?? 0,
     });
   } catch (error: any) {
     console.error("Extension proxy API error:", error);
