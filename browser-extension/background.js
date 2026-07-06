@@ -1163,7 +1163,7 @@ Respond ONLY with a JSON object in this format:
       lastInteractedTabId = targetTabId;
     }
 
-    const maxSteps = 15;
+    const maxSteps = 40;
     const actionHistory = [];
     for (let step = 1; step <= maxSteps; step++) {
       // Check if stop requested

@@ -82,6 +82,214 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           save(blockContent: any) { return this.youTubeEmbed.save(blockContent); }
         }
 
+        class CustomCodeBlock {
+          api: any;
+          readOnly: boolean;
+          isExpanded: boolean;
+          data: any;
+          wrapper: HTMLElement;
+          textarea: HTMLTextAreaElement;
+          gutter: HTMLElement;
+
+          constructor({ data, api, readOnly }: any) {
+            this.api = api;
+            this.readOnly = readOnly;
+            this.isExpanded = false;
+            this.data = {
+              code: data.code || '',
+              language: data.language || 'javascript',
+            };
+            this.wrapper = document.createElement('div');
+            this.textarea = document.createElement('textarea');
+            this.gutter = document.createElement('div');
+          }
+
+          static get isReadOnlySupported() {
+            return true;
+          }
+
+          static get toolbox() {
+            return {
+              icon: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.8824 10.6098L1 7.00004L4.8824 3.39026M9.1176 10.6098L13 7.00004L9.1176 3.39026" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+              title: 'Code',
+            };
+          }
+
+          render() {
+            this.wrapper.classList.add('custom-code-block');
+            
+            const header = document.createElement('div');
+            header.classList.add('custom-code-block__header');
+            
+            const dots = document.createElement('div');
+            dots.classList.add('custom-code-block__dots');
+            dots.innerHTML = '<span></span><span></span><span></span>';
+            
+            const languageSelector = document.createElement('div');
+            languageSelector.classList.add('custom-code-block__language');
+            
+            if (this.readOnly) {
+              languageSelector.textContent = this.data.language.toUpperCase();
+            } else {
+              const select = document.createElement('select');
+              ['javascript', 'typescript', 'python', 'html', 'css', 'json', 'bash', 'rust', 'go', 'c++'].forEach(lang => {
+                const option = document.createElement('option');
+                option.value = lang;
+                option.text = lang.toUpperCase();
+                if (this.data.language === lang) option.selected = true;
+                select.appendChild(option);
+              });
+              select.addEventListener('change', (e) => {
+                this.data.language = (e.target as HTMLSelectElement).value;
+              });
+              languageSelector.appendChild(select);
+            }
+
+            const copyBtn = document.createElement('button');
+            copyBtn.classList.add('custom-code-block__copy');
+            copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+            copyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText(this.textarea.value || this.data.code);
+              copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+              setTimeout(() => {
+                copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+              }, 2000);
+            });
+
+            header.appendChild(dots);
+            header.appendChild(languageSelector);
+            header.appendChild(copyBtn);
+
+            const body = document.createElement('div');
+            body.classList.add('custom-code-block__body');
+            body.style.position = 'relative';
+
+            this.gutter.classList.add('custom-code-block__gutter');
+            
+            const codeContainer = document.createElement('div');
+            codeContainer.classList.add('custom-code-block__code-container');
+            
+            const highlightPre = document.createElement('pre');
+            highlightPre.classList.add('custom-code-block__highlight');
+            highlightPre.setAttribute('aria-hidden', 'true');
+            
+            this.textarea.classList.add('custom-code-block__textarea');
+            this.textarea.value = this.data.code;
+            this.textarea.placeholder = 'Write your code here...';
+            this.textarea.spellcheck = false;
+            
+            if (this.readOnly) {
+              this.textarea.readOnly = true;
+              this.textarea.classList.add('read-only');
+            }
+            
+            codeContainer.appendChild(highlightPre);
+            codeContainer.appendChild(this.textarea);
+            
+            const simpleHighlight = (code: string) => {
+              if (!code) return '';
+              let html = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+              
+              // Strings
+              html = html.replace(/(&quot;.*?&quot;|'.*?'|`.*?`)/gs, '<span style="color: #a6e22e;">$1</span>');
+              // Comments
+              html = html.replace(/(\/\/.*|\/\*[\s\S]*?\*\/|#.*)/g, '<span style="color: #6272a4;">$1</span>');
+              // Keywords
+              const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'def', 'self', 'True', 'False', 'None', 'public', 'private', 'protected', 'interface', 'type', 'implements', 'extends', 'new', 'this'];
+              const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+              html = html.replace(keywordRegex, '<span style="color: #ff79c6;">$1</span>');
+              // Methods/Functions
+              html = html.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span style="color: #50fa7b;">$1</span>');
+              // Numbers
+              html = html.replace(/\b(\d+(\.\d+)?)\b/g, '<span style="color: #bd93f9;">$1</span>');
+              // Booleans/Null
+              html = html.replace(/\b(true|false|null|undefined)\b/g, '<span style="color: #bd93f9;">$1</span>');
+              
+              return html;
+            };
+
+            const expandOverlay = document.createElement('div');
+            expandOverlay.classList.add('custom-code-block__expand-overlay');
+            const expandBtn = document.createElement('button');
+            expandBtn.textContent = 'Expand Code';
+            expandBtn.classList.add('custom-code-block__expand-btn');
+            expandOverlay.appendChild(expandBtn);
+
+            expandBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.isExpanded = true;
+              updateExpandState();
+            });
+
+            let initiallyChecked = false;
+
+            const updateExpandState = () => {
+              const linesCount = (this.textarea.value.match(/\n/g) || []).length + 1;
+              if (!initiallyChecked) {
+                initiallyChecked = true;
+                if (linesCount <= 100) {
+                  this.isExpanded = true;
+                }
+              }
+
+              if (!this.isExpanded && linesCount > 100) {
+                body.classList.add('collapsed');
+              } else {
+                body.classList.remove('collapsed');
+              }
+            };
+
+            const updateGutter = () => {
+              const linesCount = (this.textarea.value.match(/\n/g) || []).length + 1;
+              this.gutter.innerHTML = Array.from({ length: linesCount }, (_, i) => `<div>${i + 1}</div>`).join('');
+              highlightPre.innerHTML = simpleHighlight(this.textarea.value) + (this.textarea.value.endsWith('\n') ? ' ' : '');
+              updateExpandState();
+            };
+
+            const adjustHeight = () => {
+              this.textarea.style.height = 'auto';
+              this.textarea.style.height = this.textarea.scrollHeight + 'px';
+              highlightPre.style.height = this.textarea.scrollHeight + 'px';
+            };
+
+            this.textarea.addEventListener('input', () => {
+              updateGutter();
+              adjustHeight();
+            });
+
+            this.textarea.addEventListener('scroll', () => {
+              highlightPre.scrollTop = this.textarea.scrollTop;
+              highlightPre.scrollLeft = this.textarea.scrollLeft;
+            });
+
+            // Need to wait for DOM insertion to calculate height properly
+            setTimeout(() => {
+              updateGutter();
+              adjustHeight();
+            }, 0);
+
+            body.appendChild(this.gutter);
+            body.appendChild(codeContainer);
+            body.appendChild(expandOverlay);
+
+            this.wrapper.appendChild(header);
+            this.wrapper.appendChild(body);
+
+            return this.wrapper;
+          }
+
+          save() {
+            return {
+              code: this.textarea.value,
+              language: this.data.language,
+            };
+          }
+        }
+
         let parsedData = undefined;
         if (typeof initialData === 'string' && initialData.trim() !== '') {
           // Check if it's stringified JSON
@@ -195,7 +403,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                 class: Paragraph.default || Paragraph,
                 inlineToolbar: true,
               },
-              code: Code.default || Code,
+              code: CustomCodeBlock,
               quote: {
                 class: Quote.default || Quote,
                 inlineToolbar: true,
@@ -422,7 +630,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           .cdx-search-field {
             background-color: #1a1a1a !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-            padding: 10px !important;
+            padding: 0px !important;
             display: flex !important;
             align-items: center !important;
           }
@@ -507,16 +715,180 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             max-width: 760px !important;
           }
 
-          /* Code block */
-          .ce-code__textarea {
-            background-color: #0f0f0f !important;
-            color: #6ee7b7 !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          /* Custom Code block */
+          .custom-code-block {
+            background-color: rgba(15, 15, 15, 0.7) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            margin: 1.5rem 0 !important;
+            backdrop-filter: blur(10px);
+          }
+          .custom-code-block__header {
+            display: flex !important;
+            align-items: center !important;
+            padding: 0.75rem 1rem !important;
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          }
+          .custom-code-block__dots {
+            display: flex !important;
+            gap: 6px !important;
+            margin-right: 1rem !important;
+          }
+          .custom-code-block__dots span {
+            width: 12px !important;
+            height: 12px !important;
+            border-radius: 50% !important;
+          }
+          .custom-code-block__dots span:nth-child(1) { background-color: #ff5f56 !important; }
+          .custom-code-block__dots span:nth-child(2) { background-color: #ffbd2e !important; }
+          .custom-code-block__dots span:nth-child(3) { background-color: #27c93f !important; }
+          
+          .custom-code-block__language {
+            flex-grow: 1 !important;
+            display: flex !important;
+            align-items: center !important;
+            color: #9ca3af !important;
+            font-size: 0.8rem !important;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.05em !important;
+          }
+          .custom-code-block__language select {
+            background: transparent !important;
+            color: #9ca3af !important;
+            border: none !important;
+            outline: none !important;
+            font-size: 0.8rem !important;
+            font-family: inherit !important;
+            text-transform: uppercase !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+          }
+          .custom-code-block__language select option {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+          }
+          
+          .custom-code-block__copy {
+            background: transparent !important;
+            border: none !important;
+            color: #6b7280 !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 4px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s ease !important;
+          }
+          .custom-code-block__copy:hover {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+          }
+          
+          .custom-code-block__body {
+            display: flex !important;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
             font-size: 0.9rem !important;
-            padding: 1rem !important;
-            border-radius: 8px !important;
+            line-height: 1.5 !important;
           }
+          .custom-code-block__gutter {
+            padding: 1rem 0.5rem 1rem 0.5rem !important;
+            text-align: right !important;
+            color: #4b5563 !important;
+            user-select: none !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+            background-color: rgba(0, 0, 0, 0.2) !important;
+            min-width: 3rem !important;
+
+            div {
+              // font-size: 14px;
+             }
+          }
+          .custom-code-block__code-container {
+            position: relative !important;
+            flex-grow: 1 !important;
+            overflow: hidden !important;
+          }
+          .custom-code-block__highlight, .custom-code-block__textarea {
+            margin: 0 !important;
+            padding: 1rem 1rem 1.5rem 1rem !important; /* Extra bottom padding for scrollbar */
+            border: none !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+            font-size: 0.9rem !important;
+            line-height: 1.5 !important;
+            white-space: pre !important;
+            tab-size: 2 !important;
+            width: 100% !important;
+            word-wrap: normal !important;
+          }
+          .custom-code-block__highlight {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            color: #f8f8f2 !important;
+            background: transparent !important;
+            pointer-events: none !important;
+            overflow: hidden !important;
+          }
+          .custom-code-block__textarea {
+            position: relative !important;
+            color: transparent !important;
+            caret-color: #f8f8f2 !important;
+            background: transparent !important;
+            resize: none !important;
+            outline: none !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+          }
+          .custom-code-block__textarea::placeholder {
+            color: #4b5563 !important;
+          }
+          /* Collapsed state rules */
+          .custom-code-block__body.collapsed {
+            max-height: 400px !important;
+            overflow: hidden !important;
+          }
+          .custom-code-block__body.collapsed .custom-code-block__expand-overlay {
+            display: flex !important;
+          }
+          .custom-code-block__expand-overlay {
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 120px !important;
+            background: linear-gradient(transparent, rgba(15, 15, 15, 0.98) 70%) !important;
+            display: none; /* hidden by default */
+            align-items: flex-end !important;
+            justify-content: center !important;
+            padding-bottom: 1.5rem !important;
+            z-index: 10 !important;
+            pointer-events: none !important;
+          }
+          .custom-code-block__expand-btn {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            padding: 0.5rem 1.25rem !important;
+            border-radius: 20px !important;
+            font-size: 0.85rem !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            backdrop-filter: blur(4px) !important;
+            transition: background-color 0.2s !important;
+            font-family: inherit !important;
+          }
+          .custom-code-block__expand-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+          }
+          
+          /* Hide old code block styles if any remain */
+          .ce-code__textarea { display: none !important; }
 
           /* Quote */
           .cdx-quote {

@@ -309,14 +309,14 @@ export default function WorkflowDetailPage() {
                 <div className="space-y-4">
                   {inputs.map((inp, idx) => (
                     <div key={idx} className="space-y-1.5">
-                      <label className="text-xs font-semibold text-app-text-primary px-1">
+                      <label className="text-xs font-semibold text-app-text-primary px-1 pb-2 capitalize">
                         {inp.name || `Variable ${idx + 1}`}
                       </label>
                       <Input
                         value={executionInputs[inp.name] ?? inp.defaultValue}
                         onChange={(e) => setExecutionInputs(prev => ({ ...prev, [inp.name]: e.target.value }))}
                         placeholder={`Value for ${inp.name}`}
-                        className="h-9 bg-zinc-800/50 border-zinc-800 focus-visible:ring-indigo-500/50 rounded-lg"
+                        className="h-10 bg-zinc-800/50 border-zinc-800 focus-visible:ring-indigo-500/50 rounded-full"
                       />
                     </div>
                   ))}

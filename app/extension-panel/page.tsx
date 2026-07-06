@@ -411,10 +411,10 @@ export default function ExtensionPanel() {
 
       {/* Input Area (Only visible on chat tab) */}
       {activeTab === "chat" && (
-        <div className="shrink-0 p-3 bg-[#0a0a0a] border-t border-white/10">
-          <div className="relative flex items-end bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden focus-within:border-blue-500/50 transition">
+        <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/5">
+          <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
             <textarea
-              className="flex-1 max-h-32 min-h-[44px] bg-transparent text-sm text-gray-200 p-3 outline-none resize-none placeholder:text-gray-600"
+              className="w-full max-h-32 min-h-[68px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none resize-none placeholder:text-zinc-500 leading-relaxed"
               placeholder={isAgentRunning ? "Agent is running..." : "Ask Jarvis to do something..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -422,40 +422,52 @@ export default function ExtensionPanel() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (!isAgentRunning) sendMessage();
+                  if (!isAgentRunning && input.trim()) sendMessage();
                 }
               }}
               rows={1}
             />
-            <div className="p-2 flex items-center gap-2 shrink-0">
-              {!isAgentRunning && (
-                <select
-                  className="bg-transparent text-[10px] text-gray-500 outline-none cursor-pointer hover:text-gray-300 appearance-none pr-1"
-                  value={model}
-                  onChange={e => setModel(e.target.value)}
-                >
-                  <option value="gpt-4o-mini">GPT-4o Mini</option>
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                  <option value="mistral-small-latest">Mistral Small</option>
-                </select>
-              )}
-              {isAgentRunning ? (
-                <button
-                  onClick={stopAgent}
-                  className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition flex items-center justify-center"
-                  title="Stop Execution"
-                >
-                  <Square size={16} fill="currentColor" />
-                </button>
-              ) : (
-                <button
-                  onClick={sendMessage}
-                  disabled={!input.trim()}
-                  className="p-1.5 bg-white text-black rounded-lg disabled:opacity-50 disabled:bg-white/10 disabled:text-white transition"
-                >
-                  <Send size={16} />
-                </button>
-              )}
+            <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1">
+              <div className="flex items-center gap-2">
+                {!isAgentRunning && (
+                  <div className="relative">
+                    <select
+                      className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-3 py-1.5 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-8"
+                      value={model}
+                      onChange={e => setModel(e.target.value)}
+                    >
+                      <option value="gpt-4o-mini">GPT-4o Mini</option>
+                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                      <option value="mistral-small-latest">Mistral Small</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
+                      <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                {isAgentRunning ? (
+                  <button
+                    onClick={stopAgent}
+                    className="p-2 bg-red-500 hover:bg-red-400 text-white rounded-full transition flex items-center justify-center shadow-md shadow-red-950/20"
+                    title="Stop Execution"
+                  >
+                    <Square size={14} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={sendMessage}
+                    disabled={!input.trim()}
+                    className="p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md"
+                  >
+                    <Send size={14} fill="currentColor" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
