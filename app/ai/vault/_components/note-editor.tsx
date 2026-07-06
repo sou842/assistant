@@ -174,10 +174,11 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
               
-              // Strings
-              html = html.replace(/(&quot;.*?&quot;|'.*?'|`.*?`)/gs, '<span style="color: #a6e22e;">$1</span>');
-              // Comments
-              html = html.replace(/(\/\/.*|\/\*[\s\S]*?\*\/|#.*)/g, '<span style="color: #6272a4;">$1</span>');
+              // Strings (non-backtracking)
+              html = html.replace(/(&quot;[^&]*?&quot;|'[^'\\]*(?:\\.[^'\\]*)*'|`[^`\\]*(?:\\.[^`\\]*)*`)/g, '<span style="color: #a6e22e;">$1</span>');
+              // Comments (line and block comments optimized)
+              html = html.replace(/(\/\/.*|#.*)/g, '<span style="color: #6272a4;">$1</span>');
+              html = html.replace(/\/\*[\s\S]*?\*\//g, '<span style="color: #6272a4;">$&</span>');
               // Keywords
               const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'def', 'self', 'True', 'False', 'None', 'public', 'private', 'protected', 'interface', 'type', 'implements', 'extends', 'new', 'this'];
               const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
