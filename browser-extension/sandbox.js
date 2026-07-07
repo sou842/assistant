@@ -41,6 +41,10 @@ window.addEventListener("message", async (event) => {
             waitForTimeout: async (ms) => {
               return await callParent("waitForTimeout", { ms });
             },
+            evaluate: async (fn, ...args) => {
+              const fnStr = fn.toString();
+              return await callParent("evaluate", { fnStr, args });
+            },
             keyboard: {
               press: async (key) => {
                 return await callParent("keyboardPress", { key });

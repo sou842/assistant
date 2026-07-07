@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Send, Terminal, Settings, Play, Info, Square, Trash, History, Plus, X, MessageSquare, Brain, Copy, Edit2 } from "lucide-react";
+import { Send, Terminal, Settings, Play, Info, Square, Trash, History, Plus, X, MessageSquare, Brain, Copy, Edit2, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, ChevronDown, OctagonAlert } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -246,68 +246,178 @@ export default function ExtensionPanel() {
               <p className="text-sm text-gray-400">Hello! I am your Jarvis Agent. Type any command below to control this browser tab.</p>
             </div>
           ) : (
-            chatHistory.map((msg, i) => {
-              const isThinking = msg.role === 'agent' && msg.text.startsWith('💡 *Thinking:*');
-              const isEditing = editingIndex === i;
+            (() => {
+              const groupedHistory = [];
+              let currentGroup: any = null;
 
-              return (
-                <div key={i} className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end ml-auto' : 'self-start items-start'}`}>
-                  {isEditing ? (
-                    <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
-                      <textarea
-                        className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none border-b border-white/5 pb-2 focus:border-blue-500/30 font-sans"
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        rows={2}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-full text-gray-400 transition cursor-pointer">Cancel</button>
-                        <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
-                      </div>
-                    </div>
-                  ) : isThinking ? (
-                    <details className="group border border-white/5 bg-white/5 rounded-xl p-3 text-xs text-gray-400 w-full shadow-sm max-w-md">
-                      <summary className="flex items-center gap-2 cursor-pointer font-medium select-none text-gray-300 hover:text-gray-200 list-none [&::-webkit-details-marker]:hidden">
-                        <Brain size={13} className="text-blue-400 shrink-0" />
-                        <span>Thought Process</span>
-                        <span className="ml-auto text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
-                      </summary>
-                      <div className="mt-2 text-gray-400 leading-relaxed border-t border-white/5 pt-2 whitespace-pre-wrap">
-                        {msg.text.replace('💡 *Thinking:*', '').trim()}
-                      </div>
-                    </details>
-                  ) : (
-                    <div className="group relative flex items-center gap-2 max-w-full">
-                      <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-bl-sm prose prose-invert prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400'}`}>
-                        {msg.role === 'user' ? (
-                          msg.text
-                        ) : (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                            {msg.text}
-                          </ReactMarkdown>
-                        )}
-                      </div>
+              const renderAgentStep = (text: string) => {
+                let Icon = Brain;
+                let cleanText = text;
 
-                      {/* Hover action buttons */}
-                      <div className={`opacity-0 group-hover:opacity-100 flex gap-1 bg-black/80 border border-white/10 p-1 rounded-lg backdrop-blur-sm transition-all duration-150 absolute top-0 -translate-y-full ${msg.role === 'user' ? 'right-0' : 'left-0'}`}>
-                        <button onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Copy">
-                          <Copy size={11} />
-                        </button>
-                        {msg.role === 'user' && (
-                          <button onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Edit">
-                            <Edit2 size={11} />
-                          </button>
-                        )}
-                        <button onClick={() => handleDeleteMessage(i)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" title="Delete">
-                          <Trash size={11} />
-                        </button>
-                      </div>
+                if (text.startsWith('💡 *Thinking:*')) {
+                  Icon = Brain;
+                  cleanText = text.replace('💡 *Thinking:*', '').trim();
+                } else if (text.startsWith('🌐')) {
+                  Icon = Globe;
+                  cleanText = text.replace('🌐', '').trim();
+                } else if (text.startsWith('📄')) {
+                  Icon = FileText;
+                  cleanText = text.replace('📄', '').trim();
+                } else if (text.startsWith('⏳')) {
+                  Icon = Hourglass;
+                  cleanText = text.replace('⏳', '').trim();
+                } else if (text.startsWith('🖱️')) {
+                  Icon = MousePointer2;
+                  cleanText = text.replace('🖱️', '').trim();
+                } else if (text.startsWith('🧠')) {
+                  Icon = Code;
+                  cleanText = text.replace('🧠', '').trim();
+                } else if (text.startsWith('🔍')) {
+                  Icon = Search;
+                  cleanText = text.replace('🔍', '').trim();
+                } else if (text.startsWith('⌨️') || text.startsWith('✏️')) {
+                  Icon = Keyboard;
+                  cleanText = text.replace(/⌨️|✏️/, '').trim();
+                } else {
+                  Icon = Info;
+                  cleanText = text.replace(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
+                }
+
+                return (
+                  <div className="flex gap-3 items-start group/step -ml-4">
+                    <span className="p-1 rounded-full bg-[#0a0a0a]">
+                      <Icon size={13} className="text-gray-500 mt-[2px] rounded shrink-0 group-hover/step:text-gray-300 transition-colors" />
+                    </span>
+                    <span className="whitespace-pre-wrap leading-relaxed">{cleanText}</span>
+                  </div>
+                );
+              };
+
+              chatHistory?.forEach((msg, idx) => {
+                const isFinalAnswer = msg.text.startsWith('✅') || msg.text.startsWith('❌') || msg.text.startsWith('⚠️') || msg.text.startsWith('🛑');
+                const isUser = msg.role === 'user';
+                const isSystemMessage = msg.text.startsWith('🚀 **Starting');
+
+                const isActionLog = msg.role === 'agent' && (
+                  msg.text.startsWith('💡') ||
+                  msg.text.startsWith('🌐') ||
+                  msg.text.startsWith('📄') ||
+                  msg.text.startsWith('⏳') ||
+                  msg.text.startsWith('🖱️') ||
+                  msg.text.startsWith('✏️') ||
+                  msg.text.startsWith('🔍') ||
+                  msg.text.startsWith('🧠') ||
+                  msg.text.startsWith('⚙️') ||
+                  msg.text.startsWith('📹') ||
+                  msg.text.startsWith('⚡') ||
+                  msg.text.startsWith('👉') ||
+                  msg.text.startsWith('📜') ||
+                  msg.text.startsWith('Opening new tab') ||
+                  msg.text.startsWith('Navigating current tab') ||
+                  msg.text.startsWith('Waiting for')
+                );
+
+                if (isUser || isFinalAnswer || isSystemMessage || (msg.role === 'agent' && !isActionLog)) {
+                  if (currentGroup) {
+                    groupedHistory.push({ type: 'group', items: currentGroup });
+                    currentGroup = null;
+                  }
+                  groupedHistory.push({ type: 'message', msg, originalIndex: idx });
+                } else if (msg.role === 'agent' && isActionLog) {
+                  if (!currentGroup) currentGroup = [];
+                  currentGroup.push({ msg, originalIndex: idx });
+                }
+              });
+              
+              if (currentGroup) {
+                groupedHistory.push({ type: 'group', items: currentGroup });
+              }
+
+              return groupedHistory.map((group, groupIdx) => {
+                if (group.type === 'message') {
+                  const { msg, originalIndex: i } = group;
+                  const isEditing = editingIndex === i;
+
+                  return (
+                    <div key={i} className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end ml-auto' : 'self-start items-start'}`}>
+                      {isEditing ? (
+                        <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
+                          <textarea
+                            className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none border-b border-white/5 pb-2 focus:border-blue-500/30 font-sans"
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            rows={2}
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-full text-gray-400 transition cursor-pointer">Cancel</button>
+                            <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="group relative flex items-center gap-2 max-w-full">
+                          <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-bl-sm prose prose-invert prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400'}`}>
+                            {msg.role === 'user' ? (
+                              msg.text
+                            ) : msg.text.startsWith('🛑') ? (
+                              <div className="flex items-start gap-2">
+                                <OctagonAlert size={15} className="shrink-0 mt-[2px] text-red-400 opacity-80" />
+                                <div>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                    {msg.text.replace('🛑', '').trim()}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            ) : (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                {msg.text}
+                              </ReactMarkdown>
+                            )}
+                          </div>
+                          
+                          {/* Hover action buttons */}
+                          <div className={`opacity-0 group-hover:opacity-100 flex gap-1 bg-black/80 border border-white/10 p-1 rounded-lg backdrop-blur-sm transition-all duration-150 absolute top-0 -translate-y-full ${msg.role === 'user' ? 'right-0' : 'left-0'}`}>
+                            <button onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Copy">
+                              <Copy size={11} />
+                            </button>
+                            {msg.role === 'user' && (
+                              <button onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Edit">
+                                <Edit2 size={11} />
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteMessage(i)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" title="Delete">
+                              <Trash size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <span className="text-[10px] text-gray-500 mt-1 px-1">{msg.role === 'user' ? 'You' : 'Jarvis'}</span>
                     </div>
-                  )}
-                  <span className="text-[10px] text-gray-500 mt-1 px-1">{msg.role === 'user' ? 'You' : 'Jarvis'}</span>
-                </div>
-              );
-            })
+                  );
+                } else {
+                  return (
+                    <div key={`group-${groupIdx}`} className="flex flex-col self-start items-start w-full my-1">
+                      <details 
+                        className="group text-[13px] text-gray-400 w-full" 
+                        open={isAgentRunning && groupIdx === groupedHistory.length - 1 ? true : undefined}
+                      >
+                        <summary className="flex items-center justify-start gap-2 cursor-pointer font-medium select-none text-gray-400 hover:text-gray-200 list-none [&::-webkit-details-marker]:hidden mb-3">
+                          <Brain size={14} className="text-gray-500 shrink-0" />
+                          <span>Chain of Thought</span>
+                          <span className="text-[10px] text-gray-600 group-open:rotate-180 transition-transform"><ChevronDown className="size-4" /></span>
+                        </summary>
+                        <div className="space-y-3 pl-[5px] border-l border-white/5 ml-[6px]">
+                          {group?.items?.map((item: any) => (
+                            <div key={item?.originalIndex}>
+                              {renderAgentStep(item?.msg?.text)}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  );
+                }
+              });
+            })()
           )}
           <div ref={chatEndRef} />
         </div>
