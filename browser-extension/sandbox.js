@@ -26,7 +26,16 @@ window.addEventListener("message", async (event) => {
           return await callParent("fill", { selector, val });
         },
         getAttribute: async (attr) => {
-          return await callParent("getAttribute", { selector, attr });
+          const res = await callParent("getAttribute", { selector, attr });
+          return res?.result;
+        },
+        textContent: async () => {
+          const res = await callParent("textContent", { selector });
+          return res?.result;
+        },
+        inputValue: async () => {
+          const res = await callParent("inputValue", { selector });
+          return res?.result;
         }
       });
 
@@ -43,7 +52,9 @@ window.addEventListener("message", async (event) => {
             },
             evaluate: async (fn, ...args) => {
               const fnStr = fn.toString();
-              return await callParent("evaluate", { fnStr, args });
+              const res = await callParent("evaluate", { fnStr, args });
+              console.log("[Sandbox] callParent evaluate raw response:", res);
+              return res?.result !== undefined ? res.result : res;
             },
             keyboard: {
               press: async (key) => {

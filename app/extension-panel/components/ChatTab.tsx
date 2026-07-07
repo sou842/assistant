@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 
@@ -29,38 +29,28 @@ export function ChatTab({
           const groupedHistory: any[] = [];
           let currentGroup: any = null;
 
-          const renderAgentStep = (text: string) => {
-            let Icon = Brain;
-            let cleanText = text;
+          const AGENT_STEP_CONFIG = [
+            { match: (text: string) => text.startsWith('💡 *Thinking:*'), Icon: Brain, clean: (text: string) => text.replace('💡 *Thinking:*', '').trim() },
+            { match: (text: string) => text.startsWith('🌐'), Icon: Globe, clean: (text: string) => text.replace('🌐', '').trim() },
+            { match: (text: string) => text.startsWith('📄'), Icon: FileText, clean: (text: string) => text.replace('📄', '').trim() },
+            { match: (text: string) => text.startsWith('⏳'), Icon: Hourglass, clean: (text: string) => text.replace('⏳', '').trim() },
+            { match: (text: string) => text.startsWith('🖱️'), Icon: MousePointer2, clean: (text: string) => text.replace('🖱️', '').trim() },
+            { match: (text: string) => text.startsWith('🧠'), Icon: Code, clean: (text: string) => text.replace('🧠', '').trim() },
+            { match: (text: string) => text.startsWith('🔍'), Icon: Search, clean: (text: string) => text.replace('🔍', '').trim() },
+            { match: (text: string) => text.startsWith('⌨️') || text.startsWith('✏️'), Icon: Keyboard, clean: (text: string) => text.replace(/⌨️|✏️/, '').trim() },
+          ];
 
-            if (text.startsWith('💡 *Thinking:*')) {
-              Icon = Brain;
-              cleanText = text.replace('💡 *Thinking:*', '').trim();
-            } else if (text.startsWith('🌐')) {
-              Icon = Globe;
-              cleanText = text.replace('🌐', '').trim();
-            } else if (text.startsWith('📄')) {
-              Icon = FileText;
-              cleanText = text.replace('📄', '').trim();
-            } else if (text.startsWith('⏳')) {
-              Icon = Hourglass;
-              cleanText = text.replace('⏳', '').trim();
-            } else if (text.startsWith('🖱️')) {
-              Icon = MousePointer2;
-              cleanText = text.replace('🖱️', '').trim();
-            } else if (text.startsWith('🧠')) {
-              Icon = Code;
-              cleanText = text.replace('🧠', '').trim();
-            } else if (text.startsWith('🔍')) {
-              Icon = Search;
-              cleanText = text.replace('🔍', '').trim();
-            } else if (text.startsWith('⌨️') || text.startsWith('✏️')) {
-              Icon = Keyboard;
-              cleanText = text.replace(/⌨️|✏️/, '').trim();
-            } else {
-              Icon = Info;
-              cleanText = text.replace(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
-            }
+          const ACTION_LOG_PREFIXES = [
+            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜',
+            'Opening new tab', 'Navigating current tab', 'Waiting for'
+          ];
+
+          const renderAgentStep = (text: string) => {
+            const config = AGENT_STEP_CONFIG.find(c => c.match(text));
+            const Icon = config ? config.Icon : Info;
+            const cleanText = config 
+              ? config.clean(text)
+              : text.replace(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
 
             return (
               <div className="flex gap-3 items-start group/step -ml-4">
@@ -74,27 +64,10 @@ export function ChatTab({
 
           chatHistory?.forEach((msg: any, idx: number) => {
             const isFinalAnswer = msg.text.startsWith('✅') || msg.text.startsWith('❌') || msg.text.startsWith('⚠️') || msg.text.startsWith('🛑');
-            const isUser = msg.role === 'user';
+            const isUser = msg?.role === 'user';
             const isSystemMessage = msg.text.startsWith('🚀 **Starting');
 
-            const isActionLog = msg.role === 'agent' && (
-              msg.text.startsWith('💡') ||
-              msg.text.startsWith('🌐') ||
-              msg.text.startsWith('📄') ||
-              msg.text.startsWith('⏳') ||
-              msg.text.startsWith('🖱️') ||
-              msg.text.startsWith('✏️') ||
-              msg.text.startsWith('🔍') ||
-              msg.text.startsWith('🧠') ||
-              msg.text.startsWith('⚙️') ||
-              msg.text.startsWith('📹') ||
-              msg.text.startsWith('⚡') ||
-              msg.text.startsWith('👉') ||
-              msg.text.startsWith('📜') ||
-              msg.text.startsWith('Opening new tab') ||
-              msg.text.startsWith('Navigating current tab') ||
-              msg.text.startsWith('Waiting for')
-            );
+            const isActionLog = msg.role === 'agent' && ACTION_LOG_PREFIXES.some(prefix => msg.text.startsWith(prefix));
 
             if (isUser || isFinalAnswer || isSystemMessage || (msg.role === 'agent' && !isActionLog)) {
               if (currentGroup) {
@@ -112,15 +85,16 @@ export function ChatTab({
             groupedHistory.push({ type: 'group', items: currentGroup });
           }
 
-          return groupedHistory.map((group, groupIdx) => {
+          return groupedHistory?.map((group, groupIdx) => {
             if (group.type === 'message') {
               const { msg, originalIndex: i } = group;
               const isEditing = editingIndex === i;
+              const isUser = msg?.role === 'user';
 
               return (
-                <Message key={i} from={msg.role as any} className="max-w-[85%] w-full">
-                  <div className={`flex gap-6 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`flex-1 min-w-0 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <Message key={i} from={msg.role as any} className={isUser ? 'max-w-[85%]' : 'w-full'}>
+                  <div className={`flex gap-6 ${isUser ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex-1 min-w-0 flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                       {isEditing ? (
                         <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
                           <textarea
@@ -135,36 +109,51 @@ export function ChatTab({
                           </div>
                         </div>
                       ) : (
-                        <MessageContent className={msg.role === 'user' ? 'group-[.is-user]:bg-blue-600 group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-sm'}>
-                          {msg.role === 'user' ? (
+                        <MessageContent className={isUser ? 'group-[.is-user]:bg-blue-600 group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-sm'}>
+                          {isUser ? (
                             msg.text
-                          ) : msg.text.startsWith('🛑') ? (
-                            <div className="flex items-start gap-2">
-                              <OctagonAlert size={15} className="shrink-0 mt-[2px] text-red-400 opacity-80" />
-                              <div>
-                                <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
-                                  {msg.text.replace('🛑', '').trim()}
-                                </MessageResponse>
-                              </div>
-                            </div>
-                          ) : (
-                            <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
-                              {msg.text}
-                            </MessageResponse>
-                          )}
+                          ) : (() => {
+                            const special = [
+                              { prefix: '🛑', Icon: OctagonAlert, className: 'text-red-400 opacity-80' },
+                              { prefix: '✅', Icon: CheckCircle2, className: 'text-green-400 opacity-60' },
+                              { prefix: '🚀', Icon: Rocket, className: 'text-blue-400 opacity-60' },
+                              { prefix: '⚠️', Icon: AlertTriangle, className: 'text-yellow-400 opacity-80' },
+                              { prefix: '❌', Icon: XCircle, className: 'text-red-400 opacity-60' }
+                            ].find(item => msg.text.startsWith(item.prefix));
+
+                            if (special) {
+                              const IconComponent = special.Icon;
+                              return (
+                                <div className="flex items-start gap-2">
+                                  <IconComponent size={15} className={cn("shrink-0 mt-[2px]", special.className)} />
+                                  <div>
+                                    <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                                      {msg.text.replace(special.prefix, '').trim()}
+                                    </MessageResponse>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                                {msg.text}
+                              </MessageResponse>
+                            );
+                          })()}
                         </MessageContent>
                       )}
 
                       {!isEditing && (
                         <MessageToolbar className={cn(
                           "mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
-                          msg.role === 'user' && "justify-end"
+                          isUser && "justify-end"
                         )}>
                           <MessageActions className="bg-black/80 border border-white/10 px-1.5 py-0.5 rounded-full backdrop-blur-sm shadow-xl flex gap-1">
                             <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                               <Copy size={8} />
                             </MessageAction>
-                            {msg.role === 'user' && (
+                            {isUser && (
                               <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                                 <Edit2 size={8} />
                               </MessageAction>

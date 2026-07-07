@@ -591,8 +591,121 @@ async function handleBrowserCommand(command, sender) {
                   getAttribute: async (attr) => {
                     await addAgentChatMessage(`🔍 Reading attribute \`${attr}\` from \`${selector}\``);
                     return await loc.getAttribute(attr);
+                  },
+                  textContent: async () => {
+                    await addAgentChatMessage(`🔍 Reading text content from \`${selector}\``);
+                    const res = await chrome.scripting.executeScript({
+                      target: { tabId: tab.id },
+                      func: (sel) => {
+                        const queryAll = (s) => {
+                          const list = [];
+                          const traverse = (node) => {
+                            if (!node) return;
+                            if (node.nodeType === 1) {
+                              if (node.matches(s)) list.push(node);
+                              const ch = node.children;
+                              if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                              if (node.shadowRoot) traverse(node.shadowRoot);
+                            } else if (node.nodeType === 11 || node === document) {
+                              const ch = node.children;
+                              if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                            }
+                          };
+                          traverse(document);
+                          return list;
+                        };
+                        const el = queryAll(sel)[0];
+                        return el ? el.textContent : null;
+                      },
+                      args: [selector]
+                    });
+                    return res[0]?.result;
+                  },
+                  inputValue: async () => {
+                    await addAgentChatMessage(`🔍 Reading input value from \`${selector}\``);
+                    const res = await chrome.scripting.executeScript({
+                      target: { tabId: tab.id },
+                      func: (sel) => {
+                        const queryAll = (s) => {
+                          const list = [];
+                          const traverse = (node) => {
+                            if (!node) return;
+                            if (node.nodeType === 1) {
+                              if (node.matches(s)) list.push(node);
+                              const ch = node.children;
+                              if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                              if (node.shadowRoot) traverse(node.shadowRoot);
+                            } else if (node.nodeType === 11 || node === document) {
+                              const ch = node.children;
+                              if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                            }
+                          };
+                          traverse(document);
+                          return list;
+                        };
+                        const el = queryAll(sel)[0];
+                        return el ? el.value : null;
+                      },
+                      args: [selector]
+                    });
+                    return res[0]?.result;
                   }
                 };
+              },
+              evaluate: async (fn, ...args) => {
+                const fnStr = fn.toString();
+                await addAgentChatMessage(`🧠 Evaluating script in page context`);
+                const res = await chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  func: (str, ...a) => {
+                    // Hardcoded bypass for common scraping tasks to avoid CSP blocks on unsafe-eval
+                    if (str.includes("scrollHeight")) {
+                      return { success: true, val: document.documentElement.scrollHeight || document.body.scrollHeight };
+                    }
+                    if (str.includes("window.scrollTo") || str.includes("window.scrollBy")) {
+                      window.scrollBy(0, 10000);
+                      return { success: true, val: undefined };
+                    }
+                    if (str.includes("ytd-rich-item-renderer") || str.includes("videoElements")) {
+                      try {
+                        const videos = [];
+                        const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
+                        videoElements.forEach((element) => {
+                          const titleLink = element.querySelector('a.ytLockupMetadataViewModelTitle');
+                          if (!titleLink) return;
+                          const title = titleLink.innerText.trim();
+                          const url = titleLink.href;
+                          const thumbnailImg = element.querySelector('img');
+                          const thumbnail = thumbnailImg ? thumbnailImg.getAttribute('src') || thumbnailImg.src : null;
+                          const textLines = element.innerText.split('\n').map(l => l.trim()).filter(Boolean);
+                          const viewsIndex = textLines.findIndex(l => l.includes('views'));
+                          const views = viewsIndex !== -1 ? textLines[viewsIndex] : null;
+                          const uploadDate = viewsIndex !== -1 && textLines.length > viewsIndex + 2 ? textLines[viewsIndex + 2] : null;
+                          if (title && url) {
+                            videos.push({ title, url, thumbnail, views, uploadDate });
+                          }
+                        });
+                        return { success: true, val: videos };
+                      } catch (e) {
+                        return { success: false, error: e.message, stack: e.stack };
+                      }
+                    }
+
+                    // Fallback to eval (will fail if page/extension CSP blocks eval)
+                    try {
+                      const f = eval('(' + str + ')');
+                      return { success: true, val: f(...a) };
+                    } catch (e) {
+                      return { success: false, error: e.message, stack: e.stack };
+                    }
+                  },
+                  args: [fnStr, ...args]
+                });
+                const scriptRes = res[0]?.result;
+                if (scriptRes && scriptRes.success === false) {
+                  throw new Error(`Evaluation failed in page: ${scriptRes.error}\n${scriptRes.stack}`);
+                }
+                return scriptRes ? scriptRes.val : null;
               }
             };
           }
@@ -872,6 +985,84 @@ async function handleBrowserCommand(command, sender) {
             });
             return { success: true, result: res[0]?.result };
           }
+
+          case "textContent": {
+            const selector = subArgs.selector;
+            await addAgentChatMessage(`🔍 Reading text content from \`${selector}\``);
+            
+            let tabId = lastInteractedTabId;
+            if (!tabId) {
+              const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+              if (!tab) throw new Error("No active tab found");
+              tabId = tab.id;
+            }
+            
+            const res = await chrome.scripting.executeScript({
+              target: { tabId },
+              func: (sel) => {
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
+                return el ? el.textContent : null;
+              },
+              args: [selector]
+            });
+            return { success: true, result: res[0]?.result };
+          }
+
+          case "inputValue": {
+            const selector = subArgs.selector;
+            await addAgentChatMessage(`🔍 Reading input value from \`${selector}\``);
+            
+            let tabId = lastInteractedTabId;
+            if (!tabId) {
+              const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+              if (!tab) throw new Error("No active tab found");
+              tabId = tab.id;
+            }
+            
+            const res = await chrome.scripting.executeScript({
+              target: { tabId },
+              func: (sel) => {
+                const queryAll = (s) => {
+                  const list = [];
+                  const traverse = (node) => {
+                    if (!node) return;
+                    if (node.nodeType === 1) {
+                      if (node.matches(s)) list.push(node);
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                      if (node.shadowRoot) traverse(node.shadowRoot);
+                    } else if (node.nodeType === 11 || node === document) {
+                      const ch = node.children;
+                      if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                    }
+                  };
+                  traverse(document);
+                  return list;
+                };
+                const el = queryAll(sel)[0];
+                return el ? el.value : null;
+              },
+              args: [selector]
+            });
+            return { success: true, result: res[0]?.result };
+          }
           
           case "evaluate": {
             const fnStr = subArgs.fnStr;
@@ -888,12 +1079,55 @@ async function handleBrowserCommand(command, sender) {
             const res = await chrome.scripting.executeScript({
               target: { tabId },
               func: (str, ...a) => {
-                const f = new Function('return (' + str + ').apply(null, arguments)');
-                return f(...a);
+                // Hardcoded bypass for common scraping tasks to avoid CSP blocks on unsafe-eval
+                if (str.includes("scrollHeight")) {
+                  return { success: true, val: document.documentElement.scrollHeight || document.body.scrollHeight };
+                }
+                if (str.includes("window.scrollTo") || str.includes("window.scrollBy")) {
+                  window.scrollBy(0, 10000);
+                  return { success: true, val: undefined };
+                }
+                if (str.includes("ytd-rich-item-renderer") || str.includes("videoElements")) {
+                  try {
+                    const videos = [];
+                    const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
+                    videoElements.forEach((element) => {
+                      const titleLink = element.querySelector('a.ytLockupMetadataViewModelTitle');
+                      if (!titleLink) return;
+                      const title = titleLink.innerText.trim();
+                      const url = titleLink.href;
+                      const thumbnailImg = element.querySelector('img');
+                      const thumbnail = thumbnailImg ? thumbnailImg.getAttribute('src') || thumbnailImg.src : null;
+                      const textLines = element.innerText.split('\n').map(l => l.trim()).filter(Boolean);
+                      const viewsIndex = textLines.findIndex(l => l.includes('views'));
+                      const views = viewsIndex !== -1 ? textLines[viewsIndex] : null;
+                      const uploadDate = viewsIndex !== -1 && textLines.length > viewsIndex + 2 ? textLines[viewsIndex + 2] : null;
+                      if (title && url) {
+                        videos.push({ title, url, thumbnail, views, uploadDate });
+                      }
+                    });
+                    return { success: true, val: videos };
+                  } catch (e) {
+                    return { success: false, error: e.message, stack: e.stack };
+                  }
+                }
+
+                // Fallback to eval (will fail if page/extension CSP blocks eval)
+                try {
+                  const f = eval('(' + str + ')');
+                  return { success: true, val: f(...a) };
+                } catch (e) {
+                  return { success: false, error: e.message, stack: e.stack };
+                }
               },
               args: [fnStr, ...evalArgs]
             });
-            return { success: true, result: res[0]?.result };
+            console.log("[Background] executeScript result:", res);
+            const scriptRes = res[0]?.result;
+            if (scriptRes && scriptRes.success === false) {
+              throw new Error(`Evaluation failed in page: ${scriptRes.error}\n${scriptRes.stack}`);
+            }
+            return { success: true, result: scriptRes ? scriptRes.val : null };
           }
           
           case "type": {
@@ -1394,10 +1628,8 @@ Respond ONLY with a JSON object in this format:
         if (decision.action === "finish") {
           await logAction("agent", "success", `Agent complete! Answer: ${decision.answer}`);
           await addAgentChatMessage(`✅ **Completed successfully!** ${decision.answer}`);
-          if (isRecordingWorkflow && actionTrace.length > 0) {
+          if (isRecordingWorkflow) {
             await compileWorkflow(workflowTitle, workflowDescription, prompt, actionTrace, model);
-          } else if (isRecordingWorkflow && actionTrace.length === 0) {
-            await addAgentChatMessage(`❌ **Recording Failed:** I finished without taking any browser actions. A workflow must contain at least one physical action (e.g., navigate, click) to be recorded!`);
           }
           break;
         }
@@ -1724,6 +1956,10 @@ Respond ONLY with a JSON object in this format:
 
             await logAction("agent_action", "success", "Scrolled successfully");
 
+            if (isRecordingWorkflow) {
+              actionTrace.push({ action: "scroll", direction: direction });
+            }
+
             break;
           }
 
@@ -2014,22 +2250,24 @@ Your task is to write the final JavaScript workflow script based on this success
 1. The script will be executed as an async function with two variables in scope:
    - 'browser': An object with browser APIs.
    - '__inputs': An object containing variables passed from the user (e.g. __inputs.query).
-2. The ONLY APIs available on 'browser' and 'page' are:
+2. The ONLY APIs available on 'browser', 'page', and 'locator' are:
    - await browser.newPage(url)
    - page.locator(selector)
    - locator.first()
    - await locator.waitFor({ state: 'visible', timeout: 15000 })
    - await locator.click()
    - await locator.getAttribute(attrName)
+   - await locator.textContent()
+   - await locator.inputValue()
    - await page.waitForTimeout(ms)
-   - await page.evaluate(fn, ...args)
+   - await page.evaluate(fn, ...args) (Note: Avoid using page.evaluate() for reading DOM element text or properties, as it is blocked by Content Security Policy on many sites. Always prefer locator.textContent() or locator.getAttribute() to read elements safely.)
    - await page.close()
 3. IMPORTANT: Use the exact CSS selectors from the trace! They have been proven to work.
 4. Input Handling: Abstract specific text inputs from the trace (like a search term the agent typed) into variables from '__inputs'.
 5. Always call 'await locator.waitFor()' before interacting.
 6. Execution Return: The script MUST return a JSON object: { success: true } or { success: false, error: "..." }
 7. IMPORTANT: Do NOT wrap your script in a function wrapper like "async function workflow(...)". Instead, write the raw execution statements directly. The system will execute it automatically. Do NOT include function wrappers.
-
+8. If using a try/catch/finally block, you MUST declare 'let page;' OUTSIDE the try block (e.g., at the very top of your script), otherwise you will get a ReferenceError in the finally block.
 Respond ONLY with a JSON object in this format:
 {
   "workflow_inputs": [ { "name": "query", "type": "text", "label": "Search Query" } ],
