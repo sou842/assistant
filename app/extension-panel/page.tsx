@@ -6,6 +6,20 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+  MessageToolbar,
+  MessageAction,
+  MessageActions,
+} from "@/components/ai-elements/message";
+import {
+  Attachments,
+  Attachment,
+  AttachmentPreview,
+} from "@/components/ai-elements/attachments";
 
 export default function ExtensionPanel() {
   const [activeTab, setActiveTab] = useState<"chat" | "workflows">("chat");
@@ -20,6 +34,14 @@ export default function ExtensionPanel() {
   const [workflowInputs, setWorkflowInputs] = useState<Record<string, any>>({});
   const [tokenUsage, setTokenUsage] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, [input]);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -339,63 +361,70 @@ export default function ExtensionPanel() {
                   const isEditing = editingIndex === i;
 
                   return (
-                    <div key={i} className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end ml-auto' : 'self-start items-start'}`}>
-                      {isEditing ? (
-                        <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
-                          <textarea
-                            className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none border-b border-white/5 pb-2 focus:border-blue-500/30 font-sans"
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            rows={2}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-full text-gray-400 transition cursor-pointer">Cancel</button>
-                            <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="group relative flex items-center gap-2 max-w-full">
-                          <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-bl-sm prose prose-invert prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400'}`}>
-                            {msg.role === 'user' ? (
-                              msg.text
-                            ) : msg.text.startsWith('🛑') ? (
-                              <div className="flex items-start gap-2">
-                                <OctagonAlert size={15} className="shrink-0 mt-[2px] text-red-400 opacity-80" />
-                                <div>
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                                    {msg.text.replace('🛑', '').trim()}
-                                  </ReactMarkdown>
-                                </div>
+                    <Message key={i} from={msg.role as any} className="max-w-[85%] w-full">
+                      <div className={`flex gap-6 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                        <div className={`flex-1 min-w-0 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          {isEditing ? (
+                            <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
+                              <textarea
+                                className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none border-b border-white/5 pb-2 focus:border-blue-500/30 font-sans"
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                rows={2}
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-full text-gray-400 transition cursor-pointer">Cancel</button>
+                                <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
                               </div>
-                            ) : (
-                              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                                {msg.text}
-                              </ReactMarkdown>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <MessageContent className={msg.role === 'user' ? 'group-[.is-user]:bg-blue-600 group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-sm'}>
+                              {msg.role === 'user' ? (
+                                msg.text
+                              ) : msg.text.startsWith('🛑') ? (
+                                <div className="flex items-start gap-2">
+                                  <OctagonAlert size={15} className="shrink-0 mt-[2px] text-red-400 opacity-80" />
+                                  <div>
+                                    <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                                      {msg.text.replace('🛑', '').trim()}
+                                    </MessageResponse>
+                                  </div>
+                                </div>
+                              ) : (
+                                <MessageResponse className="prose prose-invert max-w-none prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                                  {msg.text}
+                                </MessageResponse>
+                              )}
+                            </MessageContent>
+                          )}
                           
-                          {/* Hover action buttons */}
-                          <div className={`opacity-0 group-hover:opacity-100 flex gap-1 bg-black/80 border border-white/10 p-1 rounded-lg backdrop-blur-sm transition-all duration-150 absolute top-0 -translate-y-full ${msg.role === 'user' ? 'right-0' : 'left-0'}`}>
-                            <button onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Copy">
-                              <Copy size={11} />
-                            </button>
-                            {msg.role === 'user' && (
-                              <button onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" title="Edit">
-                                <Edit2 size={11} />
-                              </button>
-                            )}
-                            <button onClick={() => handleDeleteMessage(i)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" title="Delete">
-                              <Trash size={11} />
-                            </button>
-                          </div>
+                          {!isEditing && (
+                            <MessageToolbar className={cn(
+                              "mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
+                              msg.role === 'user' && "justify-end"
+                            )}>
+                              <MessageActions className="bg-black/80 border border-white/10 px-1.5 py-0.5 rounded-full backdrop-blur-sm shadow-xl flex gap-1">
+                                <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                                  <Copy size={8} />
+                                </MessageAction>
+                                {msg.role === 'user' && (
+                                  <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                                    <Edit2 size={8} />
+                                  </MessageAction>
+                                )}
+                                <MessageAction tooltip="Delete" onClick={() => handleDeleteMessage(i)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                                  <Trash size={8} />
+                                </MessageAction>
+                              </MessageActions>
+                            </MessageToolbar>
+                          )}
                         </div>
-                      )}
-                      <span className="text-[10px] text-gray-500 mt-1 px-1">{msg.role === 'user' ? 'You' : 'Jarvis'}</span>
-                    </div>
+                      </div>
+                    </Message>
                   );
                 } else {
                   return (
-                    <div key={`group-${groupIdx}`} className="flex flex-col self-start items-start w-full my-1">
+                    <div key={`group-${groupIdx}`} className="flex flex-col self-start items-start w-full my-1 pb-2">
                       <details 
                         className="group text-[13px] text-gray-400 w-full" 
                         open={isAgentRunning && groupIdx === groupedHistory.length - 1 ? true : undefined}
@@ -526,7 +555,8 @@ export default function ExtensionPanel() {
         <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/5">
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
             <textarea
-              className="w-full max-h-32 min-h-[68px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none resize-none placeholder:text-zinc-500 leading-relaxed"
+              ref={textareaRef}
+              className="w-full max-h-40 min-h-[44px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none resize-none placeholder:text-zinc-500 leading-relaxed overflow-y-auto"
               placeholder={isAgentRunning ? "Agent is running..." : "Ask Jarvis to do something..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -539,11 +569,11 @@ export default function ExtensionPanel() {
               }}
               rows={1}
             />
-            <div className="flex items-center justify-between border-t border-white/5 pt-2 px-1">
+            <div className="flex items-center justify-between pt-2 px-1">
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <select
-                    className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-3 py-1.5 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-8"
+                    className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-2 py-1 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-1"
                     value={model}
                     disabled={isAgentRunning}
                     onChange={e => setModel(e.target.value)}
