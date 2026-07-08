@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -72,7 +72,19 @@ function ChatMessageItem({
           ) : (
             <MessageContent className={isUser ? 'group-[.is-user]:bg-blue-600 group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-sm'}>
               {isUser ? (
-                msg.text
+                <div className="flex flex-col gap-1.5 items-end">
+                  {msg.tags && msg.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 justify-end w-full">
+                      {msg.tags.map((tag: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-1 bg-white/20 border border-white/10 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap shadow-sm">
+                          {tag.type === 'w' ? <Workflow size={10} className="opacity-80" /> : tag.type === 't' ? <AppWindow size={10} className="opacity-80" /> : <Globe size={10} className="opacity-80" />}
+                          <span className="truncate max-w-[150px]">{tag.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <span>{msg.text}</span>
+                </div>
               ) : (() => {
                 if (special) {
                   const IconComponent = special.Icon;

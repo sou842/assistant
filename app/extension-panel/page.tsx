@@ -4,26 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import useSWR from "swr";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { ChatTab } from "./components/ChatTab";
+import { MentionsInput, MentionTag } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
-import { Send, Terminal, Settings, Play, Info, Square, Trash, History, Plus, X, MessageSquare, Brain, Copy, Edit2, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, ChevronDown, OctagonAlert } from "lucide-react";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import { Send, Square, History, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-  MessageToolbar,
-  MessageAction,
-  MessageActions,
-} from "@/components/ai-elements/message";
-import {
-  Attachments,
-  Attachment,
-  AttachmentPreview,
-} from "@/components/ai-elements/attachments";
 
 export default function ExtensionPanel() {
   const [activeTab, setActiveTab] = useState<"chat" | "workflows">("chat");
@@ -35,21 +19,14 @@ export default function ExtensionPanel() {
     if (!data.success) throw new Error("Failed to load workflows");
     return data.data;
   });
-  const { data: workflows = [] } = useSWR("/api/workflows", fetcher, { onError: () => toast.error("Failed to load workflows")});
+  const { data: workflows = [] } = useSWR("/api/workflows", fetcher, { onError: () => toast.error("Failed to load workflows") });
   const [input, setInput] = useState("");
   const [model, setModel] = useState("mistral-small-latest");
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
   const [workflowInputs, setWorkflowInputs] = useState<Record<string, any>>({});
   const [tokenUsage, setTokenUsage] = useState<any>(null);
+  const [mentionTags, setMentionTags] = useState<MentionTag[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
-    }
-  }, [input]);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -86,6 +63,14 @@ export default function ExtensionPanel() {
           } else {
             toast.error("Workflow failed: " + data.error);
           }
+        } else if (data.action === "TRIGGER_RUN_WORKFLOW") {
+          const w = workflows.find((wf: any) => wf._id === data.workflowId || wf.id === data.workflowId);
+          if (w) {
+            runWorkflow(w);
+            toast.success("Agent started workflow execution");
+          } else {
+            toast.error("Agent attempted to run a workflow that was not found.");
+          }
         }
       }
     };
@@ -96,7 +81,7 @@ export default function ExtensionPanel() {
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "REQUEST_INITIAL_STATE" }, "*");
 
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [workflows, workflowInputs]);
 
 
 
@@ -106,16 +91,28 @@ export default function ExtensionPanel() {
   }, [chatHistory]);
 
   const sendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() && mentionTags.length === 0) return;
+
+    const enrichedTags = mentionTags.map(tag => {
+      if (tag.type === 'w') {
+        const fullWorkflow = workflows.find((w: any) => w._id === tag.id || w.id === tag.id);
+        if (fullWorkflow) {
+          return { ...tag, workflowData: fullWorkflow };
+        }
+      }
+      return tag;
+    });
 
     window.parent.postMessage({
       type: "FROM_NEXTJS",
       action: "RUN_AGENT",
       prompt: input,
-      model: model
+      model: model,
+      tags: enrichedTags
     }, "*");
 
     setInput("");
+    setMentionTags([]);
   };
 
   const clearChat = () => {
@@ -261,20 +258,17 @@ export default function ExtensionPanel() {
       {activeTab === "chat" && (
         <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/5">
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
-            <textarea
-              ref={textareaRef}
-              className="w-full max-h-40 min-h-[44px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none resize-none placeholder:text-zinc-500 leading-relaxed overflow-y-auto"
-              placeholder={isAgentRunning ? "Agent is running..." : "Ask Jarvis to do something..."}
+            <MentionsInput
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={isAgentRunning}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (!isAgentRunning && input.trim()) sendMessage();
-                }
+              onChange={(val) => setInput(val)}
+              onEnter={() => {
+                if (!isAgentRunning && input.trim()) sendMessage();
               }}
-              rows={1}
+              disabled={isAgentRunning}
+              placeholder={isAgentRunning ? "Agent is running..." : "Ask Jarvis to do something... (@w: for workflows)"}
+              workflows={workflows}
+              tags={mentionTags}
+              onTagsChange={setMentionTags}
             />
             <div className="flex items-center justify-between pt-2 px-1">
               <div className="flex items-center gap-2">

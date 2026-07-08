@@ -82,17 +82,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`} suppressHydrationWarning>
-        <SessionProviderWrapper>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProviderWrapper>
             {children}
             <Analytics />
-          </ThemeProvider>
-        </SessionProviderWrapper>
+          </SessionProviderWrapper>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -170,12 +170,13 @@ window.addEventListener("message", async (event) => {
       case "RUN_AGENT":
         const currentData = await chrome.storage.local.get({ chatHistory: [] });
         const newHistory = currentData.chatHistory;
-        newHistory.push({ role: "user", text: data.prompt, timestamp: Date.now() });
+        newHistory.push({ role: "user", text: data.prompt, tags: data.tags || [], timestamp: Date.now() });
         await chrome.storage.local.set({ chatHistory: newHistory });
 
         chrome.runtime.sendMessage({
           action: "run_agent",
           prompt: data.prompt,
+          tags: data.tags || [],
           model: data.model || "mistral-small-latest",
           chatId: currentChatId
         });
@@ -210,6 +211,30 @@ window.addEventListener("message", async (event) => {
         }, "*");
         break;
 
+      case "REQUEST_OPEN_TABS":
+        chrome.tabs.query({ currentWindow: true }, (tabs) => {
+          if (nextjsFrame && nextjsFrame.contentWindow) {
+            nextjsFrame.contentWindow.postMessage({
+              type: "FROM_EXTENSION",
+              action: "OPEN_TABS_RESULT",
+              tabs: tabs.map(t => ({ id: t.id, title: t.title, url: t.url }))
+            }, "*");
+          }
+        });
+        break;
+
+      case "REQUEST_RECENT_PAGES":
+        chrome.history.search({ text: '', maxResults: 50 }, (historyItems) => {
+          if (nextjsFrame && nextjsFrame.contentWindow) {
+            nextjsFrame.contentWindow.postMessage({
+              type: "FROM_EXTENSION",
+              action: "RECENT_PAGES_RESULT",
+              pages: historyItems.map(h => ({ id: h.id, title: h.title, url: h.url }))
+            }, "*");
+          }
+        });
+        break;
+
       case "STOP_AGENT":
         await chrome.storage.local.set({ agentStopRequested: true });
         break;
@@ -227,6 +252,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       messageId: message.messageId
     }, "*");
     sendResponse({ success: true, message: "Workflow dispatched to sandbox" });
+  } else if (message.action === "TRIGGER_RUN_WORKFLOW") {
+    if (nextjsFrame && nextjsFrame.contentWindow) {
+      nextjsFrame.contentWindow.postMessage({
+        type: "FROM_EXTENSION",
+        action: "TRIGGER_RUN_WORKFLOW",
+        workflowId: message.workflowId
+      }, "*");
+    }
   }
 });
 

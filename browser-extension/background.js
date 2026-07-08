@@ -1328,7 +1328,13 @@ async function runAgentLoop(prompt, model, chatId = null) {
     // Pre-check: Determine if this is a general query/chat, a workflow creation request, or a browser action
       try {
         const data = await chrome.storage.local.get({ chatHistory: [] });
-        const recentHistory = data.chatHistory.slice(-5).map(m => `${m.role}: ${m.text}`).join('\n');
+        const recentHistory = data.chatHistory.slice(-5).map(m => {
+          let text = `${m.role}: ${m.text}`;
+          if (m.tags && m.tags.length > 0) {
+            text += `\n[Attached Contexts: ${JSON.stringify(m.tags)}]`;
+          }
+          return text;
+        }).join('\n');
         const historyContext = recentHistory ? `\nRecent conversation context:\n${recentHistory}\n` : '';
         
         const tabs = await chrome.tabs.query({});
@@ -1344,12 +1350,16 @@ async function runAgentLoop(prompt, model, chatId = null) {
         tabsContext += `]\n`;
         
         const baseUrl = await getBackendBaseUrl();
-        const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model,
-            systemInstruction: `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}
+        
+        let workflowsContext = "";
+
+        const getRouterDecision = async (additionalContext = "") => {
+          const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model,
+              systemInstruction: `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -1357,30 +1367,63 @@ You possess the capability to:
 - Ask clarifying questions if the request is ambiguous, unclear, or you need more parameters.
 - Perform active browser tasks (clicks, scrolls, typing, navigation, form filling, scraping). This includes filling in login forms and logging in when credentials are provided explicitly by the user. Do NOT refuse login tasks if credentials are provided.
 - Create, record, and compile browser automation workflows.
+- Run or execute an existing attached workflow.
+- Update or edit the JSON configuration of an existing attached workflow.
 
 Decide if the request should be classified as:
 1. 'chat': General talk, greetings, general knowledge questions, or asking clarifying questions. Do NOT classify as 'chat' if the request asks to read, analyze, summarize, or extract information from the current webpage or tab.
-2. 'record_workflow': A request to write, build, create, or save a browser automation workflow script (e.g. "create a workflow to X", "write an automation script for Y", "save this as a workflow").
-3. 'browser_action': An active browser task requiring immediate execution of physical page actions (clicking, typing, scrolling, navigating, scraping) OR any request to read, analyze, summarize, or extract information from the current webpage or tab, including logging into websites using user-provided credentials.
+2. 'record_workflow': A request to write, build, create, or save a NEW browser automation workflow script.
+3. 'run_workflow': A request to run or execute an EXISTING workflow that the user has attached in the context.
+4. 'update_workflow': A request to modify, edit, or update an EXISTING workflow that the user has attached in the context.
+5. 'browser_action': An active browser task requiring immediate execution of physical page actions OR any request to read/analyze the current webpage.
+6. 'fetch_workflows': Use this if the user asks ANY questions about their saved workflows, automation scripts, or the workflows database in general (e.g., "how many workflows do I have?", "list my workflows"). Do NOT use 'browser_action' for these questions.
 
 Respond ONLY with a JSON object in this format:
 {
-  "type": "chat" | "record_workflow" | "browser_action",
+  "type": "chat" | "record_workflow" | "run_workflow" | "update_workflow" | "browser_action" | "fetch_workflows",
   "reply": "Your direct reply/summary/clarifying question to the user if type is 'chat'.",
   "workflow_title": "Short, capitalised title for the workflow (required ONLY if type is 'record_workflow')",
-  "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')"
+  "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')",
+  "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')"
 }`
-        })
-      });
+            })
+          });
 
-      if (routerResponse.ok) {
-        const routerResult = await routerResponse.json();
-        let cleanText = routerResult.text.trim();
-        if (cleanText.startsWith("```")) {
-          const match = cleanText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-          if (match && match[1]) cleanText = match[1].trim();
+          if (!routerResponse.ok) {
+            throw new Error(`Router request failed with status ${routerResponse.status}`);
+          }
+
+          const routerResult = await routerResponse.json();
+          let cleanText = routerResult.text.trim();
+          if (cleanText.startsWith("```")) {
+            const match = cleanText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+            if (match && match[1]) cleanText = match[1].trim();
+          }
+          return JSON.parse(cleanText);
+        };
+
+        let decision = await getRouterDecision();
+
+        if (decision.type === "fetch_workflows") {
+          await logAction("agent", "running", "Fetching workflows database context...");
+          try {
+            const wfRes = await fetch(`${baseUrl}/api/workflows`);
+            if (wfRes.ok) {
+              const wfData = await wfRes.json();
+              if (wfData.success && Array.isArray(wfData.data)) {
+                workflowsContext = `\n[Database Context: The user currently has ${wfData.data.length} workflows saved.`;
+                if (wfData.data.length > 0) {
+                  workflowsContext += `\nAvailable Workflows:\n` + wfData.data.map(w => `- [ID: ${w._id || w.id}] ${w.title}${w.description ? ` (${w.description})` : ''}`).join('\n');
+                }
+                workflowsContext += `]\n`;
+              }
+            }
+          } catch (e) {
+            // silently ignore
+          }
+          // Re-query with the new context
+          decision = await getRouterDecision(workflowsContext + "\n[CRITICAL INSTRUCTION: You have just fetched the user's workflows from the database. You MUST now use 'chat' type to answer the user's question using this Database Context. Do NOT use 'browser_action' or 'fetch_workflows' again.]");
         }
-        const decision = JSON.parse(cleanText);
 
         if (decision.type === "chat") {
           await logAction("agent", "success", "Responded to chat query");
@@ -1401,7 +1444,19 @@ Respond ONLY with a JSON object in this format:
           await addAgentChatMessage(`📹 **Recording Workflow:** I am now going to execute the necessary steps to build "${workflowTitle}". I will record my successful actions and compile them into a script when I'm done.`);
           // DO NOT RETURN here. Let it fall through to the browser execution loop!
         }
-      }
+        
+        if (decision.type === "run_workflow") {
+          if (!decision.workflow_id) throw new Error("Workflow ID is required to run a workflow");
+          await logAction("run_workflow", "success", "Triggering workflow execution");
+          chrome.runtime.sendMessage({ action: "TRIGGER_RUN_WORKFLOW", workflowId: decision.workflow_id });
+          return;
+        }
+        
+        if (decision.type === "update_workflow") {
+          if (!decision.workflow_id) throw new Error("Workflow ID is required to update a workflow");
+          await logAction("agent", "running", `Updating workflow ID: ${decision.workflow_id}`);
+          // Fall through to the browser agent loop where the update_workflow_db action will be handled
+        }
     } catch (e) {
       console.warn("Pre-check failed, proceeding to browser agent loop", e);
     }
@@ -2079,6 +2134,37 @@ Respond ONLY with a JSON object in this format:
             break;
           }
 
+          case "update_workflow_db": {
+            const workflowId = decision.workflow_id;
+            const updatedWorkflow = decision.updated_workflow;
+            if (!workflowId || !updatedWorkflow) {
+              throw new Error("workflow_id and updated_workflow are required for update_workflow_db");
+            }
+
+            await logAction("agent_action", "running", `Action: Updating workflow ${workflowId} in DB`);
+            await addAgentChatMessage(`⚙️ Updating workflow in database...`);
+            
+            const baseUrl = await getBackendBaseUrl();
+            const putRes = await fetch(`${baseUrl}/api/workflows/${workflowId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updatedWorkflow)
+            });
+            
+            if (!putRes.ok) {
+              const errTxt = await putRes.text();
+              throw new Error(`Failed to update workflow: ${errTxt}`);
+            }
+            
+            await logAction("agent_action", "success", "Workflow updated successfully in DB");
+            await addAgentChatMessage(`✅ Successfully updated the workflow configuration!`);
+            
+            // To notify Next.js UI to re-fetch workflows if needed, we could dispatch an event, 
+            // but the Next.js UI might need to just reload the page or SWR mutate.
+            // For now, it will be visible on reload.
+            break;
+          }
+
           default: {
             throw new Error(`Unknown action: ${decision.action}`);
           }
@@ -2136,7 +2222,13 @@ async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory =
   }).join('\n');
 
   const data = await chrome.storage.local.get({ chatHistory: [] });
-  const recentHistory = data.chatHistory.slice(-30).map(m => `${m.role}: ${m.text}`).join('\n');
+  const recentHistory = data.chatHistory.slice(-30).map(m => {
+    let text = `${m.role}: ${m.text}`;
+    if (m.tags && m.tags.length > 0) {
+      text += `\n[Attached Contexts: ${JSON.stringify(m.tags)}]`;
+    }
+    return text;
+  }).join('\n');
 
   const historyText = actionHistory.length > 0 
     ? `\nPrevious actions taken:\n${actionHistory.join('\n')}\n`
@@ -2206,12 +2298,14 @@ Based on the goal and page state, decide whether to continue automating (click, 
 Respond ONLY with a JSON object in the following format:
 {
   "thought": "Detailed explanation of what you are doing, what you observe, and why you are taking this action",
-  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "finish",
+  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "update_workflow_db" | "finish",
   "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type),
   "text": "text value to input" (required for type),
   "url": "absolute URL to load" (required for navigate),
   "tab_id": integer tab ID to switch to (required for switch_tab),
   "milliseconds": integer wait time (required for wait),
+  "workflow_id": "ID of the workflow to update (required for update_workflow_db)",
+  "updated_workflow": { "name": "...", "description": "...", "script": "..." } (required for update_workflow_db. Must contain the FULL updated workflow JSON object),
   "answer": "Your comprehensive reply to the user. Use this to summarize the page, answer questions, ask for input, or describe what you accomplished (required for finish)"
 }
 
