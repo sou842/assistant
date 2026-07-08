@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { auth } from '@/auth';
 
 const mistralApiKeys = (process.env.MISTRAL_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
 const mistralProviders = mistralApiKeys.map(key => 
@@ -24,6 +25,11 @@ const google = createGoogleGenerativeAI({
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { model, systemInstruction } = await req.json();
 
     if (!model || !systemInstruction) {

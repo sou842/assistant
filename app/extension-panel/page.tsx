@@ -2,14 +2,16 @@
 
 import { useEffect, useState, useRef } from "react";
 import useSWR from "swr";
+import { useSession } from "next-auth/react";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
-import { Send, Square, History, Plus } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ExtensionPanel() {
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<"chat" | "workflows">("chat");
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [savedChats, setSavedChats] = useState<any[]>([]);
@@ -31,12 +33,24 @@ export default function ExtensionPanel() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [isLocal, setIsLocal] = useState(false);
+  const hasOpenedLogin = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setIsLocal(window.location.search.includes("env=local"));
+      setIsLocal(
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.search.includes("env=local")
+      );
     }
   }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated" && !hasOpenedLogin.current) {
+      hasOpenedLogin.current = true;
+      window.parent.postMessage({ type: "FROM_NEXTJS", action: "OPEN_LOGIN_PAGE" }, "*");
+    }
+  }, [status]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -155,8 +169,55 @@ export default function ExtensionPanel() {
   };
 
   const stopAgent = () => {
-    window.parent.postMessage({ type: "FROM_NEXTJS", action: "STOP_AGENT" }, "*");
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "STOP_AGENT"
+    }, "*");
   };
+
+  if (status === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen w-full bg-[#0a0a0a] text-zinc-400">
+        <Loader2 className="animate-spin size-8 text-brand-primary mb-3" />
+        <span className="text-xs font-medium tracking-wide">Checking session...</span>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="flex flex-col h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between p-3 border-b border-white/10 bg-black/40 backdrop-blur-md relative z-20">
+          <div className="flex items-center gap-2">
+            <h1 className="font-semibold tracking-tight text-sm text-gray-200">Jarvis Agent</h1>
+            {isLocal && (
+              <span className="bg-brand-primary/20 text-brand-primary text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-brand-primary/30">Local</span>
+            )}
+          </div>
+        </header>
+
+        {/* Lock Screen UI */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center mb-6">
+            <Lock className="size-6 text-brand-primary" />
+          </div>
+          <h2 className="text-base font-semibold text-zinc-200 mb-2">Authentication Required</h2>
+          <p className="text-xs text-zinc-500 max-w-[240px] leading-relaxed mb-6">
+            Please log in to your account to securely chat with Jarvis and run automation workflows.
+          </p>
+          <button
+            onClick={() => {
+              window.parent.postMessage({ type: "FROM_NEXTJS", action: "OPEN_LOGIN_PAGE" }, "*");
+            }}
+            className="w-full max-w-[180px] bg-brand-primary text-black font-semibold text-xs py-2 px-4 rounded-full transition hover:opacity-90 active:scale-[0.98] cursor-pointer"
+          >
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden">

@@ -1389,6 +1389,8 @@ Respond ONLY with a JSON object in this format:
             })
           });
 
+          await checkAuthStatus(routerResponse.status);
+
           if (!routerResponse.ok) {
             throw new Error(`Router request failed with status ${routerResponse.status}`);
           }
@@ -2197,10 +2199,29 @@ Respond ONLY with a JSON object in this format:
 
 async function getBackendBaseUrl() {
   try {
-    await fetch("http://localhost:3000");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1000); // 1s timeout
+    await fetch("http://localhost:3000/api/auth/session", { method: "GET", signal: controller.signal });
+    clearTimeout(timeoutId);
     return "http://localhost:3000";
   } catch (e) {
     return "https://assistant-nine-ecru.vercel.app";
+  }
+}
+
+async function checkAuthStatus(status) {
+  if (status === 401) {
+    const data = await chrome.storage.local.get({ consecutive401Count: 0 });
+    const newCount = data.consecutive401Count + 1;
+    if (newCount >= 3) {
+      await chrome.storage.local.set({ consecutive401Count: 0, agentStopRequested: true, isAgentRunning: false });
+      const baseUrl = await getBackendBaseUrl();
+      chrome.tabs.create({ url: `${baseUrl}/api/auth/signin` });
+    } else {
+      await chrome.storage.local.set({ consecutive401Count: newCount });
+    }
+  } else if (status >= 200 && status < 300) {
+    await chrome.storage.local.set({ consecutive401Count: 0 });
   }
 }
 
@@ -2321,6 +2342,8 @@ ${isRecordingWorkflow ? recordingRules : standardRules}`;
     })
   });
 
+  await checkAuthStatus(response.status);
+
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Backend Proxy Error: ${response.status} - ${errorText}`);
@@ -2430,6 +2453,8 @@ Respond ONLY with a JSON object in this format:
         systemInstruction
       })
     });
+
+    await checkAuthStatus(routerResponse.status);
 
     if (!routerResponse.ok) throw new Error("Compiler LLM failed");
 

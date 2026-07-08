@@ -7,10 +7,11 @@ async function initNextjsFrame() {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
-    const res = await fetch("http://localhost:3000/api/workflows", { method: "HEAD", signal: controller.signal });
+    const res = await fetch("http://localhost:3000/api/auth/session", { method: "GET", signal: controller.signal });
     clearTimeout(timeoutId);
     
-    if (res.ok) {
+    // Any response (even if unauthorized or empty session) means the server is running on port 3000
+    if (res.status === 200 || res.status === 401 || res.status === 307) {
       nextjsFrame.src = "http://localhost:3000/extension-panel?env=local";
     } else {
       nextjsFrame.src = "https://assistant-nine-ecru.vercel.app/extension-panel";
@@ -258,6 +259,14 @@ window.addEventListener("message", async (event) => {
       case "STOP_AGENT":
         await chrome.storage.local.set({ agentStopRequested: true });
         break;
+
+      case "OPEN_LOGIN_PAGE": {
+        const url = nextjsFrame.src.includes("localhost") 
+          ? "http://localhost:3000/api/auth/signin" 
+          : "https://assistant-nine-ecru.vercel.app/api/auth/signin";
+        chrome.tabs.create({ url });
+        break;
+      }
     }
   }
 });
