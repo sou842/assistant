@@ -30,6 +30,13 @@ export default function ExtensionPanel() {
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [isLocal, setIsLocal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsLocal(window.location.search.includes("env=local"));
+    }
+  }, []);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -167,6 +174,9 @@ export default function ExtensionPanel() {
         </button>
         <div className="flex items-center gap-2">
           <h1 className="font-semibold tracking-tight text-sm text-gray-200">Jarvis Agent</h1>
+          {isLocal && (
+            <span className="bg-brand-primary/20 text-brand-primary text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-brand-primary/30">Local</span>
+          )}
         </div>
         <div className="flex gap-2">
           <button

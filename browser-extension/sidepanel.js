@@ -2,6 +2,26 @@ const nextjsFrame = document.getElementById("nextjsFrame");
 const sandboxFrame = document.getElementById("sandboxFrame");
 let currentChatId = Date.now().toString();
 
+// Dynamic URL loading
+async function initNextjsFrame() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
+    const res = await fetch("http://localhost:3000/api/workflows", { method: "HEAD", signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (res.ok) {
+      nextjsFrame.src = "http://localhost:3000/extension-panel?env=local";
+    } else {
+      nextjsFrame.src = "https://assistant-nine-ecru.vercel.app/extension-panel";
+    }
+  } catch (err) {
+    // Fallback to remote if localhost fetch fails
+    nextjsFrame.src = "https://assistant-nine-ecru.vercel.app/extension-panel";
+  }
+}
+initNextjsFrame();
+
 // --- 1. Forward Chat History to Next.js ---
 async function syncChatToSaved(history) {
   const data = await chrome.storage.local.get({ savedChats: [] });

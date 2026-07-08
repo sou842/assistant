@@ -52,7 +52,7 @@ export function MentionsInput({
   const [mentionType, setMentionType] = useState<'w' | 't' | 'p' | null>(null);
   const [mentionQuery, setMentionQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  
+
   // To keep track of where to replace the text
   const [mentionRange, setMentionRange] = useState<Range | null>(null);
 
@@ -91,10 +91,10 @@ export function MentionsInput({
 
   const parseContent = () => {
     if (!editorRef.current) return;
-    
+
     let plainText = "";
     const extractedTags: MentionTag[] = [];
-    
+
     // Iterate over child nodes to extract text and tags
     editorRef.current.childNodes.forEach((node) => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -106,7 +106,7 @@ export function MentionsInput({
           const id = el.getAttribute('data-mention-id') || undefined;
           const label = el.getAttribute('data-mention-label') || '';
           const url = el.getAttribute('data-mention-url') || undefined;
-          
+
           extractedTags.push({ type, id, label, url });
           // Add a plain text representation for the prompt so the LLM has context
           plainText += `@[${label}]`;
@@ -131,21 +131,21 @@ export function MentionsInput({
 
     const range = selection.getRangeAt(0);
     const node = range.startContainer;
-    
+
     if (node.nodeType === Node.TEXT_NODE) {
       const textBeforeCursor = node.textContent?.slice(0, range.startOffset) || "";
       const mentionMatch = textBeforeCursor.match(/(^|\s)@(w|t|p):([^\s]*)$/);
-      
+
       if (mentionMatch) {
         const type = mentionMatch[2] as 'w' | 't' | 'p';
         const query = mentionMatch[3];
-        
+
         // Save the exact range of the typed trigger so we can replace it later
         const matchStartOffset = textBeforeCursor.lastIndexOf(`@${type}:`);
         const newRange = document.createRange();
         newRange.setStart(node, matchStartOffset);
         newRange.setEnd(node, range.startOffset);
-        
+
         setMentionRange(newRange);
         setMentionType(type);
         setMentionQuery(query);
@@ -153,7 +153,7 @@ export function MentionsInput({
         return;
       }
     }
-    
+
     setMentionType(null);
     setMentionRange(null);
   };
@@ -176,7 +176,7 @@ export function MentionsInput({
 
   const handleSelectMention = (itemText: string, itemId?: string, itemUrl?: string) => {
     if (!mentionRange || !editorRef.current) return;
-    
+
     const selection = window.getSelection();
     if (!selection) return;
 
@@ -189,10 +189,19 @@ export function MentionsInput({
     if (itemUrl) {
       pill.setAttribute('data-mention-url', itemUrl);
     }
-    
+
     // Styling the pill to look exactly like the UI wanted
-    pill.className = "inline-flex items-center gap-1 bg-brand-primay/30 border border-brand-primary/50 text-brand-primary pl-1.5 pr-2 py-1 rounded-full text-[10px] font-medium mx-1 align-middle select-none";
-    
+    let colorClasses = "";
+    if (mentionType === 'w') {
+      colorClasses = "bg-brand-primary/20 border-brand-primary/50 text-brand-primary";
+    } else if (mentionType === 't') {
+      colorClasses = "bg-emerald-500/20 border-emerald-500/50 text-emerald-400";
+    } else {
+      colorClasses = "bg-gray-300/20 border-gray-300/50 text-gray-300";
+    }
+
+    pill.className = `inline-flex items-center gap-1 border pl-1.5 pr-2 py-1 rounded-full text-[10px] font-medium mx-1 align-middle select-none ${colorClasses}`;
+
     // Add icon based on type (using simple unicode or emoji for simplicity in contenteditable, or inline SVG)
     let iconSvg = '';
     if (mentionType === 'w') {
@@ -202,31 +211,31 @@ export function MentionsInput({
     } else {
       iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
     }
-    
+
     pill.innerHTML = `${iconSvg} <span>${itemText}</span>`;
 
     // Replace the text trigger with the pill
     selection.removeAllRanges();
     selection.addRange(mentionRange);
     selection.deleteFromDocument();
-    
+
     // Insert pill
     const range = selection.getRangeAt(0);
     range.insertNode(pill);
-    
+
     // Add a trailing space after the pill and move cursor there
     const spaceNode = document.createTextNode('\u00A0'); // non-breaking space
     pill.parentNode?.insertBefore(spaceNode, pill.nextSibling);
-    
+
     range.setStartAfter(spaceNode);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
-    
+
     setMentionType(null);
     setMentionRange(null);
     parseContent();
-    
+
     editorRef.current.focus();
   };
 
@@ -257,7 +266,7 @@ export function MentionsInput({
 
   return (
     <div className="flex flex-col w-full relative">
-      <div 
+      <div
         className={cn(
           "transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
           mentionType ? "max-h-[350px] border-b border-white/5 mb-2" : "max-h-0"
@@ -267,12 +276,14 @@ export function MentionsInput({
           <div className="flex flex-col h-full">
             <div className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {mentionType === 'w' ? <Workflow className="size-3.5 text-zinc-400" /> : mentionType === 't' ? <AppWindow className="size-3.5 text-zinc-400" /> : <Globe className="size-3.5 text-zinc-400" />}
-                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                  {mentionType === 'w' ? 'Workflows' : mentionType === 't' ? 'Open Tabs' : 'Recent Pages'}
+                {mentionType === 'w' ? <Workflow className="size-3.5 text-brand-primary" /> : mentionType === 't' ? <AppWindow className="size-3.5 text-gray-300" /> : <Globe className="size-3.5 text-gray-300" />}
+                <span className="text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-gray-400">
+                    {mentionType === 'w' ? "Workflows" : mentionType === 't' ? "Open Tabs" : "Recent Pages"}
+                  </span>
                 </span>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setMentionType(null)}
                 className="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
@@ -280,7 +291,7 @@ export function MentionsInput({
                 <X className="size-4" />
               </button>
             </div>
-            
+
             <div className="overflow-y-auto p-1 max-h-[250px] flex flex-col gap-1">
               {filteredItems.length === 0 ? (
                 <div className="px-3 py-4 text-sm text-zinc-500 text-center">
@@ -299,7 +310,7 @@ export function MentionsInput({
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                        {mentionType === 'w' ? <Workflow size={14} className="text-zinc-300" /> : <AppWindow size={14} className="text-zinc-300" />}
+                        {mentionType === 'w' ? <Workflow size={14} className="text-brand-primary" /> : mentionType === 't' ? <AppWindow size={14} className="text-gray-300" /> : <Globe size={14} className="text-gray-400" />}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="truncate text-xs font-medium text-zinc-200">{item.name || item.title}</span>
@@ -325,7 +336,7 @@ export function MentionsInput({
         className="w-full max-h-40 min-h-[44px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none overflow-y-auto"
         style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
       />
-      
+
       {/* Placeholder simulation since contentEditable doesn't have a native placeholder attribute */}
       {value === "" && !mentionType && (
         <div className="absolute left-3 top-2 pointer-events-none text-zinc-500 text-sm">
