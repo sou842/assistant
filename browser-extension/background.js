@@ -1331,13 +1331,25 @@ async function runAgentLoop(prompt, model, chatId = null) {
         const recentHistory = data.chatHistory.slice(-5).map(m => `${m.role}: ${m.text}`).join('\n');
         const historyContext = recentHistory ? `\nRecent conversation context:\n${recentHistory}\n` : '';
         
+        const tabs = await chrome.tabs.query({});
+        let tabsContext = `\n[Browser Context: ${tabs.length} tabs currently open.`;
+        if (tabs.length > 0) {
+           const maxTabsToInclude = 20;
+           const tabsToInclude = tabs.slice(0, maxTabsToInclude);
+           tabsContext += `\nTabs:\n` + tabsToInclude.map((t, i) => `- [ID: ${t.id}] [${t.active ? 'ACTIVE' : 'INACTIVE'}] ${t.title || 'Unknown'} - ${t.url || 'Unknown'}`).join('\n');
+           if (tabs.length > maxTabsToInclude) {
+             tabsContext += `\n...and ${tabs.length - maxTabsToInclude} more tabs.`;
+           }
+        }
+        tabsContext += `]\n`;
+        
         const baseUrl = await getBackendBaseUrl();
         const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
-            systemInstruction: `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}
+            systemInstruction: `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -2040,6 +2052,33 @@ Respond ONLY with a JSON object in this format:
             break;
           }
 
+          case "switch_tab": {
+            const targetId = parseInt(decision.tab_id, 10);
+            if (isNaN(targetId)) throw new Error("Invalid tab_id provided for switch_tab");
+
+            await logAction("agent_action", "running", `Action: Switching to tab ID ${targetId}`);
+            await addAgentChatMessage(`🔄 Switching to tab ${targetId}...`);
+
+            await chrome.tabs.update(targetId, { active: true });
+            const tabInfo = await chrome.tabs.get(targetId);
+            
+            if (tabInfo.windowId) {
+              await chrome.windows.update(tabInfo.windowId, { focused: true });
+            }
+
+            targetTabId = targetId;
+            lastInteractedTabId = targetId;
+
+            await waitTabLoaded(targetTabId);
+            await logAction("agent_action", "success", "Switched tab successfully");
+
+            if (isRecordingWorkflow) {
+              actionTrace.push({ action: "switch_tab", tab_id: targetId });
+            }
+
+            break;
+          }
+
           default: {
             throw new Error(`Unknown action: ${decision.action}`);
           }
@@ -2106,10 +2145,22 @@ async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory =
   const goalText = isRecordingWorkflow 
     ? `Your goal is to physically perform the following task in the browser so that it can be recorded: "${prompt}". 
 CRITICAL RECORDING RULES:
-1. You MUST execute the physical browser actions (navigate, click, type, scroll, wait) to demonstrate the workflow.
+1. You MUST execute the physical browser actions (navigate, click, type, scroll, wait, switch_tab) to demonstrate the workflow.
 2. Do NOT write a script, pseudocode, or a plan in the 'answer' field.
-3. Do NOT select 'finish' on the first step. You MUST take action (like 'navigate') to begin the workflow using the example data provided by the user. Do NOT hallucinate that the workflow is already complete.`
+3. Do NOT select 'finish' on the first step. You MUST take action (like 'navigate' or 'switch_tab') to begin the workflow using the example data provided by the user. Do NOT hallucinate that the workflow is already complete.`
     : `Your goal is: "${prompt}"`;
+
+  const tabs = await chrome.tabs.query({});
+  let tabsContext = `\n[Browser Context: ${tabs.length} tabs currently open.`;
+  if (tabs.length > 0) {
+     const maxTabsToInclude = 20;
+     const tabsToInclude = tabs.slice(0, maxTabsToInclude);
+     tabsContext += `\nTabs:\n` + tabsToInclude.map((t, i) => `- [ID: ${t.id}] [${t.active ? 'ACTIVE' : 'INACTIVE'}] ${t.title || 'Unknown'} - ${t.url || 'Unknown'}`).join('\n');
+     if (tabs.length > maxTabsToInclude) {
+       tabsContext += `\n...and ${tabs.length - maxTabsToInclude} more tabs.`;
+     }
+  }
+  tabsContext += `]\n`;
 
   const historyContext = recentHistory ? `\nRecent conversation context:\n${recentHistory}\n` : '';
 
@@ -2135,7 +2186,8 @@ CRITICAL RECORDING RULES:
 9. REPETITION PREVENTION: If you have already executed the physical action required to demonstrate the workflow (e.g. you clicked the target button to change a video, or pressed a key), do NOT repeat the same action endlessly. Once the goal is demonstrated, you MUST immediately select "action": "finish" on the very next step to stop recording.`;
 
   const systemInstruction = `You are Jarvis, a premium browser assistant. ${goalText}
-You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation).
+You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).
+${tabsContext}
 ${historyContext}
 Step: ${step}/${maxSteps}
 Current page URL: ${pageData.url}
@@ -2149,15 +2201,16 @@ ${historyText}
 Here is a list of interactive elements found on the active page:
 ${compactElements}
 
-Based on the goal and page state, decide whether to continue automating (click, type, scroll, navigate, wait) or if you are ready to reply, summarize, ask a question, or conclude the task.
+Based on the goal and page state, decide whether to continue automating (click, type, scroll, navigate, switch_tab, wait) or if you are ready to reply, summarize, ask a question, or conclude the task.
 
 Respond ONLY with a JSON object in the following format:
 {
   "thought": "Detailed explanation of what you are doing, what you observe, and why you are taking this action",
-  "action": "click" | "type" | "scroll" | "navigate" | "wait" | "finish",
+  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "finish",
   "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type),
   "text": "text value to input" (required for type),
   "url": "absolute URL to load" (required for navigate),
+  "tab_id": integer tab ID to switch to (required for switch_tab),
   "milliseconds": integer wait time (required for wait),
   "answer": "Your comprehensive reply to the user. Use this to summarize the page, answer questions, ask for input, or describe what you accomplished (required for finish)"
 }

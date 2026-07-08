@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -167,10 +167,11 @@ export function ChatTab({
             { match: (text: string) => text.startsWith('🧠'), Icon: Code, clean: (text: string) => text.replace('🧠', '').trim() },
             { match: (text: string) => text.startsWith('🔍'), Icon: Search, clean: (text: string) => text.replace('🔍', '').trim() },
             { match: (text: string) => text.startsWith('⌨️') || text.startsWith('✏️'), Icon: Keyboard, clean: (text: string) => text.replace(/⌨️|✏️/, '').trim() },
+            { match: (text: string) => text.startsWith('🔄'), Icon: ArrowRightLeft, clean: (text: string) => text.replace('🔄', '').trim() },
           ];
 
           const ACTION_LOG_PREFIXES = [
-            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜',
+            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜', '🔄',
             'Opening new tab', 'Navigating current tab', 'Waiting for'
           ];
 
@@ -257,6 +258,22 @@ export function ChatTab({
           });
         })()
       )}
+      
+      {isAgentRunning && chatHistory?.length > 0 && chatHistory[chatHistory?.length - 1]?.role === 'user' && (
+        <Message from="agent" className="w-full">
+          <div className="flex gap-6">
+            <div className="flex-1 min-w-0 flex flex-col items-start">
+              <MessageContent>
+                <div className="flex items-center gap-2.5">
+                  <Loader2 size={13} className="animate-spin text-blue-400" />
+                  <span className="text-[13px] text-gray-400 font-medium">Thinking...</span>
+                </div>
+              </MessageContent>
+            </div>
+          </div>
+        </Message>
+      )}
+
       <div ref={chatEndRef} />
     </div>
   );
