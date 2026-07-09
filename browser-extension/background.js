@@ -1,4 +1,9 @@
 // background.js - Manages browser actions and state
+try {
+  importScripts('skills/index.js', 'skills/youtube.js');
+} catch (e) {
+  console.error("[Jarvis Skills] Failed to load skills:", e);
+}
 console.log("[Jarvis Extension] Service worker started.");
 
 // Set up Chrome sidepanel open behavior (Chrome-only)
@@ -2392,8 +2397,11 @@ CRITICAL RECORDING RULES:
 8. DIRECT NAVIGATION RULE: If the user provided a target URL (e.g., a YouTube channel), use the "navigate" action to go there immediately.
 9. REPETITION PREVENTION: If you have already executed the physical action required to demonstrate the workflow (e.g. you clicked the target button to change a video, or pressed a key), do NOT repeat the same action endlessly. Once the goal is demonstrated, you MUST immediately select "action": "finish" on the very next step to stop recording.`;
 
+  const activeSkill = self.SkillRegistry ? self.SkillRegistry.getSkillForUrl(pageData.url) : null;
+  const skillContext = activeSkill ? `\n[WEBSITE SKILL LOADED: ${activeSkill.name}]\n${activeSkill.systemInstruction}\n` : '';
+
   const systemInstruction = `You are Jarvis, a premium browser assistant. ${goalText}
-You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).
+You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).${skillContext}
 ${tabsContext}
 ${historyContext}
 Step: ${step}/${maxSteps}
