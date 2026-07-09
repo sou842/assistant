@@ -180,10 +180,11 @@ export function ChatTab({
             { match: (text: string) => text.startsWith('🔍'), Icon: Search, clean: (text: string) => text.replace('🔍', '').trim() },
             { match: (text: string) => text.startsWith('⌨️') || text.startsWith('✏️'), Icon: Keyboard, clean: (text: string) => text.replace(/⌨️|✏️/, '').trim() },
             { match: (text: string) => text.startsWith('🔄'), Icon: ArrowRightLeft, clean: (text: string) => text.replace('🔄', '').trim() },
+            { match: (text: string) => text.startsWith('🚨'), Icon: AlertTriangle, className: "text-red-400 group-hover/step:text-red-300", clean: (text: string) => text.replace('🚨', '').trim() },
           ];
 
           const ACTION_LOG_PREFIXES = [
-            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜', '🔄',
+            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜', '🔄', '🚨',
             'Opening new tab', 'Navigating current tab', 'Waiting for'
           ];
 
@@ -197,9 +198,9 @@ export function ChatTab({
             return (
               <div className="flex gap-3 items-start group/step -ml-4">
                 <span className="p-1 rounded-full bg-[#0a0a0a]">
-                  <Icon size={13} className="text-gray-500 mt-[2px] rounded shrink-0 group-hover/step:text-gray-300 transition-colors" />
+                  <Icon size={13} className={cn("mt-[2px] rounded shrink-0 transition-colors text-gray-500 group-hover/step:text-gray-300")} />
                 </span>
-                <span className="whitespace-pre-wrap leading-relaxed">{cleanText}</span>
+                <span className={cn("whitespace-pre-wrap leading-relaxed")}>{cleanText}</span>
               </div>
             );
           };

@@ -443,7 +443,7 @@ export default function TasksPage() {
                   <p className="mb-8 max-w-sm text-app-text-faint">
                     Stay organized and keep track of your goals. Create your first task to get started.
                   </p>
-                  <Button onClick={() => openAddPanel()} className="bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover">
+                  <Button onClick={() => openAddPanel()} className="bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover rounded-full">
                     Create First Task
                   </Button>
                 </div>

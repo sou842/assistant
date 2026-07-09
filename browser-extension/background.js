@@ -720,9 +720,31 @@ async function handleBrowserCommand(command, sender) {
             runnerCode += "\nreturn await main(browser, __inputs);";
           }
           const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-          const runner = new AsyncFunction('browser', '__inputs', runnerCode);
           
-          const result = await runner(browserImpl, inputs);
+          const executeSubWorkflow = async (workflowId, subInputs = {}) => {
+            await addAgentChatMessage(`⚙️ Fetching sub-workflow: ${workflowId}`);
+            const baseUrl = await getBackendBaseUrl();
+            const res = await fetch(`${baseUrl}/api/workflows/${workflowId}`);
+            const data = await res.json();
+            if (!data.success || !data.data) {
+              throw new Error(`Failed to load sub-workflow ${workflowId}: ${data.error}`);
+            }
+            const subScript = data.data.script;
+            const subCleaned = cleanScriptCode(subScript);
+            let subRunnerCode = subCleaned;
+            if (/async\s+function\s+workflow\b/.test(subCleaned) || /function\s+workflow\b/.test(subCleaned)) {
+              subRunnerCode += "\nreturn await workflow(browser, __inputs);";
+            } else if (/async\s+function\s+main\b/.test(subCleaned) || /function\s+main\b/.test(subCleaned)) {
+              subRunnerCode += "\nreturn await main(browser, __inputs);";
+            }
+            const subRunner = new AsyncFunction('browser', '__inputs', 'runWorkflow', subRunnerCode);
+            await addAgentChatMessage(`⚙️ Executing sub-workflow: ${data.data.title}`);
+            return await subRunner(browserImpl, subInputs, executeSubWorkflow);
+          };
+
+          const runner = new AsyncFunction('browser', '__inputs', 'runWorkflow', runnerCode);
+          
+          const result = await runner(browserImpl, inputs, executeSubWorkflow);
           await logAction(action, "success", `Workflow executed successfully`);
           if (result && result.success) {
             await addAgentChatMessage(`✅ **Workflow finished successfully!**\nResult: ${JSON.stringify(result)}`);
@@ -1259,6 +1281,47 @@ async function handleBrowserCommand(command, sender) {
             });
             return { success: true };
           }
+          case "runSubWorkflow": {
+            const workflowId = subArgs.workflowId;
+            const subInputs = subArgs.subInputs || {};
+            await addAgentChatMessage(`⚙️ Fetching sub-workflow: ${workflowId}`);
+            const baseUrl = await getBackendBaseUrl();
+            const res = await fetch(`${baseUrl}/api/workflows/${workflowId}`);
+            const data = await res.json();
+            if (!data.success || !data.data) {
+              throw new Error(`Failed to load sub-workflow ${workflowId}: ${data.error}`);
+            }
+            const subScript = data.data.script;
+            const subCleaned = cleanScriptCode(subScript);
+            let subRunnerCode = subCleaned;
+            if (/async\s+function\s+workflow\b/.test(subCleaned) || /function\s+workflow\b/.test(subCleaned)) {
+              subRunnerCode += "\nreturn await workflow(browser, __inputs);";
+            } else if (/async\s+function\s+main\b/.test(subCleaned) || /function\s+main\b/.test(subCleaned)) {
+              subRunnerCode += "\nreturn await main(browser, __inputs);";
+            }
+            
+            // To run the sub-workflow in sandbox, we could just send a recursive execute command back to the sandbox
+            // But since this is a proxy, we can just execute it in the background script directly!
+            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+            
+            // We need a recursive executeSubWorkflow reference
+            const executeSubWorkflow = async (wId, sInputs = {}) => {
+              await addAgentChatMessage(`⚙️ Fetching sub-workflow: ${wId}`);
+              const res2 = await fetch(`${baseUrl}/api/workflows/${wId}`);
+              const data2 = await res2.json();
+              if (!data2.success || !data2.data) throw new Error(`Failed: ${data2.error}`);
+              let code = cleanScriptCode(data2.data.script);
+              if (/async\s+function\s+workflow\b/.test(code) || /function\s+workflow\b/.test(code)) code += "\nreturn await workflow(browser, __inputs);";
+              else if (/async\s+function\s+main\b/.test(code) || /function\s+main\b/.test(code)) code += "\nreturn await main(browser, __inputs);";
+              const r = new AsyncFunction('browser', '__inputs', 'runWorkflow', code);
+              return await r(browserImpl, sInputs, executeSubWorkflow);
+            };
+
+            const subRunner = new AsyncFunction('browser', '__inputs', 'runWorkflow', subRunnerCode);
+            await addAgentChatMessage(`⚙️ Executing sub-workflow: ${data.data.title}`);
+            const result = await subRunner(browserImpl, subInputs, executeSubWorkflow);
+            return { success: true, result };
+          }
           
           default:
             throw new Error(`Unknown sandbox command: ${subCommand}`);
@@ -1401,7 +1464,7 @@ Respond ONLY with a JSON object in this format:
             const match = cleanText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
             if (match && match[1]) cleanText = match[1].trim();
           }
-          return JSON.parse(cleanText);
+          return safeJsonParse(cleanText);
         };
 
         let decision = await getRouterDecision();
@@ -1443,7 +1506,7 @@ Respond ONLY with a JSON object in this format:
 
           isRecordingWorkflow = true;
           await logAction("record_workflow", "running", `Starting recording for: "${workflowTitle}"`);
-          await addAgentChatMessage(`📹 **Recording Workflow:** I am now going to execute the necessary steps to build "${workflowTitle}". I will record my successful actions and compile them into a script when I'm done.`);
+          await addAgentChatMessage(`📹 Recording Workflow: I am now going to execute the necessary steps to build "${workflowTitle}". I will record my successful actions and compile them into a script when I'm done.`);
           // DO NOT RETURN here. Let it fall through to the browser execution loop!
         }
         
@@ -1530,8 +1593,9 @@ Respond ONLY with a JSON object in this format:
             target: { tabId: targetTabId, allFrames: true },
             func: () => {
               const interactiveSelectors = [
-                'a', 'button', 'input', 'textarea', 'select',
+                'a', 'button', 'input', 'textarea', 'select', 'label',
                 '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
+                '[role="textbox"]', '[contenteditable="true"]',
                 '[onclick]', '[cursor="pointer"]'
               ];
               const elements = [];
@@ -1563,7 +1627,18 @@ Respond ONLY with a JSON object in this format:
                       const ariaLabel = el.getAttribute('aria-label'); if (ariaLabel) elData.ariaLabel = ariaLabel;
                       const title = el.getAttribute('title'); if (title) elData.title = title;
                       const ariaPressed = el.getAttribute('aria-pressed'); if (ariaPressed !== null) elData.ariaPressed = ariaPressed;
-                      const ariaChecked = el.getAttribute('aria-checked'); if (ariaChecked !== null) elData.ariaChecked = ariaChecked;
+                      let ariaChecked = el.getAttribute('aria-checked');
+                      if (el.tagName.toLowerCase() === 'label' && el.hasAttribute('for')) {
+                        const targetInput = document.getElementById(el.getAttribute('for'));
+                        if (targetInput) {
+                          if (targetInput.hasAttribute('aria-checked')) {
+                            ariaChecked = targetInput.getAttribute('aria-checked');
+                          } else if (targetInput.checked !== undefined) {
+                            ariaChecked = targetInput.checked ? "true" : "false";
+                          }
+                        }
+                      }
+                      if (ariaChecked !== null) elData.ariaChecked = ariaChecked;
                       const ariaExpanded = el.getAttribute('aria-expanded'); if (ariaExpanded !== null) elData.ariaExpanded = ariaExpanded;
                       const text = el.innerText ? el.innerText.trim().substring(0, 80) : ""; if (text) elData.text = text;
                       const value = el.value ? el.value.substring(0, 100) : null; if (value) elData.value = value;
@@ -1690,7 +1765,7 @@ Respond ONLY with a JSON object in this format:
 
         await logAction("api_response", "success", rawText);
 
-        const decision = JSON.parse(rawText);
+        const decision = safeJsonParse(rawText);
         await logAction("agent_decision", "running", `Thought: ${decision.thought}`);
         await addAgentChatMessage(`💡 *Thinking:* ${decision.thought}`);
 
@@ -1929,7 +2004,11 @@ Respond ONLY with a JSON object in this format:
                   el.style.transition = origTransition;
 
                   el.focus();
-                  el.value = val;
+                  if (el.isContentEditable) {
+                    el.textContent = val;
+                  } else {
+                    el.value = val;
+                  }
 
                   el.dispatchEvent(new Event("input", { bubbles: true }));
                   el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -2183,11 +2262,11 @@ Respond ONLY with a JSON object in this format:
         await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
         
         if (err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("key") || err.message.toLowerCase().includes("rate limit")) {
-          await addAgentChatMessage(`❌ **Failed at step ${step}:** ${err.message}`);
+          await addAgentChatMessage(`🚨 Failed at step ${step}: ${err.message}`);
           break;
         }
 
-        await addAgentChatMessage(`⚠️ **Step ${step} error:** ${err.message}`);
+        await addAgentChatMessage(`🚨 Step ${step} error: ${err.message}`);
         actionHistory.push(`Step ${step} FAILED: ${err.message}`);
         // Loop continues to allow AI to self-correct
       }
@@ -2225,8 +2304,23 @@ async function checkAuthStatus(status) {
   }
 }
 
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    // Sanitise literal control characters (newlines, carriage returns, tabs) in the string
+    const sanitized = str.replace(/[\x00-\x1f]/g, (match) => {
+      if (match === '\n') return '\\n';
+      if (match === '\r') return '\\r';
+      if (match === '\t') return '\\t';
+      return '';
+    });
+    return JSON.parse(sanitized);
+  }
+}
+
 async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false) {
-  const compactElements = pageData.elements.map(e => {
+  const compactElements = pageData?.elements?.map(e => {
     let s = `[data-agent-id="${e.index}"] ${e.tag}`;
     if (e.id) s += ` id="${e.id}"`;
     if (e.name) s += ` name="${e.name}"`;
@@ -2331,6 +2425,8 @@ Respond ONLY with a JSON object in the following format:
 }
 
 ${isRecordingWorkflow ? recordingRules : standardRules}`;
+
+console.log(systemInstruction, "##################[SYSTEM_PROMPT]##################")
 
   const baseUrl = await getBackendBaseUrl();
   const response = await fetch(`${baseUrl}/api/extension/chat`, {
@@ -2464,7 +2560,7 @@ Respond ONLY with a JSON object in this format:
       const match = cleanText.match(/^\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`$/i);
       if (match && match[1]) cleanText = match[1].trim();
     }
-    const compiled = JSON.parse(cleanText);
+    const compiled = safeJsonParse(cleanText);
 
     const tabs = await chrome.tabs.query({});
     const jarvisTab = tabs.find(tab =>

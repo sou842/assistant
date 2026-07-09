@@ -372,7 +372,7 @@ export default function ExtensionPanel() {
                 {isAgentRunning ? (
                   <button
                     onClick={stopAgent}
-                    className="p-2 bg-red-500 hover:bg-red-400 text-white rounded-full transition flex items-center justify-center shadow-md shadow-red-950/20"
+                    className="p-2 bg-brand-primary hover:bg-brand-primary/80 text-white rounded-full transition flex items-center justify-center shadow-md shadow-red-950/20 cursor-pointer"
                     title="Stop Execution"
                   >
                     <Square size={14} fill="currentColor" />

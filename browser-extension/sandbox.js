@@ -9,7 +9,11 @@ window.addEventListener("message", async (event) => {
         runnerCode += "\nreturn await main(browser, __inputs);";
       }
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-      const runner = new AsyncFunction("browser", "__inputs", runnerCode);
+      const runner = new AsyncFunction("browser", "__inputs", "runWorkflow", runnerCode);
+
+      const runWorkflow = async (workflowId, subInputs = {}) => {
+        return await callParent("runSubWorkflow", { workflowId, subInputs });
+      };
 
       const createLocatorProxy = (selector) => ({
         first: () => createLocatorProxy(selector),
@@ -65,7 +69,7 @@ window.addEventListener("message", async (event) => {
         }
       };
 
-      const result = await runner(browserProxy, inputs);
+      const result = await runner(browserProxy, inputs, runWorkflow);
       window.parent.postMessage({ action: "result", success: true, result, messageId }, "*");
     } catch (err) {
       window.parent.postMessage({ action: "result", success: false, error: err.message, messageId }, "*");

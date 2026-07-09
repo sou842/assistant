@@ -1,4 +1,5 @@
-import { Play } from "lucide-react";
+import { Play, Copy, Check } from "lucide-react";
+import { useState } from "react";
 
 export function WorkflowsTab({
   activeTab,
@@ -9,6 +10,14 @@ export function WorkflowsTab({
   setWorkflowInputs,
   runWorkflow
 }: any) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
   return (
     <div className={`flex-1 overflow-y-auto p-3 space-y-3 ${activeTab === "workflows" ? "block" : "hidden"}`}>
       {workflows.length === 0 ? (
@@ -20,10 +29,27 @@ export function WorkflowsTab({
               className="p-3 flex justify-between items-center cursor-pointer hover:bg-white/5 transition"
               onClick={() => setExpandedWorkflow(expandedWorkflow === w._id ? null : w._id)}
             >
-              <div>
+              <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium text-gray-200">{w.title}</h3>
                 {w.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{w.description}</p>}
               </div>
+              <button
+                onClick={(e) => handleCopyId(e, w._id)}
+                className="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded-md transition cursor-pointer flex items-center gap-1 text-[10px]"
+                title="Copy Workflow ID"
+              >
+                {copiedId === w._id ? (
+                  <>
+                    <Check size={12} className="text-green-500" />
+                    <span className="text-green-500 font-medium">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    <span className="opacity-60">ID</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {expandedWorkflow === w._id && (
