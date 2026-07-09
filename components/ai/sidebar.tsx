@@ -17,7 +17,8 @@ import {
   Briefcase,
   Pin,
   PinOff,
-  Cpu
+  Cpu,
+  Workflow
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -195,6 +196,13 @@ export function Sidebar({
               icon={<Cpu size={16} />}
               label="Workflows"
               active={pathname.startsWith("/ai/workflows")}
+              isCollapsed={isCollapsed}
+            />
+            <SidebarNavItem
+              href="/ai/automation"
+              icon={<Workflow size={16} />}
+              label="Automations"
+              active={pathname.startsWith("/ai/automation")}
               isCollapsed={isCollapsed}
             />
             {/* <SidebarNavItem

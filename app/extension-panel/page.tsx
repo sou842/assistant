@@ -177,7 +177,7 @@ export default function ExtensionPanel() {
 
   if (status === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-full bg-[#0a0a0a] text-zinc-400">
+      <div className="flex flex-col items-center justify-center h-screen w-full bg-transparent text-zinc-400">
         <Loader2 className="animate-spin size-8 text-brand-primary mb-3" />
         <span className="text-xs font-medium tracking-wide">Checking session...</span>
       </div>
@@ -233,6 +233,7 @@ export default function ExtensionPanel() {
         >
           <Plus size={14} /> New Chat
         </button>
+
         <div className="flex items-center gap-2">
           <h1 className="font-semibold tracking-tight text-sm text-gray-200">Jarvis Agent</h1>
           {isLocal && (
@@ -242,7 +243,7 @@ export default function ExtensionPanel() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`p-1.5 rounded-md transition ${showHistory ? 'bg-blue-600/30 text-blue-400' : 'hover:bg-white/10 text-gray-400'}`}
+            className={`p-1.5 rounded-md transition ${showHistory ? 'bg-blue-600/30 text-brand-primary' : 'hover:bg-white/10 text-gray-400'}`}
             title="Chat History"
           >
             <History size={14} />
