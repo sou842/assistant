@@ -1,6 +1,6 @@
 // background.js - Manages browser actions and state
 try {
-  importScripts('skills/index.js', 'skills/youtube.js');
+  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js');
 } catch (e) {
   console.error("[Jarvis Skills] Failed to load skills:", e);
 }
@@ -1861,7 +1861,12 @@ Respond ONLY with a JSON object in this format:
                   el.style.boxShadow = origShadow;
                   el.style.transition = origTransition;
 
-                  el.click();
+                  let newTabUrl = null;
+                  if (el.tagName.toLowerCase() === 'a' && el.target === '_blank' && el.href) {
+                    newTabUrl = el.href;
+                  } else {
+                    el.click();
+                  }
                   
                   function getStableSelector(e) {
                     if (e.id) return `#${e.id}`;
@@ -1903,7 +1908,7 @@ Respond ONLY with a JSON object in this format:
                     return path.join(' > ');
                   }
 
-                  return { success: true, selector: getStableSelector(el) };
+                  return { success: true, selector: getStableSelector(el), newTabUrl };
                 }
 
                 return {
@@ -1918,6 +1923,13 @@ Respond ONLY with a JSON object in this format:
               throw new Error(
                 clickResult[0]?.result?.error || "Click failed"
               );
+            }
+
+            if (clickResult[0].result.newTabUrl) {
+              const newTab = await chrome.tabs.create({ url: clickResult[0].result.newTabUrl, active: true });
+              targetTabId = newTab.id;
+              lastInteractedTabId = newTab.id;
+              await waitTabLoaded(targetTabId);
             }
 
             await logAction("agent_action", "success", "Clicked element successfully");
