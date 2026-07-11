@@ -138,7 +138,8 @@ window.addEventListener("message", async (event) => {
       action: "log_sandbox_result",
       success: data.success,
       result: data.result,
-      error: data.error
+      error: data.error,
+      messageId: data.messageId
     });
 
     if (nextjsFrame && nextjsFrame.contentWindow) {

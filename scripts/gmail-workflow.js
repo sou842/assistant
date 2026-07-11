@@ -29,7 +29,10 @@ async function workflow(browser, inputs) {
     console.log(`[Jarvis Workflow] Starting email send process... (Test Mode: ${isTest})`);
     
     // 2. Navigate to Gmail Inbox
-    const page = await browser.newPage("https://mail.google.com/mail/u/0/#inbox");
+    let page = await browser.getPage("mail.google.com");
+    if (!page) {
+        page = await browser.newPage("https://mail.google.com/mail/u/0/#inbox");
+    }
     
     // 3. Wait and Click Compose Button
     const composeBtn = page.locator('.T-I.T-I-KE, div[role="button"][gh="cm"]');

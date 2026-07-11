@@ -127,6 +127,31 @@ export default function ExtensionPanel() {
       });
 
       const browserProxy = {
+        getPage: async (urlPattern: string) => {
+          const res: any = await callParent("getPage", { urlPattern });
+          if (res && res.found) {
+            return {
+              locator: (selector: string) => createLocatorProxy(selector),
+              close: async () => {
+                return await callParent("closePage", {});
+              },
+              waitForTimeout: async (ms: number) => {
+                return await callParent("waitForTimeout", { ms });
+              },
+              evaluate: async (fn: any, ...args: any[]) => {
+                const fnStr = fn.toString();
+                const res: any = await callParent("evaluate", { fnStr, args });
+                return res?.result !== undefined ? res.result : res;
+              },
+              keyboard: {
+                press: async (key: string) => {
+                  return await callParent("keyboardPress", { key });
+                }
+              }
+            };
+          }
+          return null;
+        },
         newPage: async (url: string) => {
           await callParent("newPage", { url });
           return {

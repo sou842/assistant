@@ -15,6 +15,7 @@ if (typeof chrome !== "undefined" && chrome.sidePanel && chrome.sidePanel.setPan
 
 // Track the last tab we interacted with or opened
 let lastInteractedTabId = null;
+const pendingWorkflows = new Map();
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (lastInteractedTabId === tabId) {
@@ -550,20 +551,13 @@ async function handleBrowserCommand(command, sender) {
           }
         });
 
-        const browserImpl = {
-          newPage: async (pageUrl) => {
-            await addAgentChatMessage(`🌐 Opening tab and navigating to: ${pageUrl}`);
-            const tab = await chrome.tabs.create({ url: pageUrl, active: true });
-            lastInteractedTabId = tab.id;
-            await waitTabLoaded(tab.id);
-            await addAgentChatMessage(`📄 Page loaded successfully.`);
-            return {
-              waitForTimeout: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
-              close: async () => chrome.tabs.remove(tab.id),
+        const createPageObject = (tabId) => ({
+          waitForTimeout: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
+          close: async () => chrome.tabs.remove(tabId),
               keyboard: {
                 press: async (key) => {
                   await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
+                    target: { tabId: tabId },
                     func: (k) => {
                       const activeEl = document.activeElement;
                       if (activeEl) {
@@ -582,7 +576,7 @@ async function handleBrowserCommand(command, sender) {
                 }
               },
               locator: (selector) => {
-                const loc = createLocatorImpl(tab.id, selector);
+                const loc = createLocatorImpl(tabId, selector);
                 return {
                   first: () => loc.first(),
                   waitFor: async (opts) => {
@@ -608,7 +602,7 @@ async function handleBrowserCommand(command, sender) {
                   textContent: async () => {
                     await addAgentChatMessage(`🔍 Reading text content from \`${selector}\``);
                     const res = await chrome.scripting.executeScript({
-                      target: { tabId: tab.id },
+                      target: { tabId: tabId },
                       func: (sel) => {
                         const queryAll = (s) => {
                           const list = [];
@@ -637,7 +631,7 @@ async function handleBrowserCommand(command, sender) {
                   inputValue: async () => {
                     await addAgentChatMessage(`🔍 Reading input value from \`${selector}\``);
                     const res = await chrome.scripting.executeScript({
-                      target: { tabId: tab.id },
+                      target: { tabId: tabId },
                       func: (sel) => {
                         const queryAll = (s) => {
                           const list = [];
@@ -669,7 +663,7 @@ async function handleBrowserCommand(command, sender) {
                 const fnStr = fn.toString();
                 await addAgentChatMessage(`🧠 Evaluating script in page context`);
                 const res = await chrome.scripting.executeScript({
-                  target: { tabId: tab.id },
+                  target: { tabId: tabId },
                   func: (str, ...a) => {
                     // Hardcoded bypass for common scraping tasks to avoid CSP blocks on unsafe-eval
                     if (str.includes("scrollHeight")) {
@@ -720,7 +714,33 @@ async function handleBrowserCommand(command, sender) {
                 }
                 return scriptRes ? scriptRes.val : null;
               }
-            };
+        });
+
+        const browserImpl = {
+          getPage: async (urlPattern) => {
+            await addAgentChatMessage(`🔍 Checking for existing tab matching: ${urlPattern}`);
+            const tabs = await chrome.tabs.query({});
+            const existingTab = tabs.find(t => t.url && t.url.includes(urlPattern));
+            
+            if (existingTab) {
+              await addAgentChatMessage(`🔍 Found existing tab: ${existingTab.title}. Switching to it.`);
+              await chrome.tabs.update(existingTab.id, { active: true });
+              if (existingTab.windowId) {
+                await chrome.windows.update(existingTab.windowId, { focused: true });
+              }
+              lastInteractedTabId = existingTab.id;
+              
+              return createPageObject(existingTab.id);
+            }
+            return null;
+          },
+          newPage: async (pageUrl) => {
+            await addAgentChatMessage(`🌐 Opening tab and navigating to: ${pageUrl}`);
+            const tab = await chrome.tabs.create({ url: pageUrl, active: true });
+            lastInteractedTabId = tab.id;
+            await waitTabLoaded(tab.id);
+            await addAgentChatMessage(`📄 Page loaded successfully.`);
+            return createPageObject(tab.id);
           }
         };
 
@@ -760,31 +780,34 @@ async function handleBrowserCommand(command, sender) {
           const result = await runner(browserImpl, inputs, executeSubWorkflow);
           await logAction(action, "success", `Workflow executed successfully`);
           if (result && result.success) {
-            await addAgentChatMessage(`✅ **Workflow finished successfully!**\nResult: ${JSON.stringify(result)}`);
+            await addAgentChatMessage(`✅ Workflow finished successfully! Result: ${JSON.stringify(result)}`);
           } else if (result && result.success === false) {
-            await addAgentChatMessage(`⚠️ **Workflow reported failure:** ${result.error || "Unknown error"}`);
+            await addAgentChatMessage(`⚠️ Workflow reported failure: ${result.error || "Unknown error"}`);
           } else {
-            await addAgentChatMessage(`✅ **Workflow completed.**`);
+            await addAgentChatMessage(`✅ Workflow completed.`);
           }
           return result;
         } catch (err) {
-          await addAgentChatMessage(`❌ **Workflow error:** ${err.message}`);
+          await addAgentChatMessage(`❌ Workflow error: ${err.message}`);
           throw new Error(`Workflow error: ${err.message}`);
         }
       }
 
       case "run_workflow_sandbox": {
         return new Promise((resolve, reject) => {
+          const messageId = Date.now().toString();
+          
+          pendingWorkflows.set(messageId, { resolve, reject });
+          
           chrome.runtime.sendMessage({
             action: "RUN_WORKFLOW_SANDBOX",
             script: script,
             inputs: command.inputs || {},
-            messageId: Date.now().toString()
+            messageId: messageId
           }, (response) => {
             if (chrome.runtime.lastError) {
+              pendingWorkflows.delete(messageId);
               reject(new Error("Please open the Jarvis side panel to execute this workflow. The sandbox environment is required."));
-            } else {
-              resolve({ success: true, message: "Workflow dispatched to sandbox" });
             }
           });
         });
@@ -824,16 +847,22 @@ async function handleBrowserCommand(command, sender) {
       }
 
       case "log_sandbox_start": {
-        await addAgentChatMessage(`🚀 **Starting Workflow Execution...**`);
+        await addAgentChatMessage(`⚙️ Starting Workflow Execution...`);
         return { success: true };
       }
 
       case "log_sandbox_result": {
-        const { success: sandboxSuccess, result, error } = command;
+        const { success: sandboxSuccess, result, error, messageId } = command;
         if (sandboxSuccess) {
-          await addAgentChatMessage(`✅ **Workflow finished successfully!**\nResult: ${JSON.stringify(result)}`);
+          await addAgentChatMessage(`⚙️ Workflow finished successfully! Result: ${JSON.stringify(result)}`);
         } else {
-          await addAgentChatMessage(`❌ **Workflow error:** ${error || "Unknown error"}`);
+          await addAgentChatMessage(`🚨 Workflow error: ${error || "Unknown error"}`);
+        }
+
+        if (messageId && pendingWorkflows.has(messageId)) {
+          const { resolve } = pendingWorkflows.get(messageId);
+          pendingWorkflows.delete(messageId);
+          resolve({ success: sandboxSuccess, result, error });
         }
         return { success: true };
       }
@@ -842,6 +871,24 @@ async function handleBrowserCommand(command, sender) {
         const { command: subCommand, args: subArgs } = command;
         
         switch (subCommand) {
+          case "getPage": {
+            const urlPattern = subArgs.urlPattern;
+            await addAgentChatMessage(`🔍 Checking for existing tab matching: ${urlPattern}`);
+            const tabs = await chrome.tabs.query({});
+            const existingTab = tabs.find(t => t.url && t.url.includes(urlPattern));
+            
+            if (existingTab) {
+              await addAgentChatMessage(`🔍 Found existing tab: ${existingTab.title || urlPattern}. Switching to it.`);
+              await chrome.tabs.update(existingTab.id, { active: true });
+              if (existingTab.windowId) {
+                await chrome.windows.update(existingTab.windowId, { focused: true });
+              }
+              lastInteractedTabId = existingTab.id;
+              return { success: true, found: true };
+            }
+            return { success: true, found: false };
+          }
+
           case "newPage": {
             const pageUrl = subArgs.url;
             await addAgentChatMessage(`🌐 Opening tab and navigating to: ${pageUrl}`);
@@ -1350,7 +1397,7 @@ async function handleBrowserCommand(command, sender) {
         // User prompt is already appended to chatHistory by sidepanel.js for instant UI responsiveness
 
         // Start agent loop asynchronously so it doesn't block the response
-        runAgentLoop(prompt, model || "mistral-small-latest", command.chatId).catch(err => {
+        runAgentLoop(prompt, model || "mistral-small-latest", command.chatId, sender).catch(err => {
           console.error("Agent error:", err);
         });
         return { status: "started" };
@@ -1396,12 +1443,13 @@ async function addAgentChatMessage(text) {
   }
 }
 
-async function runAgentLoop(prompt, model, chatId = null) {
+async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   await chrome.storage.local.set({ isAgentRunning: true, agentStopRequested: false });
   let isRecordingWorkflow = false;
   let workflowTitle = "";
   let workflowDescription = "";
   const actionTrace = [];
+  let workflowsContext = "";
   try {
     await logAction("agent", "running", `Analyzing request...`);
 
@@ -1574,6 +1622,20 @@ Respond ONLY with a JSON object in this format:
       }
       targetTabId = tab.id;
       lastInteractedTabId = targetTabId;
+    }
+
+    // Ensure workflows are loaded from skills so agent can use them as sub-routines
+    if (!workflowsContext && self.SkillRegistry && self.SkillRegistry.skills) {
+      const allWorkflows = [];
+      for (const skill of self.SkillRegistry.skills) {
+        if (skill.workflows && Array.isArray(skill.workflows)) {
+          allWorkflows.push(...skill.workflows);
+        }
+      }
+      if (allWorkflows.length > 0) {
+        workflowsContext = `\n[Skill-Defined Workflows (You can use the 'run_workflow' action to delegate tasks to these):\n` + 
+          allWorkflows.map(w => `- [ID: ${w.id}] ${w.description}`).join('\n') + `]\n`;
+      }
     }
 
     const maxSteps = 40;
@@ -1760,7 +1822,7 @@ Respond ONLY with a JSON object in this format:
         };
         await logAction("api_call", "running", JSON.stringify(requestPayload));
 
-        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow);
+        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow, workflowsContext);
         const rawText = llmResult.text;
 
         promptTokens += llmResult.promptTokens;
@@ -2276,6 +2338,41 @@ Respond ONLY with a JSON object in this format:
             break;
           }
 
+          case "run_workflow": {
+            const workflowId = decision.workflow_id;
+            const inputs = decision.workflow_inputs || {};
+            if (!workflowId) {
+              throw new Error("workflow_id is required for run_workflow");
+            }
+            
+            await logAction("agent_action", "running", `Action: Triggering sub-workflow ${workflowId}`);
+            await addAgentChatMessage(`⚙️ Delegating task to sub-workflow ID: ${workflowId}...`);
+            
+            const baseUrl = await getBackendBaseUrl();
+            const res = await fetch(`${baseUrl}/api/workflows/${workflowId}`);
+            const data = await res.json();
+            if (!data.success || !data.data) {
+              throw new Error(`Failed to load workflow ${workflowId}: ${data.error || "not found"}`);
+            }
+            const script = data.data.script;
+
+            // Execute the workflow synchronously inside the agent loop
+            const result = await handleBrowserCommand({
+              action: "run_workflow_sandbox",
+              script: script,
+              inputs: inputs
+            }, sender);
+
+            if (result && result.success !== false) {
+              actionHistory.push(`Step ${step}: run_workflow ID ${workflowId} Succeeded. Result: ${JSON.stringify(result)}`);
+            } else {
+              const errMsg = result?.error || "Unknown error";
+              actionHistory.push(`Step ${step}: run_workflow ID ${workflowId} FAILED. Error: ${errMsg}`);
+              throw new Error(`Sub-workflow failed: ${errMsg}`);
+            }
+            break;
+          }
+
           default: {
             throw new Error(`Unknown action: ${decision.action}`);
           }
@@ -2349,7 +2446,7 @@ function safeJsonParse(str) {
   }
 }
 
-async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false) {
+async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false, workflowsContext = "") {
   const compactElements = pageData?.elements?.map(e => {
     let s = `[data-agent-id="${e.index}"] ${e.tag}`;
     if (e.id) s += ` id="${e.id}"`;
@@ -2410,7 +2507,8 @@ CRITICAL RECORDING RULES:
 6. SCROLLING STOP CONDITION: If you are scrolling to load more content (e.g., YouTube videos, lists), and the number of items or page content does not increase after a scroll action, or you reach the absolute bottom of the page, you MUST stop scrolling immediately and execute the "finish" action with the gathered results. Do NOT scroll infinitely.
 7. DIRECT NAVIGATION RULE: If the user's request or goal specifies visiting, opening, or using a particular website (e.g., "go to YouTube", "open google.com", "search on Amazon"), and your current page URL is not on that website, you MUST use the "navigate" action to go directly to that website's URL first. Do NOT attempt to search for the website or click links on the current page to navigate there.
 8. REPETITION PREVENTION: If you have already executed the physical action required to achieve the user's goal (e.g. you clicked a button to change a video, or pressed a key to pause), do NOT repeat the same action endlessly. Once the goal is achieved, you MUST immediately select "action": "finish" on the very next step and confirm completion.
-9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."`;
+9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."
+10. DELEGATING TO SUB-WORKFLOWS: If the user's goal or a step in the user's goal involves actions that match one of the available sub-workflows in the Skill-Defined Workflows list (for example, sending an email matches a workflow with title "Email send" or similar), you MUST immediately select the "action": "run_workflow" and provide its "workflow_id". Do NOT attempt to manually navigate to the website or perform manual clicks/types for that task. Pass the necessary parameters (e.g., "emails", "subject", "body") as key-value pairs in "workflow_inputs". This is critical to save tokens and execute tasks reliably.`;
 
   const recordingRules = `CRITICAL RECORDING RULES:
 1. YOU ARE CURRENTLY RECORDING A WORKFLOW. You MUST NOT hallucinate results or finish immediately.
@@ -2429,6 +2527,7 @@ CRITICAL RECORDING RULES:
   const systemInstruction = `You are Jarvis, a premium browser assistant. ${goalText}
 You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).${skillContext}
 ${tabsContext}
+${workflowsContext}
 ${historyContext}
 Step: ${step}/${maxSteps}
 Current page URL: ${pageData.url}
@@ -2447,13 +2546,14 @@ Based on the goal and page state, decide whether to continue automating (click, 
 Respond ONLY with a JSON object in the following format:
 {
   "thought": "Detailed explanation of what you are doing, what you observe, and why you are taking this action",
-  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "update_workflow_db" | "finish",
+  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "update_workflow_db" | "run_workflow" | "finish",
   "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type),
   "text": "text value to input" (required for type),
   "url": "absolute URL to load" (required for navigate),
   "tab_id": integer tab ID to switch to (required for switch_tab),
   "milliseconds": integer wait time (required for wait),
-  "workflow_id": "ID of the workflow to update (required for update_workflow_db)",
+  "workflow_id": "ID of the workflow to update or run (required for update_workflow_db and run_workflow)",
+  "workflow_inputs": { "key": "value" } (Optional key-value JSON object of parameters to pass when using the run_workflow action),
   "updated_workflow": { "name": "...", "description": "...", "script": "..." } (required for update_workflow_db. Must contain the FULL updated workflow JSON object),
   "answer": "Your comprehensive reply to the user. Use this to summarize the page, answer questions, ask for input, or describe what you accomplished (required for finish)"
 }
