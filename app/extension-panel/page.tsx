@@ -177,7 +177,7 @@ export default function ExtensionPanel() {
         } else if (data.action === "TRIGGER_RUN_WORKFLOW") {
           const w = workflows.find((wf: any) => wf._id === data.workflowId || wf.id === data.workflowId);
           if (w) {
-            runWorkflow(w);
+            runWorkflow(w, data.inputs);
             toast.success("Agent started workflow execution");
           } else {
             toast.error("Agent attempted to run a workflow that was not found.");
@@ -232,19 +232,23 @@ export default function ExtensionPanel() {
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "CLEAR_CHAT_HISTORY" }, "*");
   };
 
-  const runWorkflow = (w: any) => {
+  const runWorkflow = (w: any, overrideInputs?: any) => {
     let inputsObj = {};
-    const rawInputs = workflowInputs[w._id];
-    if (rawInputs) {
-      if (typeof rawInputs === 'string') {
-        try {
-          inputsObj = JSON.parse(rawInputs);
-        } catch (e: any) {
-          toast.error("Invalid JSON format in inputs: " + e.message);
-          return;
+    if (overrideInputs) {
+      inputsObj = overrideInputs;
+    } else {
+      const rawInputs = workflowInputs[w._id];
+      if (rawInputs) {
+        if (typeof rawInputs === 'string') {
+          try {
+            inputsObj = JSON.parse(rawInputs);
+          } catch (e: any) {
+            toast.error("Invalid JSON format in inputs: " + e.message);
+            return;
+          }
+        } else {
+          inputsObj = rawInputs;
         }
-      } else {
-        inputsObj = rawInputs;
       }
     }
 

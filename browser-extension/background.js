@@ -1451,9 +1451,9 @@ You possess the capability to:
 - Update or edit the JSON configuration of an existing attached workflow.
 
 Decide if the request should be classified as:
-1. 'chat': General talk, greetings, general knowledge questions, or asking clarifying questions. Do NOT classify as 'chat' if the request asks to read, analyze, summarize, or extract information from the current webpage or tab.
+1. 'chat': General talk, greetings, general knowledge questions, asking clarifying questions, OR asking to explain/tell about a workflow attached in the context. Do NOT classify as 'chat' if the request asks to read, analyze, summarize, or extract information from the current webpage or tab.
 2. 'record_workflow': A request to write, build, create, or save a NEW browser automation workflow script.
-3. 'run_workflow': A request to run or execute an EXISTING workflow that the user has attached in the context.
+3. 'run_workflow': A request to ACTUALLY RUN or EXECUTE an existing workflow that the user has attached in the context. Do NOT use this if the user just asks to explain or tell them about the workflow.
 4. 'update_workflow': A request to modify, edit, or update an EXISTING workflow that the user has attached in the context.
 5. 'browser_action': An active browser task requiring immediate execution of physical page actions OR any request to read/analyze the current webpage.
 6. 'fetch_workflows': Use this if the user asks ANY questions about their saved workflows, automation scripts, or the workflows database in general (e.g., "how many workflows do I have?", "list my workflows"). Do NOT use 'browser_action' for these questions.
@@ -1464,7 +1464,8 @@ Respond ONLY with a JSON object in this format:
   "reply": "Your direct reply/summary/clarifying question to the user if type is 'chat'.",
   "workflow_title": "Short, capitalised title for the workflow (required ONLY if type is 'record_workflow')",
   "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')",
-  "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')"
+  "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')",
+  "workflow_inputs": { "key": "value" } // A JSON object of key-value pairs representing the inputs to pass to the workflow (ONLY if type is 'run_workflow' and the user provides inputs in their request)
 }`
             })
           });
@@ -1530,7 +1531,7 @@ Respond ONLY with a JSON object in this format:
         if (decision.type === "run_workflow") {
           if (!decision.workflow_id) throw new Error("Workflow ID is required to run a workflow");
           await logAction("run_workflow", "success", "Triggering workflow execution");
-          chrome.runtime.sendMessage({ action: "TRIGGER_RUN_WORKFLOW", workflowId: decision.workflow_id });
+          chrome.runtime.sendMessage({ action: "TRIGGER_RUN_WORKFLOW", workflowId: decision.workflow_id, inputs: decision.workflow_inputs });
           return;
         }
         

@@ -288,7 +288,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       nextjsFrame.contentWindow.postMessage({
         type: "FROM_EXTENSION",
         action: "TRIGGER_RUN_WORKFLOW",
-        workflowId: message.workflowId
+        workflowId: message.workflowId,
+        inputs: message.inputs || {}
       }, "*");
     }
   }

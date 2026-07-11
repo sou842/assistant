@@ -9,7 +9,12 @@ export async function GET() {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-    const workflows = await Workflow.find({ userId: session.user.id }).sort({ updatedAt: -1 });
+    const workflows = await Workflow.find({
+      $or: [
+        { userId: session.user.id },
+        { isPublic: true }
+      ]
+    }).sort({ updatedAt: -1 });
     return NextResponse.json({ success: true, data: workflows });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
