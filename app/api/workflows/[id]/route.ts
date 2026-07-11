@@ -13,7 +13,10 @@ export async function GET(
     if (!session?.user?.id) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
-    const workflow = await Workflow.findOne({ _id: id, userId: session.user.id });
+    const workflow = await Workflow.findOne({
+      _id: id,
+      $or: [{ userId: session.user.id }, { isPublic: true }]
+    });
     if (!workflow) {
       return NextResponse.json({ success: false, error: 'Workflow not found' }, { status: 404 });
     }

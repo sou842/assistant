@@ -164,8 +164,14 @@ export const tools = {
       title: z.string().describe("Descriptive title of the workflow. E.g. 'YouTube Video Liker' or 'Empty Workflow'"),
       description: z.string().describe("A brief explanation of what the workflow does."),
       script: z.string().describe("The JavaScript code of the workflow script."),
+      inputs: z.array(z.object({
+        name: z.string().describe("The variable name used in the script. E.g., 'emails'"),
+        defaultValue: z.string().describe("Default value as string."),
+        type: z.enum(["text", "largetext", "boolean", "select", "file"]).describe("The input control type."),
+        options: z.array(z.string()).optional().describe("For 'select' type, the list of choices."),
+      })).optional().describe("Variables that the user can configure before running the workflow."),
     }),
-    execute: async ({ title, description, script }) => {
+    execute: async ({ title, description, script, inputs }) => {
       const session = await auth();
       if (!session?.user?.email) throw new Error("Unauthorized");
       
@@ -178,6 +184,7 @@ export const tools = {
         title,
         description,
         script,
+        inputs: inputs || [],
         userId: user._id,
       });
 

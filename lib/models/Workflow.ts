@@ -22,6 +22,10 @@ const WorkflowSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
