@@ -224,7 +224,8 @@ window.addEventListener("message", async (event) => {
 
       case "RUN_WORKFLOW":
         await chrome.runtime.sendMessage({ action: "log_sandbox_start" });
-        sandboxFrame.contentWindow.postMessage({
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
           action: "execute",
           script: data.script,
           inputs: data.inputs,
@@ -274,7 +275,8 @@ window.addEventListener("message", async (event) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "RUN_WORKFLOW_SANDBOX") {
     chrome.runtime.sendMessage({ action: "log_sandbox_start" });
-    sandboxFrame.contentWindow.postMessage({
+    nextjsFrame.contentWindow.postMessage({
+      type: "FROM_EXTENSION",
       action: "execute",
       script: message.script,
       inputs: message.inputs || {},

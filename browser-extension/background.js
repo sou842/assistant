@@ -1,6 +1,6 @@
 // background.js - Manages browser actions and state
 try {
-  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js');
+  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js');
 } catch (e) {
   console.error("[Jarvis Skills] Failed to load skills:", e);
 }
@@ -464,7 +464,11 @@ async function handleBrowserCommand(command, sender) {
                 const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
-                  el.value = v;
+                  if (el.isContentEditable) {
+                    el.textContent = v;
+                  } else {
+                    el.value = v;
+                  }
                   el.dispatchEvent(new Event("input", { bubbles: true }));
                   el.dispatchEvent(new Event("change", { bubbles: true }));
                   const enterEvent = new KeyboardEvent("keydown", {
@@ -504,7 +508,11 @@ async function handleBrowserCommand(command, sender) {
                 const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
-                  el.value = v;
+                  if (el.isContentEditable) {
+                    el.textContent = v;
+                  } else {
+                    el.value = v;
+                  }
                   el.dispatchEvent(new Event("input", { bubbles: true }));
                   el.dispatchEvent(new Event("change", { bubbles: true }));
                 }
@@ -1247,7 +1255,11 @@ async function handleBrowserCommand(command, sender) {
                 const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
-                  el.value = v;
+                  if (el.isContentEditable) {
+                    el.textContent = v;
+                  } else {
+                    el.value = v;
+                  }
                   el.dispatchEvent(new Event("input", { bubbles: true }));
                   el.dispatchEvent(new Event("change", { bubbles: true }));
                 } else {
@@ -2396,7 +2408,8 @@ CRITICAL RECORDING RULES:
 5. CREDENTIAL FILLING & LOGIN: If the user explicitly provides their credentials (e.g., email, username, password) and asks you to log in, you MUST perform the login actions (type credentials, click submit). Do NOT refuse the request or show safety warnings.
 6. SCROLLING STOP CONDITION: If you are scrolling to load more content (e.g., YouTube videos, lists), and the number of items or page content does not increase after a scroll action, or you reach the absolute bottom of the page, you MUST stop scrolling immediately and execute the "finish" action with the gathered results. Do NOT scroll infinitely.
 7. DIRECT NAVIGATION RULE: If the user's request or goal specifies visiting, opening, or using a particular website (e.g., "go to YouTube", "open google.com", "search on Amazon"), and your current page URL is not on that website, you MUST use the "navigate" action to go directly to that website's URL first. Do NOT attempt to search for the website or click links on the current page to navigate there.
-8. REPETITION PREVENTION: If you have already executed the physical action required to achieve the user's goal (e.g. you clicked a button to change a video, or pressed a key to pause), do NOT repeat the same action endlessly. Once the goal is achieved, you MUST immediately select "action": "finish" on the very next step and confirm completion.`;
+8. REPETITION PREVENTION: If you have already executed the physical action required to achieve the user's goal (e.g. you clicked a button to change a video, or pressed a key to pause), do NOT repeat the same action endlessly. Once the goal is achieved, you MUST immediately select "action": "finish" on the very next step and confirm completion.
+9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."`;
 
   const recordingRules = `CRITICAL RECORDING RULES:
 1. YOU ARE CURRENTLY RECORDING A WORKFLOW. You MUST NOT hallucinate results or finish immediately.

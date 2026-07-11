@@ -159,9 +159,9 @@ const stepSchema = z.discriminatedUnion('type', [
 
 export const tools = {
   createWorkflow: tool({
-    description: "Create and save a browser automation workflow (script as code). The script should be written in JavaScript using the pseudo-Playwright API (browser.newPage(url), page.locator(selector).click(), page.locator(selector).waitFor(), page.locator(selector).getAttribute()). Always write robust code wrapping locators in waitFor blocks if they require waiting.",
+    description: "Create and save a browser automation workflow (script as code). The script should be written in JavaScript using the pseudo-Playwright API (browser.newPage(url), page.locator(selector).click(), page.locator(selector).waitFor(), page.locator(selector).getAttribute()). Always write robust code wrapping locators in waitFor blocks if they require waiting. IMPORTANT: If the user asks for an 'empty' or 'blank' workflow, do NOT perform any web actions or searches. Just immediately call this tool with a basic skeleton script like: async function workflow(browser, inputs) { \\n  // Your code here \\n  return { success: true }; \\n}",
     inputSchema: z.object({
-      title: z.string().describe("Descriptive title of the workflow. E.g. 'YouTube Video Liker'"),
+      title: z.string().describe("Descriptive title of the workflow. E.g. 'YouTube Video Liker' or 'Empty Workflow'"),
       description: z.string().describe("A brief explanation of what the workflow does."),
       script: z.string().describe("The JavaScript code of the workflow script."),
     }),

@@ -68,6 +68,96 @@ export default function ExtensionPanel() {
     setEditingText("");
   };
 
+  const runSandboxedWorkflow = async (script: string, inputs: any, messageId: string) => {
+    try {
+      let runnerCode = script;
+      if (/async\s+function\s+workflow\b/.test(script) || /function\s+workflow\b/.test(script)) {
+        runnerCode += "\nreturn await workflow(browser, __inputs);";
+      } else if (/async\s+function\s+main\b/.test(script) || /function\s+main\b/.test(script)) {
+        runnerCode += "\nreturn await main(browser, __inputs);";
+      }
+      
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const runner = new AsyncFunction("browser", "__inputs", "runWorkflow", runnerCode);
+
+      const callParent = async (command: string, args: any) => {
+        return new Promise((resolve, reject) => {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = (event) => {
+            if (event.data.success) {
+              resolve(event.data.result);
+            } else {
+              reject(new Error(event.data.error));
+            }
+          };
+          window.parent.postMessage({ action: "command", command, args }, "*", [channel.port2]);
+        });
+      };
+
+      const runWorkflow = async (workflowId: string, subInputs = {}) => {
+        return await callParent("runSubWorkflow", { workflowId, subInputs });
+      };
+
+      const createLocatorProxy = (selector: string): any => ({
+        first: () => createLocatorProxy(selector),
+        waitFor: async (opts: any) => {
+          return await callParent("waitFor", { selector, opts });
+        },
+        click: async () => {
+          return await callParent("click", { selector });
+        },
+        type: async (val: string) => {
+          return await callParent("type", { selector, val });
+        },
+        fill: async (val: string) => {
+          return await callParent("fill", { selector, val });
+        },
+        getAttribute: async (attr: string) => {
+          const res: any = await callParent("getAttribute", { selector, attr });
+          return res?.result;
+        },
+        textContent: async () => {
+          const res: any = await callParent("textContent", { selector });
+          return res?.result;
+        },
+        inputValue: async () => {
+          const res: any = await callParent("inputValue", { selector });
+          return res?.result;
+        }
+      });
+
+      const browserProxy = {
+        newPage: async (url: string) => {
+          await callParent("newPage", { url });
+          return {
+            locator: (selector: string) => createLocatorProxy(selector),
+            close: async () => {
+              return await callParent("closePage", {});
+            },
+            waitForTimeout: async (ms: number) => {
+              return await callParent("waitForTimeout", { ms });
+            },
+            evaluate: async (fn: any, ...args: any[]) => {
+              const fnStr = fn.toString();
+              const res: any = await callParent("evaluate", { fnStr, args });
+              return res?.result !== undefined ? res.result : res;
+            },
+            keyboard: {
+              press: async (key: string) => {
+                return await callParent("keyboardPress", { key });
+              }
+            }
+          };
+        }
+      };
+
+      const result = await runner(browserProxy, inputs, runWorkflow);
+      window.parent.postMessage({ action: "result", success: true, result, messageId }, "*");
+    } catch (err: any) {
+      window.parent.postMessage({ action: "result", success: false, error: err.message, messageId }, "*");
+    }
+  };
+
   // Message Bridge Setup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -92,6 +182,8 @@ export default function ExtensionPanel() {
           } else {
             toast.error("Agent attempted to run a workflow that was not found.");
           }
+        } else if (data.action === "execute") {
+          runSandboxedWorkflow(data.script, data.inputs, data.messageId);
         }
       }
     };
