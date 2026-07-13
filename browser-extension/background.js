@@ -1460,6 +1460,14 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   let workflowDescription = "";
   const actionTrace = [];
   let workflowsContext = "";
+
+  const chatUsageKey = chatId ? `tokenUsage_${chatId}` : 'currentTokenUsage';
+  const usageData = await chrome.storage.local.get({ [chatUsageKey]: null });
+  const currentUsageObj = usageData[chatUsageKey];
+  let promptTokens = currentUsageObj?.prompt || 0;
+  let completionTokens = currentUsageObj?.completion || 0;
+  let totalTokens = currentUsageObj?.total || 0;
+
   try {
     await logAction("agent", "running", `Analyzing request...`);
 
@@ -1492,12 +1500,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         let workflowsContext = "";
 
         const getRouterDecision = async (additionalContext = "") => {
-          const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model,
-              systemInstruction: `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
+          const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -1524,7 +1527,16 @@ Respond ONLY with a JSON object in this format:
   "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')",
   "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')",
   "workflow_inputs": { "key": "value" } // A JSON object of key-value pairs representing the inputs to pass to the workflow (ONLY if type is 'run_workflow' and the user provides inputs in their request)
-}`
+}`;
+
+          console.log(sysInstruction, "##################[ROUTER_PROMPT]##################");
+
+          const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model,
+              systemInstruction: sysInstruction
             })
           });
 
@@ -1540,6 +1552,25 @@ Respond ONLY with a JSON object in this format:
             const match = cleanText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
             if (match && match[1]) cleanText = match[1].trim();
           }
+
+          // Accumulate tokens
+          promptTokens += routerResult.promptTokens || 0;
+          completionTokens += routerResult.completionTokens || 0;
+          totalTokens += routerResult.totalTokens || 0;
+
+          const newUsage = {
+            prompt: promptTokens,
+            completion: completionTokens,
+            total: totalTokens,
+            model: model
+          };
+
+          const updatePayload = { currentTokenUsage: newUsage };
+          if (chatId) {
+            updatePayload[`tokenUsage_${chatId}`] = newUsage;
+          }
+          await chrome.storage.local.set(updatePayload);
+
           return safeJsonParse(cleanText);
         };
 
@@ -1604,13 +1635,6 @@ Respond ONLY with a JSON object in this format:
 
     await logAction("agent", "running", `Starting Browser Agent [${model}] with goal: "${prompt}"`);
     await addAgentChatMessage(`🔍 Page analysis started [${model}] to accomplish your request: "${prompt}"`);
-
-    const chatUsageKey = chatId ? `tokenUsage_${chatId}` : 'currentTokenUsage';
-    const usageData = await chrome.storage.local.get({ [chatUsageKey]: null });
-    const currentUsageObj = usageData[chatUsageKey];
-    let promptTokens = currentUsageObj?.prompt || 0;
-    let completionTokens = currentUsageObj?.completion || 0;
-    let totalTokens = currentUsageObj?.total || 0;
 
     let targetTabId = lastInteractedTabId;
     
