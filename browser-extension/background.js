@@ -2407,8 +2407,9 @@ async function getBackendBaseUrl() {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1000); // 1s timeout
-    await fetch("http://localhost:3000/api/auth/session", { method: "GET", signal: controller.signal });
+    const res = await fetch("http://localhost:3000/api/auth/session", { method: "GET", signal: controller.signal });
     clearTimeout(timeoutId);
+    if (!res.ok) throw new Error("Local backend not available");
     return "http://localhost:3000";
   } catch (e) {
     return "https://assistant-nine-ecru.vercel.app";
