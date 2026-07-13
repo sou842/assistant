@@ -1498,9 +1498,23 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         const baseUrl = await getBackendBaseUrl();
         
         let workflowsContext = "";
+        if (self.SkillRegistry && self.SkillRegistry.skills) {
+          const allWorkflows = [];
+          for (const skill of self.SkillRegistry.skills) {
+            if (skill.workflows && Array.isArray(skill.workflows)) {
+              allWorkflows.push(...skill.workflows);
+            }
+          }
+          if (allWorkflows.length > 0) {
+            workflowsContext = `\n[Skill-Defined Workflows (You can use the 'run_workflow' action to delegate tasks to these):\n` + 
+              allWorkflows.map(w => `- [ID: ${w.id}] ${w.description}`).join('\n') + `]\n`;
+          }
+        }
 
         const getRouterDecision = async (additionalContext = "") => {
           const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
+
+CRITICAL: You control a real Chrome browser extension. You CAN directly send WhatsApp messages, send emails, and automate any website. You MUST NEVER reply saying "I cannot send messages directly", "I don't have access to external services", or refuse to execute the request. If the user asks you to send a message, send an email, or perform any action, you must classify it as 'run_workflow' (if a matching workflow is available in the Skill-Defined Workflows list) or 'browser_action' (if you need to automate it step-by-step). Only use 'chat' for simple greetings, casual conversation, or asking clarifying questions.
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -1574,7 +1588,7 @@ Respond ONLY with a JSON object in this format:
           return safeJsonParse(cleanText);
         };
 
-        let decision = await getRouterDecision();
+        let decision = await getRouterDecision(workflowsContext);
 
         if (decision.type === "fetch_workflows") {
           await logAction("agent", "running", "Fetching workflows database context...");
