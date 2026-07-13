@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, KeyboardEvent } from "react";
+import React, { useState, useRef, useEffect, KeyboardEvent, forwardRef, useImperativeHandle } from "react";
 import { Workflow, AppWindow, Globe, Search, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,11 @@ interface MentionsInputProps {
   onTagsChange: (tags: MentionTag[]) => void;
 }
 
-export function MentionsInput({
+export interface MentionsInputRef {
+  triggerMention: (type: 'w' | 't' | 'p') => void;
+}
+
+export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
   value,
   onChange,
   onEnter,
@@ -46,8 +50,52 @@ export function MentionsInput({
   workflows,
   tags,
   onTagsChange
-}: MentionsInputProps) {
+}, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerMention: (type: 'w' | 't' | 'p') => {
+      if (!editorRef.current) return;
+      editorRef.current.focus();
+
+      const selection = window.getSelection();
+      if (!selection) return;
+
+      let range: Range;
+      if (selection.rangeCount > 0) {
+        range = selection.getRangeAt(0);
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      const triggerText = `@${type}:`;
+      const textNode = document.createTextNode(triggerText);
+      range.insertNode(textNode);
+
+      // Place cursor right after the text we inserted
+      const cursorRange = document.createRange();
+      cursorRange.setStart(textNode, triggerText.length);
+      cursorRange.setEnd(textNode, triggerText.length);
+      selection.removeAllRanges();
+      selection.addRange(cursorRange);
+
+      // Set the mention range to highlight/replace the `@type:` trigger
+      const triggerRange = document.createRange();
+      triggerRange.setStart(textNode, 0);
+      triggerRange.setEnd(textNode, triggerText.length);
+
+      setMentionRange(triggerRange);
+      setMentionType(type);
+      setMentionQuery("");
+      setSelectedIndex(0);
+
+      parseContent();
+    }
+  }));
 
   const [mentionType, setMentionType] = useState<'w' | 't' | 'p' | null>(null);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -345,4 +393,6 @@ export function MentionsInput({
       )}
     </div>
   );
-}
+});
+
+MentionsInput.displayName = "MentionsInput";

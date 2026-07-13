@@ -5,10 +5,16 @@ import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { ChatTab } from "./components/ChatTab";
-import { MentionsInput, MentionTag } from "./components/MentionsInput";
+import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
-import { Send, Square, History, Plus, Lock, Loader2 } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ExtensionPanel() {
   const { data: session, status } = useSession();
@@ -29,6 +35,11 @@ export default function ExtensionPanel() {
   const [tokenUsage, setTokenUsage] = useState<any>(null);
   const [mentionTags, setMentionTags] = useState<MentionTag[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const mentionsInputRef = useRef<MentionsInputRef>(null);
+
+  const handleTriggerMention = (type: 'w' | 't' | 'p') => {
+    mentionsInputRef.current?.triggerMention(type);
+  };
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -76,8 +87,8 @@ export default function ExtensionPanel() {
       } else if (/async\s+function\s+main\b/.test(script) || /function\s+main\b/.test(script)) {
         runnerCode += "\nreturn await main(browser, __inputs);";
       }
-      
-      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
+      const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
       const runner = new AsyncFunction("browser", "__inputs", "runWorkflow", runnerCode);
 
       const callParent = async (command: string, args: any) => {
@@ -452,6 +463,7 @@ export default function ExtensionPanel() {
         <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/5">
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
             <MentionsInput
+              ref={mentionsInputRef}
               value={input}
               onChange={(val) => setInput(val)}
               onEnter={() => {
@@ -465,7 +477,43 @@ export default function ExtensionPanel() {
             />
             <div className="flex items-center justify-between pt-2 px-1">
               <div className="flex items-center gap-2">
-                <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isAgentRunning}
+                      className="bg-white/5 hover:bg-white/10 p-1 text-zinc-400 hover:text-zinc-200 rounded-full transition-colors flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Insert reference"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-[#161616] border border-white/10 text-zinc-300 min-w-[180px] rounded-lg">
+                    <DropdownMenuItem
+                      onClick={() => handleTriggerMention('w')}
+                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    >
+                      <Workflow size={12} className="text-zinc-400" />
+                      <span>Workflow</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleTriggerMention('t')}
+                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    >
+                      <AppWindow size={12} className="text-zinc-400" />
+                      <span>Tabs</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleTriggerMention('p')}
+                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    >
+                      <Globe size={12} className="text-zinc-400" />
+                      <span>Pages</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* <div className="relative">
                   <select
                     className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-2 py-1 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-1"
                     value={model}
@@ -481,7 +529,8 @@ export default function ExtensionPanel() {
                       <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                     </svg>
                   </div>
-                </div>
+                </div> */}
+
                 {tokenUsage && (
                   <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 shadow-sm shrink-0">
                     <span className="text-zinc-500">Token:</span>
