@@ -1497,12 +1497,10 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         
         const baseUrl = await getBackendBaseUrl();
         
-        workflowsContext = await getFilteredWorkflowsAndSkills(prompt, baseUrl);
+        let workflowsContext = "";
 
         const getRouterDecision = async (additionalContext = "") => {
           const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
-
-CRITICAL: You control a real Chrome browser extension. You CAN directly send WhatsApp messages, send emails, and automate any website. You MUST NEVER reply saying "I cannot send messages directly", "I don't have access to external services", or refuse to execute the request. If the user asks you to send a message, send an email, or perform any action, you must classify it as 'run_workflow' (if a matching workflow is available in the Skill-Defined Workflows list) or 'browser_action' (if you need to automate it step-by-step). Only use 'chat' for simple greetings, casual conversation, or asking clarifying questions.
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -1512,6 +1510,12 @@ You possess the capability to:
 - Create, record, and compile browser automation workflows.
 - Run or execute an existing attached workflow.
 - Update or edit the JSON configuration of an existing attached workflow.
+
+CRITICAL INSTRUCTIONS ON CAPABILITIES:
+1. You control a real browser extension. You CAN directly open new tabs, navigate to any URL (like mail.google.com or web.whatsapp.com), click elements, type text, and automate websites.
+2. If the user asks you to perform an action (e.g. "send hi to vineet on whatsapp" or "send an email"), you MUST NEVER reply saying "I cannot do this directly", "I don't have access to external services", or "I need to record a workflow first". 
+3. If a matching workflow exists in the Skill-Defined Workflows list, classify the request as 'run_workflow'.
+4. If no matching workflow exists, but the task is a browser automation task (e.g., navigating to a page and clicking/typing), you MUST classify it as 'browser_action' so you can execute it step-by-step. Do NOT classify it as 'chat' or refuse it. Only use 'chat' for general conversation, explanations, or clarifying questions.
 
 Decide if the request should be classified as:
 1. 'chat': General talk, greetings, general knowledge questions, asking clarifying questions, OR asking to explain/tell about a workflow attached in the context. Do NOT classify as 'chat' if the request asks to read, analyze, summarize, or extract information from the current webpage or tab.
@@ -1576,7 +1580,7 @@ Respond ONLY with a JSON object in this format:
           return safeJsonParse(cleanText);
         };
 
-        let decision = await getRouterDecision(workflowsContext);
+        let decision = await getRouterDecision();
 
         if (decision.type === "fetch_workflows") {
           await logAction("agent", "running", "Fetching workflows database context...");
@@ -2437,74 +2441,6 @@ Respond ONLY with a JSON object in this format:
   } finally {
     await chrome.storage.local.set({ isAgentRunning: false });
   }
-}
-
-async function getFilteredWorkflowsAndSkills(prompt, baseUrl) {
-  const keywords = prompt.toLowerCase().split(/[\s,._-]+/).filter(w => w.length > 2);
-  let workflowsContext = "";
-  let matchedWorkflows = [];
-
-  // 1. Fetch matched workflows from the DB
-  try {
-    const res = await fetch(`${baseUrl}/api/workflows?q=${encodeURIComponent(prompt)}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        matchedWorkflows.push(...data.data.map(w => ({
-          id: w._id || w.id,
-          title: w.title,
-          description: w.description
-        })));
-      }
-    }
-  } catch (e) {
-    console.warn("DB workflow search failed", e);
-  }
-
-  // 2. Filter local registry skills & workflows
-  if (self.SkillRegistry && self.SkillRegistry.skills) {
-    for (const skill of self.SkillRegistry.skills) {
-      // Match by skill name
-      if (keywords.some(k => skill.name.toLowerCase().includes(k))) {
-        if (skill.workflows && Array.isArray(skill.workflows)) {
-          for (const w of skill.workflows) {
-            matchedWorkflows.push({
-              id: w.id,
-              description: w.description
-            });
-          }
-        }
-      } else if (skill.workflows && Array.isArray(skill.workflows)) {
-        // Match by skill workflows title/description
-        for (const w of skill.workflows) {
-          const desc = w.description ? w.description.toLowerCase() : "";
-          if (keywords.some(k => desc.includes(k))) {
-            matchedWorkflows.push({
-              id: w.id,
-              description: w.description
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // Build the workflows context string
-  if (matchedWorkflows.length > 0) {
-    // deduplicate by id
-    const uniqueWorkflows = [];
-    const seenIds = new Set();
-    for (const w of matchedWorkflows) {
-      if (!seenIds.has(w.id)) {
-        seenIds.add(w.id);
-        uniqueWorkflows.push(w);
-      }
-    }
-    workflowsContext = `\n[Skill-Defined Workflows (You can use the 'run_workflow' action to delegate tasks to these):\n` + 
-      uniqueWorkflows.map(w => `- [ID: ${w.id}] ${w.description || w.title}`).join('\n') + `]\n`;
-  }
-
-  return workflowsContext;
 }
 
 async function getBackendBaseUrl() {
