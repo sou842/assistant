@@ -1497,19 +1497,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         
         const baseUrl = await getBackendBaseUrl();
         
-        let workflowsContext = "";
-        if (self.SkillRegistry && self.SkillRegistry.skills) {
-          const allWorkflows = [];
-          for (const skill of self.SkillRegistry.skills) {
-            if (skill.workflows && Array.isArray(skill.workflows)) {
-              allWorkflows.push(...skill.workflows);
-            }
-          }
-          if (allWorkflows.length > 0) {
-            workflowsContext = `\n[Skill-Defined Workflows (You can use the 'run_workflow' action to delegate tasks to these):\n` + 
-              allWorkflows.map(w => `- [ID: ${w.id}] ${w.description}`).join('\n') + `]\n`;
-          }
-        }
+        workflowsContext = await getFilteredWorkflowsAndSkills(prompt, baseUrl);
 
         const getRouterDecision = async (additionalContext = "") => {
           const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
@@ -2449,6 +2437,74 @@ Respond ONLY with a JSON object in this format:
   } finally {
     await chrome.storage.local.set({ isAgentRunning: false });
   }
+}
+
+async function getFilteredWorkflowsAndSkills(prompt, baseUrl) {
+  const keywords = prompt.toLowerCase().split(/[\s,._-]+/).filter(w => w.length > 2);
+  let workflowsContext = "";
+  let matchedWorkflows = [];
+
+  // 1. Fetch matched workflows from the DB
+  try {
+    const res = await fetch(`${baseUrl}/api/workflows?q=${encodeURIComponent(prompt)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        matchedWorkflows.push(...data.data.map(w => ({
+          id: w._id || w.id,
+          title: w.title,
+          description: w.description
+        })));
+      }
+    }
+  } catch (e) {
+    console.warn("DB workflow search failed", e);
+  }
+
+  // 2. Filter local registry skills & workflows
+  if (self.SkillRegistry && self.SkillRegistry.skills) {
+    for (const skill of self.SkillRegistry.skills) {
+      // Match by skill name
+      if (keywords.some(k => skill.name.toLowerCase().includes(k))) {
+        if (skill.workflows && Array.isArray(skill.workflows)) {
+          for (const w of skill.workflows) {
+            matchedWorkflows.push({
+              id: w.id,
+              description: w.description
+            });
+          }
+        }
+      } else if (skill.workflows && Array.isArray(skill.workflows)) {
+        // Match by skill workflows title/description
+        for (const w of skill.workflows) {
+          const desc = w.description ? w.description.toLowerCase() : "";
+          if (keywords.some(k => desc.includes(k))) {
+            matchedWorkflows.push({
+              id: w.id,
+              description: w.description
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Build the workflows context string
+  if (matchedWorkflows.length > 0) {
+    // deduplicate by id
+    const uniqueWorkflows = [];
+    const seenIds = new Set();
+    for (const w of matchedWorkflows) {
+      if (!seenIds.has(w.id)) {
+        seenIds.add(w.id);
+        uniqueWorkflows.push(w);
+      }
+    }
+    workflowsContext = `\n[Skill-Defined Workflows (You can use the 'run_workflow' action to delegate tasks to these):\n` + 
+      uniqueWorkflows.map(w => `- [ID: ${w.id}] ${w.description || w.title}`).join('\n') + `]\n`;
+  }
+
+  return workflowsContext;
 }
 
 async function getBackendBaseUrl() {
