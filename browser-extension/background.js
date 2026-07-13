@@ -1,6 +1,6 @@
 // background.js - Manages browser actions and state
 try {
-  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js');
+  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js');
 } catch (e) {
   console.error("[Jarvis Skills] Failed to load skills:", e);
 }
@@ -1247,9 +1247,14 @@ async function handleBrowserCommand(command, sender) {
                 const el = queryAll(sel)[0];
                 if (el) {
                   el.focus();
-                  el.value = v;
-                  el.dispatchEvent(new Event("input", { bubbles: true }));
-                  el.dispatchEvent(new Event("change", { bubbles: true }));
+                  if (el.isContentEditable) {
+                    document.execCommand('insertText', false, v);
+                  } else {
+                    el.value = v;
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                    el.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                  
                   const enterEvent = new KeyboardEvent("keydown", {
                     key: "Enter",
                     code: "Enter",
@@ -1303,12 +1308,17 @@ async function handleBrowserCommand(command, sender) {
                 if (el) {
                   el.focus();
                   if (el.isContentEditable) {
-                    el.textContent = v;
+                    document.execCommand('selectAll', false, null);
+                    if (v === "") {
+                        document.execCommand('delete', false, null);
+                    } else {
+                        document.execCommand('insertText', false, v);
+                    }
                   } else {
                     el.value = v;
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                    el.dispatchEvent(new Event("change", { bubbles: true }));
                   }
-                  el.dispatchEvent(new Event("input", { bubbles: true }));
-                  el.dispatchEvent(new Event("change", { bubbles: true }));
                 } else {
                   throw new Error(`Element not found for fill: ${sel}`);
                 }
