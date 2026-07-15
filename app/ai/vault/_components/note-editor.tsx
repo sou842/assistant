@@ -627,6 +627,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             background-color: #1a1a1a !important;
             color: #9ca3af !important;
             border-radius: 8px !important;
+            cursor: grab;
           }
           .ce-toolbar__plus:hover, .ce-toolbar__settings-btn:hover {
             background-color: #262626 !important;
@@ -636,6 +637,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           .ce-popover__container {
             background-color: #0f0f0f !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            top: 48px;
           }
           
           .cdx-search-field, .ce-popover__search {
@@ -669,7 +671,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .cdx-search-field {
             background-color: #1a1a1a !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border: 0px;
             padding: 0px !important;
             display: flex !important;
             align-items: center !important;
@@ -677,7 +679,8 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .cdx-search-field__icon {
             color: #9ca3af !important;
-            margin-right: 8px !important;
+            margin-right: 4px !important;
+            margin-left: 4px !important;
             display: flex !important;
             align-items: center !important;
           }
@@ -697,13 +700,13 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
 
           .ce-popover__items {
-            padding: 6px !important;
             max-height: 350px !important;
             overflow-y: auto !important;
           }
 
           .ce-popover-item {
             color: #e5e7eb !important;
+
           }
 
           .ce-popover-item__icon {
@@ -712,7 +715,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
 
           .ce-popover-item:hover:not(.ce-popover-item--disabled) {
-            background-color: transparent !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
           }
 
           .ce-popover-item--disabled {
@@ -972,7 +975,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           /* Quote */
           .cdx-quote {
-            border-left: 3px solid rgba(255, 255, 255, 0.1) !important;
+            border-left: 3px solid #505050 !important;
             padding-left: 1.5rem !important;
             margin: 1.5rem 0 !important;
             font-style: italic !important;
