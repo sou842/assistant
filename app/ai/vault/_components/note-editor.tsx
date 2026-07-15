@@ -611,6 +611,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             height: 45px;
           }
 
+          .ce-toolbar__actions--opened {
+            left: -110px !important;
+          }
+
           .cdx-search-field {
             background-color: #1a1a1a !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
