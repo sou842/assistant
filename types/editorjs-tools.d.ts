@@ -12,3 +12,6 @@ declare module '@editorjs/delimiter';
 declare module 'editorjs-inline-image';
 declare module 'editorjs-youtube-embed';
 declare module 'editorjs-drag-drop';
+declare module '@editorjs/image';
+declare module '@editorjs/link';
+declare module 'editorjs-undo';

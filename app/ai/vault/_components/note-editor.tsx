@@ -44,6 +44,8 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
         import('@editorjs/delimiter'),
         import('editorjs-drag-drop'),
         import('@editorjs/image'),
+        import('@editorjs/link'),
+        import('editorjs-undo'),
       ]).then(([
         Header,
         List,
@@ -59,12 +61,15 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
         Checklist,
         Delimiter,
         DragDrop,
-        ImageTool
+        ImageTool,
+        LinkTool,
+        Undo
       ]) => {
         if (!isCurrent) return;
 
         // Custom YouTube wrapper logic from reference
         class CustomYouTubeEmbed {
+          youTubeEmbed: any;
           constructor({ data, config, api, readOnly }: any) {
             this.youTubeEmbed = new YouTubeEmbed.default({ data, config, api, readOnly });
           }
@@ -507,6 +512,12 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                 inlineToolbar: true,
               },
               delimiter: Delimiter.default || Delimiter,
+              linkTool: {
+                class: LinkTool.default || LinkTool,
+                config: {
+                  endpoint: "/api/fetchUrl", // Your endpoint that provides URL metadata
+                },
+              },
             },
             onChange: async (api) => {
               const data = await api.saver.save();
@@ -514,6 +525,18 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             },
             onReady: () => {
               setIsReady(true);
+              try {
+                const UndoConstructor = Undo.default || Undo;
+                const undoInstance = new UndoConstructor({ editor });
+                
+                // Initialize undo stack with the parsed initial data to prevent
+                // "can't access property 'data', t[n] is undefined" crash when undoing.
+                if (parsedData && parsedData.blocks && parsedData.blocks.length > 0) {
+                  undoInstance.initialize(parsedData);
+                }
+              } catch (e) {
+                console.error("Failed to initialize EditorJS Undo plugin:", e);
+              }
               if (typeof DragDrop.default === 'function') {
                 new DragDrop.default(editor);
               } else if (typeof DragDrop === 'function') {
@@ -536,6 +559,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
       isCurrent = false;
       if (editorRef.current && typeof editorRef.current.destroy === 'function') {
         try {
+          // Dispatch custom destroy event so editorjs-undo cleans up its DOM listeners
+          if (containerRef.current) {
+            containerRef.current.dispatchEvent(new CustomEvent("destroy"));
+          }
           editorRef.current.destroy();
         } catch (e) {
           console.error("EditorJS cleanup error", e);
@@ -567,14 +594,14 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
       <style>
         {`
           #editorjs-instance {
-            color: #e5e7eb;
+            color: #a0a0a5;
             caret-color: #ffffff;
           }
 
-          #editorjs-instance h1 { font-size: 2.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; color: #ffffff; }
-          #editorjs-instance h2 { font-size: 1.875rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #f3f4f6; }
-          #editorjs-instance h3 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #e5e7eb; }
-          #editorjs-instance h4 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #d1d5db; }
+          #editorjs-instance h1 { font-size: 2.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; color: #d4d4d8; }
+          #editorjs-instance h2 { font-size: 1.875rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #c4c4c7; }
+          #editorjs-instance h3 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #a8a8ab; }
+          #editorjs-instance h4 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #8e8e93; }
 
           /* Selection */
           #editorjs-instance ::selection {
@@ -599,6 +626,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           
           .cdx-search-field, .ce-popover__search {
             padding: 4px 6px !important;
+            min-height: 34px;
           }
           .ce-popover {
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
@@ -608,13 +636,13 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             
           .ce-popover--opened {
             width: 230px;
-            height: 45px;
+            height: 450px;
           }
 
           .ce-toolbar__actions--opened {
             left: -110px !important;
           }
-
+popover-it
           .cdx-input {
             border: 1px solid #505050 !important;
           }
@@ -670,7 +698,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
 
           .ce-popover-item:hover:not(.ce-popover-item--disabled) {
-            background-color: #1a1a1a !important;
+            background-color: transparent !important;
           }
 
           .ce-popover-item--disabled {
@@ -939,27 +967,34 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           .cdx-quote__text {
             font-size: 1.1rem !important;
             line-height: 1.6 !important;
+            border-radius: 0px !important;
           }
           .cdx-quote__caption {
             color: #4b5563 !important;
             font-style: normal !important;
             margin-top: 0.5rem !important;
+            border-radius: 0px !important;
           }
 
           /* Table */
           .tc-table {
             border-color: rgba(255, 255, 255, 0.1) !important;
           }
+          .tc-row {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+          }
           .tc-row::after {
             border-color: rgba(255, 255, 255, 0.1) !important;
           }
           .tc-cell {
+            border-left: 1px solid #050505;
             background-color: transparent !important;
             border-color: rgba(255, 255, 255, 0.1) !important;
             color: #e5e7eb !important;
           }
           .tc-add-column, .tc-add-row {
-             color: #4b5563 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #4b5563 !important;
           }
           .tc-add-row:hover:before {
              background-color: gray !important;
@@ -981,6 +1016,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .image-tool__caption {
             bottom: -36px !important;
+          }
+
+          .inline-image__caption {
+            border-color: rgba(255, 255, 255, 0.1) !important;
           }
 
           /* Warning */
@@ -1009,7 +1048,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             justify-content: center;
             font-weight: bold;
             font-size: 12px;
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+            box-shadow: none;
           }
           .cdx-warning__title {
             color: #fbbf24 !important;
@@ -1033,6 +1072,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           .cdx-checklist__item-checkbox-check {
             background-color: #212121;
             color: #3b82f6 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
           }
           /* Fix for when placeholder is visible */
           .cdx-warning__title[data-placeholder]:empty:before,
@@ -1049,7 +1089,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             font-size: 2rem !important;
           }
           .cdx-block {
-            padding: 1rem 0 !important;
+            padding: 0rem 0 !important;
           }
           /* Inline Code */
           code {
