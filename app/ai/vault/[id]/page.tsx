@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Trash2, FileText, Table2, Image as ImageIcon, Share2, Copy, MoreHorizontal, EllipsisVertical, AlertCircle, Sparkles, Bot, Link2, Loader2, Download, Plus, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -45,6 +45,7 @@ export default function VaultItemPage() {
   const [showChat, setShowChat] = useState(false);
   const [input, setInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorInstanceRef = useRef<any>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
@@ -238,37 +239,18 @@ ${itemContext}`,
     }
   }, [data]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        if (isEditing) {
-          e.preventDefault();
-          handleSave();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isEditing, title, content]);
-
-  const handleCancel = () => {
-    if (data?.item) {
-      setTitle(data.item.title);
-      setContent(data.item.content);
-    }
-    setIsEditing(false);
-  };
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
+      let finalContent = content;
+      if (editorInstanceRef.current && typeof editorInstanceRef.current.save === 'function') {
+        finalContent = await editorInstanceRef.current.save();
+      }
+
       const res = await fetch(`/api/vault/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content: finalContent }),
       });
 
       if (res.ok) {
@@ -283,6 +265,30 @@ ${itemContext}`,
     } finally {
       setIsSaving(false);
     }
+  }, [id, title, content, mutate]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        if (isEditing) {
+          e.preventDefault();
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isEditing, handleSave]);
+
+  const handleCancel = () => {
+    if (data?.item) {
+      setTitle(data.item.title);
+      setContent(data.item.content);
+    }
+    setIsEditing(false);
   };
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -654,6 +660,7 @@ ${itemContext}`,
                     initialData={data.item.content}
                     onChange={setContent}
                     readOnly={!isEditing}
+                    editorInstanceRef={editorInstanceRef}
                   />
                 ) : data.item.type === "spreadsheet" ? (
                   <SpreadsheetEditor

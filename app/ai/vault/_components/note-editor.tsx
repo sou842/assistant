@@ -9,9 +9,10 @@ interface NoteEditorProps {
   onChange: (data: any) => void;
   readOnly?: boolean;
   compact?: boolean;
+  editorInstanceRef?: React.MutableRefObject<any | null>;
 }
 
-export function NoteEditor({ initialData, onChange, readOnly = false, compact = false }: NoteEditorProps) {
+export function NoteEditor({ initialData, onChange, readOnly = false, compact = false, editorInstanceRef }: NoteEditorProps) {
   const editorRef = useRef<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragDropRef = useRef<any>(null);
@@ -554,6 +555,9 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           if (!editorRef.current) {
             editorRef.current = editor as any;
+            if (editorInstanceRef) {
+              editorInstanceRef.current = editor;
+            }
           } else {
             // If for some reason it already exists, destroy the new one
             editor.destroy();
@@ -575,6 +579,9 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           console.error("EditorJS cleanup error", e);
         }
         editorRef.current = null;
+        if (editorInstanceRef) {
+          editorInstanceRef.current = null;
+        }
       } else if (containerRef.current) {
         containerRef.current.innerHTML = "";
       }
@@ -645,7 +652,6 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             min-height: 34px;
           }
           .ce-popover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
             overflow: hidden !important;
             z-index: 1000 !important;
           }
@@ -1128,6 +1134,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             color: #60a5fa !important;
             padding: 0.1rem 0.2rem !important;
             border-radius: 2px !important;
+          }
+
+          .ce-paragraph {
+            padding-bottom: 10px !important;
           }
 
           /* Placeholder */
