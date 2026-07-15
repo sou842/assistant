@@ -624,7 +624,14 @@ ${itemContext}`,
                 <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
               </div>
             ) : (
-              <div className="h-full w-full">
+              <div 
+                className="h-full w-full"
+                onDoubleClick={() => {
+                  if (!isEditing && isEditorRequired) {
+                    setIsEditing(true);
+                  }
+                }}
+              >
                 {data.item.type === "note" ? (
                   <NoteEditor
                     key={`${id}-${data.item.updatedAt}`}

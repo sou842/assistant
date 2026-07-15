@@ -520,7 +520,6 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                 new DragDrop(editor);
               }
             },
-            autofocus: true,
           });
 
           if (!editorRef.current) {
@@ -595,18 +594,21 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .ce-popover__container {
             background-color: #0f0f0f !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
           }
           
           .cdx-search-field, .ce-popover__search {
             padding: 4px 6px !important;
           }
           .ce-popover {
-            background-color: #0f0f0f !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 12px !important;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
             overflow: hidden !important;
             z-index: 1000 !important;
+          }
+            
+          .ce-popover--opened {
+            width: 230px;
+            height: 45px;
           }
 
           .cdx-search-field {
@@ -649,7 +651,6 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
 
           .ce-popover-item__icon {
-            background-color: #1a1a1a !important;
             color: #ffffff !important;
             box-shadow: none !important;
           }
@@ -675,17 +676,57 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           /* Inline Toolbar */
           .ce-inline-toolbar {
-            background-color: #0f0f0f !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             border-radius: 8px !important;
             color: #ffffff !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+            z-index: 1000 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+          }
+          .ce-inline-toolbar__actions {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 4px !important;
           }
           .ce-inline-tool {
             color: #9ca3af !important;
+            background: transparent !important;
+            border: none !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 28px !important;
+            height: 28px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s ease !important;
           }
           .ce-inline-tool:hover {
             background-color: #1a1a1a !important;
             color: #ffffff !important;
+          }
+          .ce-inline-tool svg {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          .ce-inline-toolbar__dropdown {
+            color: #9ca3af !important;
+            height: 28px !important;
+            padding: 0 8px !important;
+            margin-right: 4px !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+            display: flex !important;
+            align-items: center !important;
+            font-size: 0.85rem !important;
+          }
+          .ce-inline-toolbar__dropdown:hover {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+            border-radius: 6px 0 0 6px !important;
           }
 
           /* Blocks */
