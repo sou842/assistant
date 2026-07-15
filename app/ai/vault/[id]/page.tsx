@@ -254,7 +254,6 @@ ${itemContext}`,
       });
 
       if (res.ok) {
-        toast.success("Item updated");
         mutate();
         setIsEditing(false);
       } else {

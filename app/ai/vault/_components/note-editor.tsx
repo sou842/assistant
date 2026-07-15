@@ -89,6 +89,240 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           save(blockContent: any) { return this.youTubeEmbed.save(blockContent); }
         }
 
+        class CustomTabsBlock {
+          api: any;
+          readOnly: boolean;
+          data: { selectedIndex: number; tabs: Array<{ title: string; content: string }> };
+          container: HTMLElement | null;
+
+          constructor({ data, api, readOnly }: any) {
+            this.api = api;
+            this.readOnly = readOnly;
+            this.data = {
+              selectedIndex: typeof data?.selectedIndex === 'number' ? data.selectedIndex : 0,
+              tabs: Array.isArray(data?.tabs) && data.tabs.length > 0 ? data.tabs : [
+                { title: 'Tab 1', content: '' },
+                { title: 'Tab 2', content: '' }
+              ]
+            };
+            this.container = null;
+          }
+
+          static get isReadOnlySupported() {
+            return true;
+          }
+
+          static get toolbox() {
+            return {
+              title: 'Tabs',
+              icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`
+            };
+          }
+
+          render() {
+            const container = document.createElement('div');
+            container.classList.add('editorjs-tabs-container');
+            container.style.position = 'relative';
+
+            const header = document.createElement('div');
+            header.classList.add('editorjs-tabs-header');
+
+            const body = document.createElement('div');
+            body.classList.add('editorjs-tabs-body');
+
+            const showContextMenu = (e: MouseEvent, index: number, tabEl: HTMLElement) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              // Remove any existing menus
+              container.querySelectorAll('.editorjs-tab-menu').forEach(m => m.remove());
+
+              const menu = document.createElement('div');
+              menu.classList.add('editorjs-tab-menu');
+              menu.style.position = 'absolute';
+              
+              const containerRect = container.getBoundingClientRect();
+              const tabRect = tabEl.getBoundingClientRect();
+              menu.style.top = `${tabRect.bottom - containerRect.top + container.scrollTop}px`;
+              menu.style.left = `${tabRect.left - containerRect.left + container.scrollLeft}px`;
+
+              const items = [
+                {
+                  label: 'Rename',
+                  icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>`,
+                  action: () => {
+                    const titleEl = tabEl.querySelector('span.editorjs-tab-title') as HTMLSpanElement;
+                    if (titleEl) {
+                      titleEl.contentEditable = 'true';
+                      titleEl.focus();
+                      const range = document.createRange();
+                      range.selectNodeContents(titleEl);
+                      const sel = window.getSelection();
+                      if (sel) {
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                      }
+                    }
+                  }
+                },
+                {
+                  label: 'Delete',
+                  icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`,
+                  action: () => {
+                    if (this.data.tabs.length > 1) {
+                      this.data.tabs.splice(index, 1);
+                      if (this.data.selectedIndex >= this.data.tabs.length) {
+                        this.data.selectedIndex = this.data.tabs.length - 1;
+                      }
+                      renderTabs();
+                    } else {
+                      toast.error('Cannot delete the last tab');
+                    }
+                  }
+                }
+              ];
+
+              items.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.classList.add('editorjs-tab-menu-item');
+                if (item.label === 'Delete') {
+                  itemEl.classList.add('text-red-500');
+                }
+                itemEl.innerHTML = `${item.icon}<span>${item.label}</span>`;
+                itemEl.addEventListener('click', (ev) => {
+                  ev.stopPropagation();
+                  menu.remove();
+                  item.action();
+                });
+                menu.appendChild(itemEl);
+              });
+
+              container.appendChild(menu);
+
+              const closeMenu = () => {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+              };
+              setTimeout(() => {
+                document.addEventListener('click', closeMenu);
+              }, 50);
+            };
+
+            const renderTabs = () => {
+              header.innerHTML = '';
+              this.data.tabs.forEach((tab, index) => {
+                const tabEl = document.createElement('div');
+                tabEl.classList.add('editorjs-tab-btn');
+                if (index === this.data.selectedIndex) {
+                  tabEl.classList.add('active');
+                }
+
+                if (tab.icon) {
+                  const iconEl = document.createElement('span');
+                  iconEl.classList.add('editorjs-tab-icon');
+                  iconEl.textContent = tab.icon + ' ';
+                  tabEl.appendChild(iconEl);
+                }
+
+                const titleEl = document.createElement('span');
+                titleEl.classList.add('editorjs-tab-title');
+                titleEl.textContent = tab.title;
+                titleEl.contentEditable = 'false';
+                
+                titleEl.addEventListener('blur', () => {
+                  tab.title = titleEl.textContent || `Tab ${index + 1}`;
+                  titleEl.contentEditable = 'false';
+                });
+                
+                titleEl.addEventListener('keydown', (e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    titleEl.blur();
+                  }
+                });
+                
+                tabEl.appendChild(titleEl);
+
+                tabEl.addEventListener('contextmenu', (e) => {
+                  showContextMenu(e, index, tabEl);
+                });
+
+                // Double click triggers rename inline
+                tabEl.addEventListener('dblclick', (e) => {
+                  e.preventDefault();
+                  if (titleEl) {
+                    titleEl.contentEditable = 'true';
+                    titleEl.focus();
+                    const range = document.createRange();
+                    range.selectNodeContents(titleEl);
+                    const sel = window.getSelection();
+                    if (sel) {
+                      sel.removeAllRanges();
+                      sel.addRange(range);
+                    }
+                  }
+                });
+
+                // Clicking only switches tabs
+                tabEl.addEventListener('click', (e) => {
+                  if (index !== this.data.selectedIndex) {
+                    this.data.selectedIndex = index;
+                    renderTabs();
+                  }
+                });
+
+                header.appendChild(tabEl);
+              });
+
+              if (!this.readOnly) {
+                const addBtn = document.createElement('button');
+                addBtn.classList.add('editorjs-tab-add');
+                addBtn.textContent = '+';
+                addBtn.addEventListener('click', () => {
+                  this.data.tabs.push({
+                    title: `Tab ${this.data.tabs.length + 1}`,
+                    content: ''
+                  });
+                  this.data.selectedIndex = this.data.tabs.length - 1;
+                  renderTabs();
+                });
+                header.appendChild(addBtn);
+              }
+
+              body.innerHTML = '';
+              const activeTab = this.data.tabs[this.data.selectedIndex];
+              if (activeTab) {
+                const contentEl = document.createElement('div');
+                contentEl.classList.add('editorjs-tab-content');
+                contentEl.contentEditable = (!this.readOnly).toString();
+                contentEl.innerHTML = activeTab.content;
+                contentEl.setAttribute('data-placeholder', 'Empty tab. Click or type content inside.');
+
+                contentEl.addEventListener('input', () => {
+                  activeTab.content = contentEl.innerHTML;
+                });
+                contentEl.addEventListener('keydown', (e) => {
+                  e.stopPropagation();
+                });
+
+                body.appendChild(contentEl);
+              }
+            };
+
+            renderTabs();
+            container.appendChild(header);
+            container.appendChild(body);
+            this.container = container;
+
+            return container;
+          }
+
+          save() {
+            return this.data;
+          }
+        }
+
         class CustomCodeBlock {
           api: any;
           readOnly: boolean;
@@ -393,6 +627,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                 inlineToolbar: true,
               },
               code: CustomCodeBlock,
+              tabs: CustomTabsBlock,
               quote: {
                 class: Quote.default || Quote,
                 inlineToolbar: true,
@@ -1143,6 +1378,124 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           /* Placeholder */
           .ce-paragraph[data-placeholder]:empty:before {
             color: #4b5563 !important;
+          }
+
+          /* Tabs Tool */
+          .editorjs-tabs-container {
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 12px !important;
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            padding: 0.50rem !important;
+            margin: 1.5rem 0 !important;
+          }
+          .editorjs-tabs-header {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            padding-bottom: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            overflow-x: auto !important;
+          }
+            
+          .editorjs-tabs-body {
+            padding: 0px 10px 10px 10px;          
+          }
+
+          .editorjs-tab-btn {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            padding: 0.25rem 0.75rem !important;
+            border-radius: 60px !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            color: #8e8e93 !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            user-select: none !important;
+          }
+          .editorjs-tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            color: #d4d4d8 !important;
+          }
+          .editorjs-tab-btn.active {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+          }
+          .editorjs-tab-btn span[contenteditable="true"] {
+            outline: none !important;
+            cursor: text !important;
+          }
+          .editorjs-tab-icon {
+            font-size: 1.1rem !important;
+            margin-right: 2px !important;
+          }
+          .editorjs-tab-add {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 28px !important;
+            height: 28px !important;
+            border-radius: 60px !important;
+            background: transparent !important;
+            color: #8e8e93 !important;
+            font-size: 18px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+          }
+          .editorjs-tab-add:hover {
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.02) !important;
+          }
+          .editorjs-tab-content {
+            min-height: 80px !important;
+            font-size: 1rem !important;
+            line-height: 1.6 !important;
+            color: #a0a0a5 !important;
+            outline: none !important;
+          }
+          .editorjs-tab-content[data-placeholder]:empty:before {
+            content: attr(data-placeholder) !important;
+            color: #4b5563 !important;
+          }
+
+          /* Tab Context Menu */
+          .editorjs-tab-menu {
+            background-color: #1a1a1a !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+            padding: 4px !important;
+            z-index: 2000 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-width: 140px !important;
+          }
+          .editorjs-tab-menu-item {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 4px 12px !important;
+            font-size: 0.85rem !important;
+            color: #d1d5db !important;
+            cursor: pointer !important;
+            border-radius: 6px !important;
+            transition: background-color 0.15s !important;
+          }
+          .editorjs-tab-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            color: #ffffff !important;
+          }
+          .editorjs-tab-menu-item svg {
+            width: 14px !important;
+            height: 14px !important;
+            opacity: 0.7 !important;
+            color: #c7c7c7 !important;
+          }
+          .editorjs-tab-menu-item svg.text-red-500 {
+            color: #ef4444 !important;
           }
         `}
       </style>
