@@ -85,7 +85,7 @@ function SortablePageItem({ page, isActive, onClick, onDelete, onRename }: any) 
           />
         ) : (
           <span
-            className="text-sm truncate flex-1 text-app-text-primary"
+            className="w-full min-h-5 text-sm truncate flex-1 text-app-text-primary"
             onDoubleClick={() => setIsEditing(true)}
           >
             {page.title}

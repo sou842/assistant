@@ -615,6 +615,16 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             left: -110px !important;
           }
 
+          .cdx-input {
+            border: 1px solid #505050 !important;
+          }
+
+          .inline-image__picture--withBackground {
+            background: #222223;
+            border: none !important;
+            border-radius: 10px
+          }
+
           .cdx-search-field {
             background-color: #1a1a1a !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
