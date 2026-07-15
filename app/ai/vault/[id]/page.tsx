@@ -238,6 +238,22 @@ ${itemContext}`,
     }
   }, [data]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        if (isEditing) {
+          e.preventDefault();
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isEditing, title, content]);
+
   const handleCancel = () => {
     if (data?.item) {
       setTitle(data.item.title);

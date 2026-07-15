@@ -14,6 +14,7 @@ interface NoteEditorProps {
 export function NoteEditor({ initialData, onChange, readOnly = false, compact = false }: NoteEditorProps) {
   const editorRef = useRef<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragDropRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
   const onChangeRef = useRef(onChange);
 
@@ -537,10 +538,16 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
               } catch (e) {
                 console.error("Failed to initialize EditorJS Undo plugin:", e);
               }
-              if (typeof DragDrop.default === 'function') {
-                new DragDrop.default(editor);
-              } else if (typeof DragDrop === 'function') {
-                new DragDrop(editor);
+              try {
+                let dragDropInstance;
+                if (typeof DragDrop.default === 'function') {
+                  dragDropInstance = new DragDrop.default(editor);
+                } else if (typeof DragDrop === 'function') {
+                  dragDropInstance = new DragDrop(editor);
+                }
+                dragDropRef.current = dragDropInstance;
+              } catch (e) {
+                console.error("Failed to initialize EditorJS DragDrop plugin:", e);
               }
             },
           });
@@ -578,6 +585,13 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
     if (editorRef.current && isReady) {
       try {
         editorRef.current.readOnly.toggle(readOnly);
+        if (dragDropRef.current) {
+          dragDropRef.current.readOnly = readOnly;
+          if (!readOnly) {
+            // Re-run drag listener creation if we just switched to editable
+            dragDropRef.current.setDragListener();
+          }
+        }
       } catch (e) {
         console.error("Failed to toggle readOnly state", e);
       }
@@ -598,10 +612,10 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             caret-color: #ffffff;
           }
 
-          #editorjs-instance h1 { font-size: 2.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; color: #d4d4d8; }
-          #editorjs-instance h2 { font-size: 1.875rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #c4c4c7; }
-          #editorjs-instance h3 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #a8a8ab; }
-          #editorjs-instance h4 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #8e8e93; }
+          #editorjs-instance h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 1.50rem; color: #d4d4d8; }
+          #editorjs-instance h2 { font-size: 1.875rem; font-weight: 700; margin-bottom: 1.0rem; color: #c4c4c7; }
+          #editorjs-instance h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; color: #a8a8ab; }
+          #editorjs-instance h4 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.50rem; color: #8e8e93; }
 
           /* Selection */
           #editorjs-instance ::selection {
@@ -640,9 +654,9 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
 
           .ce-toolbar__actions--opened {
-            left: -110px !important;
+            left: -120px !important;
           }
-popover-it
+
           .cdx-input {
             border: 1px solid #505050 !important;
           }
@@ -958,7 +972,7 @@ popover-it
 
           /* Quote */
           .cdx-quote {
-            border-left: 3px solid #3b82f6 !important;
+            border-left: 3px solid rgba(255, 255, 255, 0.1) !important;
             padding-left: 1.5rem !important;
             margin: 1.5rem 0 !important;
             font-style: italic !important;
