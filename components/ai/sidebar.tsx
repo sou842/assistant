@@ -109,7 +109,7 @@ export function Sidebar({
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-app-border-default bg-app-canvas md:static md:z-10 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           } transition-all duration-300 ease-in-out`}
-        style={{ width: isCollapsed ? 76 : sidebarWidth }}
+        style={{ width: isCollapsed ? 56 : sidebarWidth }}
       >
         {/* Header */}
         <div className={`p-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-app-border-default h-16 shrink-0`}>
