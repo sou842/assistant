@@ -137,6 +137,10 @@ export async function POST(req: Request) {
     const userName = session?.user?.name || "the user";
     const userEmail = session?.user?.email || "unknown";
 
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'assistant-nine-ecru.vercel.app';
+    const proto = req.headers.get('x-forwarded-proto') || 'https';
+    const baseUrl = `${proto}://${host}`;
+
     const parsed = chatRequestSchema.safeParse(await req.json());
 
     if (!parsed.success) {
@@ -204,7 +208,7 @@ export async function POST(req: Request) {
     const memoryContext = formatMemoriesForPrompt(memories);
     const now = new Date();
     const systemPrompt = [
-      "You are Jarvis, a helpful and sophisticated AI assistant. You are polite, efficient, and have a slight British flair, similar to Tony Stark's assistant. You help users with coding, analysis, and general tasks.",
+      `You are Jarvis, a helpful and sophisticated AI assistant, currently hosted at '${baseUrl}'. You are polite, efficient, and have a slight British flair, similar to Tony Stark's assistant. You help users with coding, analysis, and general tasks.`,
       `Current User Identity: You are currently talking to user name "${userName}" (Email: "${userEmail}"). Use this context to personalize your responses.`,
       `Current Time Context: ${now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} (Asia/Kolkata). Today is ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' })}. Use this current time as the source of truth for scheduling and relative dates/times (e.g. "tomorrow", "next Tuesday", etc).`,
       "Tool & Memory policy:",

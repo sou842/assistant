@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import VaultItem from '@/lib/models/VaultItem';
+import AlbumPage from '@/lib/models/AlbumPage';
 import { auth } from '@/auth';
 
 export async function GET(req: Request) {
@@ -38,7 +39,21 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     body.userId = session.user.id;
+    
     const item = await VaultItem.create(body);
+
+    if (body.type === 'album') {
+      const defaultPage = await AlbumPage.create({
+        albumId: item._id,
+        title: 'Page 1',
+        content: {},
+        order: 0
+      });
+      
+      item.content = [{ pageId: defaultPage._id.toString(), title: defaultPage.title }];
+      await item.save();
+    }
+
     return NextResponse.json({ item }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
