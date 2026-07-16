@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil, CheckCircle2, Circle, Book, NotebookPen } from "lucide-react";
+import { Database, Search, Plus, FileText, Table2, Trash2, ChevronDown, Image as ImageIcon, Pencil, CheckCircle2, Circle, Book, NotebookPen, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,24 @@ export default function VaultPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+  const [viewMode, setViewMode] = useState<"card" | "list">("card");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("vault-view-mode");
+      if (saved === "card" || saved === "list") {
+        setViewMode(saved);
+      }
+    }
+  }, []);
+
+  const toggleViewMode = (mode: "card" | "list") => {
+    setViewMode(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vault-view-mode", mode);
+    }
+  };
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -192,6 +210,32 @@ export default function VaultPage() {
               </li>
             </ul>
           </div>
+          <div className="flex items-center gap-1 rounded-full border border-app-border-default bg-app-surface-glass p-0.5">
+            <button
+              onClick={() => toggleViewMode("card")}
+              className={cn(
+                "p-1.5 rounded-full transition-all cursor-pointer",
+                viewMode === "card"
+                  ? "bg-app-surface-glass-strong text-app-text-primary"
+                  : "text-app-text-ghost hover:text-app-text-primary"
+              )}
+              title="Grid View"
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => toggleViewMode("list")}
+              className={cn(
+                "p-1.5 rounded-full transition-all cursor-pointer",
+                viewMode === "list"
+                  ? "bg-app-surface-glass-strong text-app-text-primary"
+                  : "text-app-text-ghost hover:text-app-text-primary"
+              )}
+              title="List View"
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
       </PageHeader>
 
@@ -215,123 +259,263 @@ export default function VaultPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {items?.map((item: any) => {
-                const isSelected = selectedIds?.includes(item._id);
-                return (
-                  <div
-                    key={item._id}
-                    onClick={() => {
-                      if (selectedIds.length > 0) {
-                        setSelectedIds((prev) =>
-                          prev.includes(item._id)
-                            ? prev.filter((id) => id !== item._id)
-                            : [...prev, item._id]
-                        );
-                      } else {
-                        handleEdit(item);
-                      }
-                    }}
-                    className={cn(
-                      "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass",
-                      isSelected ? "border-brand-primary bg-app-primary/5" : "border-app-border-subtle"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div
-                        className={`rounded-full p-2.5 ${item.type === "note"
-                          ? "bg-blue-500"
-                          : item.type === "spreadsheet"
-                            ? "bg-emerald-500"
-                            : item.type === "album"
-                              ? "bg-amber-600"
-                              : "bg-cyan-600"
-                          }`}
-                      >
-                        {item.type === "note" ? (
-                          <FileText size={22} className="text-gray-50" />
-                        ) : item.type === "spreadsheet" ? (
-                          <Table2 size={22} className="text-gray-50" />
-                        ) : item.type === "album" ? (
-                          <NotebookPen size={22} className="text-gray-50" />
-                        ) : (
-                          <ImageIcon size={22} className="text-gray-50" />
-                        )}
-                      </div>
-                      <div className={cn("flex items-center gap-1 transition-all", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingId(item._id);
-                            setEditTitle(item.title);
-                          }}
-                          className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+            viewMode === "card" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {items?.map((item: any) => {
+                  const isSelected = selectedIds?.includes(item._id);
+                  return (
+                    <div
+                      key={item._id}
+                      onClick={() => {
+                        if (selectedIds.length > 0) {
+                          setSelectedIds((prev) =>
+                            prev.includes(item._id)
+                              ? prev.filter((id) => id !== item._id)
+                              : [...prev, item._id]
+                          );
+                        } else {
+                          handleEdit(item);
+                        }
+                      }}
+                      className={cn(
+                        "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass",
+                        isSelected ? "bg-app-primary/5" : "border-app-border-subtle"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div
+                          className={`rounded-full p-2.5 ${item.type === "note"
+                            ? "bg-blue-500"
+                            : item.type === "spreadsheet"
+                              ? "bg-emerald-500"
+                              : item.type === "album"
+                                ? "bg-amber-600"
+                                : "bg-cyan-600"
+                            }`}
                         >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          {item.type === "note" ? (
+                            <FileText size={22} className="text-gray-50" />
+                          ) : item.type === "spreadsheet" ? (
+                            <Table2 size={22} className="text-gray-50" />
+                          ) : item.type === "album" ? (
+                            <NotebookPen size={22} className="text-gray-50" />
+                          ) : (
+                            <ImageIcon size={22} className="text-gray-50" />
+                          )}
+                        </div>
+                        <div className={cn("flex items-center gap-1 transition-all", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(item._id);
+                              setEditTitle(item.title);
+                            }}
+                            className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedIds((prev) =>
+                                prev.includes(item._id)
+                                  ? prev.filter((id) => id !== item._id)
+                                  : [...prev, item._id]
+                              );
+                            }}
+                            className={cn(
+                              "cursor-pointer rounded-full p-1.5",
+                              isSelected
+                                ? "text-app-primary hover:text-app-primary/80"
+                                : "text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                            )}
+                          >
+                            {isSelected ? <CheckCircle2 size={20} className="text-brand-primary" /> : <Circle size={18} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {editingId === item._id ? (
+                        <form
+                          onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
+                          className="mb-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            autoFocus
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
+                            className="w-full bg-app-surface-glass rounded-full px-2 py-1 text-sm font-semibold text-app-text-primary outline-none"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </form>
+                      ) : (
+                        <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
+                      )}
+                      <div className="mb-4 flex items-center gap-2 text-xs text-app-text-faint">
+                        <span className="capitalize">{item.type}</span>
+                        <span>•</span>
+                        <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
+                      </div>
+
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-subtle pt-4">
+                          {item.tags.slice(0, 3).map((tag: string, i: number) => (
+                            <span key={i} className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
+                              {tag}
+                            </span>
+                          ))}
+                          {item.tags.length > 3 && (
+                            <span className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
+                              +{item.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col rounded-2xl border border-app-border-subtle bg-app-surface-glass-soft overflow-hidden">
+                {/* Table Headers */}
+                <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-semibold text-app-text-faint border-b border-app-border-subtle bg-app-surface-glass/40">
+                  <div className="col-span-6">Name</div>
+                  <div className="col-span-2">Type</div>
+                  <div className="col-span-2">Date Created</div>
+                  <div className="col-span-2 flex justify-end">Actions</div>
+                </div>
+                {/* Rows */}
+                <div className="flex flex-col divide-y divide-app-border-subtle/40">
+                  {items?.map((item: any) => {
+                    const isSelected = selectedIds?.includes(item._id);
+                    return (
+                      <div
+                        key={item._id}
+                        onClick={() => {
+                          if (selectedIds.length > 0) {
                             setSelectedIds((prev) =>
                               prev.includes(item._id)
                                 ? prev.filter((id) => id !== item._id)
                                 : [...prev, item._id]
                             );
-                          }}
-                          className={cn(
-                            "cursor-pointer rounded-full p-1.5",
-                            isSelected
-                              ? "text-app-primary hover:text-app-primary/80"
-                              : "text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
-                          )}
-                        >
-                          {isSelected ? <CheckCircle2 size={20} className="text-brand-primary" /> : <Circle size={18} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {editingId === item._id ? (
-                      <form
-                        onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
-                        className="mb-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          autoFocus
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
-                          className="w-full bg-app-surface-glass border border-app-border-strong rounded px-2 py-1 text-sm font-semibold text-app-text-primary outline-none"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </form>
-                    ) : (
-                      <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
-                    )}
-                    <div className="mb-4 flex items-center gap-2 text-xs text-app-text-faint">
-                      <span className="capitalize">{item.type}</span>
-                      <span>•</span>
-                      <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
-                    </div>
-
-                    {item.tags && item.tags.length > 0 && (
-                      <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-subtle pt-4">
-                        {item.tags.slice(0, 3).map((tag: string, i: number) => (
-                          <span key={i} className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
-                            {tag}
-                          </span>
-                        ))}
-                        {item.tags.length > 3 && (
-                          <span className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
-                            +{item.tags.length - 3}
-                          </span>
+                          } else {
+                            handleEdit(item);
+                          }
+                        }}
+                        className={cn(
+                          "grid grid-cols-12 gap-4 items-center px-6 py-3 text-sm transition-all hover:bg-app-surface-glass cursor-pointer",
+                          isSelected ? "bg-app-primary/5" : ""
                         )}
+                      >
+                        <div className="col-span-6 flex items-center gap-3 min-w-0">
+                          {/* Selection Checkbox */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedIds((prev) =>
+                                prev.includes(item._id)
+                                  ? prev.filter((id) => id !== item._id)
+                                  : [...prev, item._id]
+                              );
+                            }}
+                            className={cn(
+                              "cursor-pointer rounded-full p-1 transition-all shrink-0",
+                              isSelected
+                                ? "text-app-primary hover:text-app-primary/80"
+                                : "text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                            )}
+                          >
+                            {isSelected ? <CheckCircle2 size={16} className="text-brand-primary" /> : <Circle size={14} />}
+                          </button>
+                          
+                          {/* Item Icon */}
+                          <div
+                            className={`rounded-lg p-1.5 shrink-0 ${item.type === "note"
+                              ? "bg-blue-500"
+                              : item.type === "spreadsheet"
+                                ? "bg-emerald-500"
+                                : item.type === "album"
+                                  ? "bg-amber-600"
+                                  : "bg-cyan-600"
+                              }`}
+                          >
+                            {item.type === "note" ? (
+                              <FileText size={16} className="text-gray-50" />
+                            ) : item.type === "spreadsheet" ? (
+                              <Table2 size={16} className="text-gray-50" />
+                            ) : item.type === "album" ? (
+                              <NotebookPen size={16} className="text-gray-50" />
+                            ) : (
+                              <ImageIcon size={16} className="text-gray-50" />
+                            )}
+                          </div>
+
+                          {/* Title / Rename input */}
+                          <div className="min-w-0 flex-1">
+                            {editingId === item._id ? (
+                              <form
+                                onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
+                                className="my-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  autoFocus
+                                  value={editTitle}
+                                  onChange={(e) => setEditTitle(e.target.value)}
+                                  onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
+                                  className="w-full max-w-md bg-app-surface-glass rounded-full px-2 py-1 text-sm font-semibold text-app-text-primary outline-none"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </form>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-app-text-primary truncate">{item.title}</span>
+                                {item.tags && item.tags.length > 0 && (
+                                  <div className="hidden md:flex gap-1 shrink-0">
+                                    {item.tags.slice(0, 2).map((tag: string, i: number) => (
+                                      <span key={i} className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.25 text-[9px] text-app-text-soft">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {item.tags.length > 2 && (
+                                      <span className="rounded-full border border-app-border-subtle bg-app-surface-glass px-1.5 py-0.25 text-[9px] text-app-text-soft">
+                                        +{item.tags.length - 2}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="col-span-2 capitalize text-xs text-app-text-soft">{item.type}</div>
+                        
+                        <div className="col-span-2 text-xs text-app-text-soft">
+                          {format(new Date(item.createdAt), 'MMM d, yyyy')}
+                        </div>
+
+                        <div className="col-span-2 flex items-center justify-end gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(item._id);
+                              setEditTitle(item.title);
+                            }}
+                            className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                            title="Rename"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>
