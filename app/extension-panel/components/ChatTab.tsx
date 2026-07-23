@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -158,10 +158,10 @@ export function ChatTab({
 }: any) {
   return (
     <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${activeTab === "chat" ? "block" : "hidden"}`}>
-      {chatHistory.length === 0 ? (
+      {chatHistory?.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-            <Terminal className="text-blue-400" size={24} />
+            <Chrome className="text-blue-400" size={24} strokeWidth={1.5} />
           </div>
           <p className="text-sm text-gray-400">Hello! I am your Jarvis Agent. Type any command below to control this browser tab.</p>
         </div>
@@ -181,10 +181,11 @@ export function ChatTab({
             { match: (text: string) => text.startsWith('⌨️') || text.startsWith('✏️'), Icon: Keyboard, clean: (text: string) => text.replace(/⌨️|✏️/, '').trim() },
             { match: (text: string) => text.startsWith('🔄'), Icon: ArrowRightLeft, clean: (text: string) => text.replace('🔄', '').trim() },
             { match: (text: string) => text.startsWith('🚨'), Icon: AlertTriangle, className: "text-red-400 group-hover/step:text-red-300", clean: (text: string) => text.replace('🚨', '').trim() },
+            { match: (text: string) => text.startsWith('🗑️'), Icon: Trash, clean: (text: string) => text.replace('🗑️', '').trim() },
           ];
 
           const ACTION_LOG_PREFIXES = [
-            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜', '🔄', '🚨',
+            '💡', '🌐', '📄', '⏳', '🖱️', '✏️', '🔍', '🧠', '⚙️', '📹', '⚡', '👉', '📜', '🔄', '🚨', '🗑️',
             'Opening new tab', 'Navigating current tab', 'Waiting for'
           ];
 

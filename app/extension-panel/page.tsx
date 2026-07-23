@@ -7,7 +7,7 @@ import { HistoryPanel } from "./components/HistoryPanel";
 import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Chrome } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import {
 
 export default function ExtensionPanel() {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<"chat" | "workflows">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "workflows" | "inbox" | "browser">("chat");
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [savedChats, setSavedChats] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -360,6 +360,7 @@ export default function ExtensionPanel() {
           onClick={() => {
             window.parent.postMessage({ type: "FROM_NEXTJS", action: "NEW_CHAT" }, "*");
             setShowHistory(false);
+            setActiveTab("chat");
           }}
           className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-full transition cursor-pointer"
         >
@@ -375,7 +376,7 @@ export default function ExtensionPanel() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`p-1.5 rounded-md transition ${showHistory ? 'bg-blue-600/30 text-brand-primary' : 'hover:bg-white/10 text-gray-400'}`}
+            className={`p-1.5 rounded-full transition cursor-pointer ${showHistory ? 'bg-blue-600/30 text-brand-primary' : 'hover:bg-white/10 text-gray-400'}`}
             title="Chat History"
           >
             <History size={14} />
@@ -391,24 +392,37 @@ export default function ExtensionPanel() {
       />
 
       {/* Tabs & Status Bar */}
-      <div className="flex items-center justify-end p-2 gap-2 border-b border-white/10 shrink-0 bg-black/20">
-        <div className="flex bg-white/5 p-0.5 rounded-full w-fit">
+      {/* <div className="flex items-center justify-start p-2 gap-2 border-b border-white/10 shrink-0 bg-black/20"> */}
+        {/* <div className="flex items-center gap-4 px-2">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${activeTab === "chat" ? 'bg-blue-600/30 text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Chat"
           >
-            Chat
+            <FileText size={18} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => setActiveTab("workflows")}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "workflows" ? 'bg-blue-600/30 text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "workflows" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Workflows"
           >
-            Workflows
-            {workflows.length > 0 && (
-              <span className="bg-white/10 px-1.5 py-0.5 rounded-full text-[10px] leading-none text-gray-300">{workflows.length}</span>
-            )}
+            <SquareTerminal size={18} strokeWidth={1.5} />
           </button>
-        </div>
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className={`transition-colors cursor-pointer ${activeTab === "inbox" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Inbox"
+          >
+            <Inbox size={18} strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={() => setActiveTab("browser")}
+            className={`transition-colors cursor-pointer ${activeTab === "browser" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Browser"
+          >
+            <Chrome size={18} strokeWidth={1.5} />
+          </button>
+        </div> */}
 
         {/* <div className="flex items-center gap-3 pr-1">
           <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -426,14 +440,14 @@ export default function ExtensionPanel() {
             <span className="truncate max-w-[60px] font-medium">{model.split('-')[0]}</span>
           </div>
         </div> */}
-      </div>
+      {/* </div> */}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden flex flex-col relative">
 
         {/* Chat Tab */}
         <ChatTab
-          activeTab={activeTab}
+          activeTab={activeTab as any}
           chatHistory={chatHistory}
           isAgentRunning={isAgentRunning}
           editingIndex={editingIndex}
@@ -448,7 +462,7 @@ export default function ExtensionPanel() {
 
         {/* Workflows Tab */}
         <WorkflowsTab
-          activeTab={activeTab}
+          activeTab={activeTab as any}
           workflows={workflows}
           expandedWorkflow={expandedWorkflow}
           setExpandedWorkflow={setExpandedWorkflow}
@@ -456,11 +470,58 @@ export default function ExtensionPanel() {
           setWorkflowInputs={setWorkflowInputs}
           runWorkflow={runWorkflow}
         />
+
+        {/* Placeholder Tabs */}
+        {activeTab === "inbox" && (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+            <Inbox size={48} strokeWidth={1} className="mb-4 opacity-20" />
+            <p className="text-sm font-medium">Inbox is empty</p>
+          </div>
+        )}
+
+        {activeTab === "browser" && (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+            <Chrome size={48} strokeWidth={1} className="mb-4 opacity-20" />
+            <p className="text-sm font-medium">Browser controls</p>
+          </div>
+        )}
       </div>
 
       {/* Input Area (Only visible on chat tab) */}
-      {activeTab === "chat" && (
-        <div className="shrink-0 p-4 bg-[#0a0a0a] border-t border-white/5">
+
+      <div className="flex flex-col gap-2 shrink-0 px-3 py-2 bg-[#0a0a0a] border-white/5">
+
+        <div className="flex items-center gap-4 px-3">
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Chat"
+          >
+            <FileText size={16} strokeWidth={1} />
+          </button>
+          <button
+            onClick={() => setActiveTab("workflows")}
+            className={`transition-colors cursor-pointer ${activeTab === "workflows" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Workflows"
+          >
+            <SquareTerminal size={16} strokeWidth={1} />
+          </button>
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className={`transition-colors cursor-pointer ${activeTab === "inbox" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Inbox"
+          >
+            <Inbox size={16} strokeWidth={1} />
+          </button>
+          <button
+            onClick={() => setActiveTab("browser")}
+            className={`transition-colors cursor-pointer ${activeTab === "browser" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Browser"
+          >
+            <Chrome size={16} strokeWidth={1} />
+          </button>
+        </div>
+        {/* {activeTab === "chat" && ( */}
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
             <MentionsInput
               ref={mentionsInputRef}
@@ -560,8 +621,8 @@ export default function ExtensionPanel() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        {/* )} */}
+      </div>
     </div>
   );
 }

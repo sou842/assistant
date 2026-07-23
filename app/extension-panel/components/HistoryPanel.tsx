@@ -13,7 +13,7 @@ export function HistoryPanel({ showHistory, setShowHistory, savedChats }: {
             window.parent.postMessage({ type: "FROM_NEXTJS", action: "NEW_CHAT" }, "*");
             setShowHistory(false);
           }}
-          className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-full transition cursor-pointer"
+          className="h-6 flex items-center justify-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 rounded-full transition cursor-pointer"
         >
           <Plus size={14} /> New Chat
         </button>
@@ -22,7 +22,7 @@ export function HistoryPanel({ showHistory, setShowHistory, savedChats }: {
           onClick={() => {
             setShowHistory(false);
           }}
-          className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-full transition cursor-pointer"
+          className="w-6 h-6 flex items-center justify-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white rounded-full transition cursor-pointer"
         >
           <X size={14} />
         </button>
@@ -34,7 +34,7 @@ export function HistoryPanel({ showHistory, setShowHistory, savedChats }: {
           savedChats?.map(chat => (
             <div
               key={chat.id}
-              className="flex items-center justify-between py-2 px-4 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer group transition cursor-pointer"
+              className="flex items-center justify-between py-2 pl-4 pr-2 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer group transition"
               onClick={() => {
                 window.parent.postMessage({ type: "FROM_NEXTJS", action: "LOAD_CHAT", chatId: chat.id }, "*");
                 setShowHistory(false);
@@ -47,7 +47,7 @@ export function HistoryPanel({ showHistory, setShowHistory, savedChats }: {
               <button onClick={(e) => {
                 e.stopPropagation();
                 window.parent.postMessage({ type: "FROM_NEXTJS", action: "DELETE_CHAT", chatId: chat.id }, "*");
-              }} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded transition shrink-0">
+              }} className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-full transition shrink-0 cursor-pointer">
                 <Trash size={12} />
               </button>
             </div>

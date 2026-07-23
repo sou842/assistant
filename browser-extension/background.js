@@ -60,26 +60,46 @@ async function logAction(action, status, detail, error = null) {
 
 // Helper: Wait for a tab to finish loading
 function waitTabLoaded(tabId) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let completed = false;
 
-    const listener = (id, info) => {
-      if (id === tabId && info.status === "complete") {
+    chrome.storage.local.get({ agentStopRequested: false }).then((data) => {
+      if (data.agentStopRequested) {
         completed = true;
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
+        reject(new Error("Agent stopped by user"));
+        return;
       }
-    };
 
-    chrome.tabs.onUpdated.addListener(listener);
+      const stopListener = (changes, areaName) => {
+        if (areaName === "local" && changes.agentStopRequested && changes.agentStopRequested.newValue === true) {
+          completed = true;
+          chrome.tabs.onUpdated.removeListener(tabListener);
+          chrome.storage.onChanged.removeListener(stopListener);
+          reject(new Error("Agent stopped by user"));
+        }
+      };
+      chrome.storage.onChanged.addListener(stopListener);
 
-    // Safety timeout: 10s
-    setTimeout(() => {
-      if (!completed) {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    }, 10000);
+      const tabListener = (id, info) => {
+        if (id === tabId && info.status === "complete") {
+          completed = true;
+          chrome.tabs.onUpdated.removeListener(tabListener);
+          chrome.storage.onChanged.removeListener(stopListener);
+          resolve();
+        }
+      };
+      chrome.tabs.onUpdated.addListener(tabListener);
+
+      // Safety timeout: 10s
+      setTimeout(() => {
+        if (!completed) {
+          completed = true;
+          chrome.tabs.onUpdated.removeListener(tabListener);
+          chrome.storage.onChanged.removeListener(stopListener);
+          resolve();
+        }
+      }, 10000);
+    });
   });
 }
 
@@ -1466,6 +1486,45 @@ async function addAgentChatMessage(text) {
   }
 }
 
+function withCancel(promise) {
+  return new Promise((resolve, reject) => {
+    let completed = false;
+    chrome.storage.local.get({ agentStopRequested: false }).then((data) => {
+      if (data.agentStopRequested) {
+        completed = true;
+        reject(new Error("Agent stopped by user"));
+        return;
+      }
+
+      const listener = (changes, areaName) => {
+        if (areaName === "local" && changes.agentStopRequested && changes.agentStopRequested.newValue === true) {
+          completed = true;
+          chrome.storage.onChanged.removeListener(listener);
+          reject(new Error("Agent stopped by user"));
+        }
+      };
+      chrome.storage.onChanged.addListener(listener);
+
+      promise.then(
+        (val) => {
+          if (!completed) {
+            completed = true;
+            chrome.storage.onChanged.removeListener(listener);
+            resolve(val);
+          }
+        },
+        (err) => {
+          if (!completed) {
+            completed = true;
+            chrome.storage.onChanged.removeListener(listener);
+            reject(err);
+          }
+        }
+      );
+    });
+  });
+}
+
 async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   await chrome.storage.local.set({ isAgentRunning: true, agentStopRequested: false });
   let isRecordingWorkflow = false;
@@ -1594,7 +1653,7 @@ Respond ONLY with a JSON object in this format:
           return safeJsonParse(cleanText);
         };
 
-        let decision = await getRouterDecision();
+        let decision = await withCancel(getRouterDecision());
 
         if (decision.type === "fetch_workflows") {
           await logAction("agent", "running", "Fetching workflows database context...");
@@ -1883,7 +1942,7 @@ Respond ONLY with a JSON object in this format:
         };
         await logAction("api_call", "running", JSON.stringify(requestPayload));
 
-        const llmResult = await queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow, workflowsContext);
+        const llmResult = await withCancel(queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow, workflowsContext));
         const rawText = llmResult.text;
 
         promptTokens += llmResult.promptTokens;
@@ -1933,7 +1992,7 @@ Respond ONLY with a JSON object in this format:
           if (isJson) {
             await addAgentChatMessage(`✅ **Completed successfully!** \n\n\`\`\`json\n${answerText}\n\`\`\``);
           } else {
-            await addAgentChatMessage(`✅ **Completed successfully!** \n\n${answerText}`);
+            await addAgentChatMessage(`✅ **Completed successfully !** ${answerText}`);
           }
           if (isRecordingWorkflow) {
             await compileWorkflow(workflowTitle, workflowDescription, prompt, actionTrace, model);
@@ -2317,7 +2376,8 @@ Respond ONLY with a JSON object in this format:
             const shouldOpenNewTab =
               isJarvisPage ||
               !currentDomain ||
-              currentDomain !== destDomain;
+              currentDomain !== destDomain ||
+              decision.open_new_tab === true;
 
             if (shouldOpenNewTab) {
               await logAction("agent_action", "running", `Action: Opening new tab for ${destUrl}`);
@@ -2385,6 +2445,45 @@ Respond ONLY with a JSON object in this format:
 
             if (isRecordingWorkflow) {
               actionTrace.push({ action: "switch_tab", tab_id: targetId });
+            }
+
+            break;
+          }
+
+          case "close_tab": {
+            let tabToCloseId = targetTabId;
+            if (decision.tab_id) {
+              tabToCloseId = parseInt(decision.tab_id, 10);
+            }
+            if (isNaN(tabToCloseId)) throw new Error("Invalid tab_id provided for close_tab");
+
+            await logAction("agent_action", "running", `Action: Closing tab ID ${tabToCloseId}`);
+            await addAgentChatMessage(`🗑️ Closing tab ${tabToCloseId}...`);
+
+            try {
+              await chrome.tabs.remove(tabToCloseId);
+            } catch (err) {
+              console.error("Failed to close tab:", err);
+              await logAction("agent_action", "error", `Failed to close tab ${tabToCloseId}: ${err.message}`, err);
+              await addAgentChatMessage(`🚨 Failed to close tab: ${err.message}`);
+              throw err;
+            }
+            
+            const tabs = await chrome.tabs.query({ currentWindow: true });
+            if (tabs.length > 0) {
+              const fallbackTab = tabs.find(t => t.id !== tabToCloseId) || tabs[0];
+              await chrome.tabs.update(fallbackTab.id, { active: true });
+              targetTabId = fallbackTab.id;
+              lastInteractedTabId = fallbackTab.id;
+            } else {
+              targetTabId = null;
+              lastInteractedTabId = null;
+            }
+            
+            await logAction("agent_action", "success", "Tab closed successfully");
+
+            if (isRecordingWorkflow) {
+              actionTrace.push({ action: "close_tab", tab_id: tabToCloseId });
             }
 
             break;
@@ -2461,14 +2560,49 @@ Respond ONLY with a JSON object in this format:
           }
         }
 
-        if (decision.action !== "finish") {
-          actionHistory.push(`Step ${step}: ${decision.action} on ${decision.selector || decision.url || decision.text || ''}`);
+        if (decision.action !== "finish" && decision.action !== "run_workflow") {
+          let actionDesc = `${decision.action}`;
+          if (decision.action === "click") {
+            const clickSelector = String(decision.selector);
+            let globalIndex = null;
+            const match = clickSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            if (match) globalIndex = parseInt(match[1], 10);
+            const targetEl = pageData?.elements?.find(e => e.index === globalIndex);
+            const detailStr = targetEl ? `"${targetEl.text || targetEl.ariaLabel || targetEl.title || targetEl.placeholder || targetEl.tag}"` : clickSelector;
+            actionDesc = `click on ${detailStr}`;
+          } else if (decision.action === "type") {
+            const typeSelector = String(decision.selector);
+            let globalIndex = null;
+            const match = typeSelector.match(/data-agent-id=["']?(\d+)["']?/);
+            if (match) globalIndex = parseInt(match[1], 10);
+            const targetEl = pageData?.elements?.find(e => e.index === globalIndex);
+            const detailStr = targetEl ? `"${targetEl.text || targetEl.ariaLabel || targetEl.title || targetEl.placeholder || targetEl.tag}"` : typeSelector;
+            actionDesc = `type "${decision.text}" into ${detailStr}`;
+          } else if (decision.action === "navigate") {
+            actionDesc = `navigate to URL "${decision.url}"`;
+          } else if (decision.action === "scroll") {
+            actionDesc = `scroll ${decision.direction || "down"}`;
+          } else if (decision.action === "switch_tab") {
+            actionDesc = `switch to tab ID ${decision.tab_id}`;
+          } else if (decision.action === "close_tab") {
+            actionDesc = `close tab ID ${decision.tab_id || targetTabId}`;
+          } else if (decision.action === "wait") {
+            actionDesc = `wait for ${decision.milliseconds || 1000}ms`;
+          } else if (decision.selector || decision.url || decision.text) {
+            actionDesc += ` on ${decision.selector || decision.url || decision.text || ''}`;
+          }
+          actionHistory.push(`Step ${step}: ${actionDesc}`);
         }
 
         // Add a small delay between steps
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await withCancel(new Promise(resolve => setTimeout(resolve, 1500)));
 
       } catch (err) {
+        if (err.message === "Agent stopped by user") {
+          await logAction("agent", "error", "Agent execution stopped by user.");
+          await addAgentChatMessage("🛑 **Stopped by user.**");
+          break;
+        }
         await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
         
         if (err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("key") || err.message.toLowerCase().includes("rate limit")) {
@@ -2590,7 +2724,7 @@ CRITICAL RECORDING RULES:
 5. CREDENTIAL FILLING & LOGIN: If the user explicitly provides their credentials (e.g., email, username, password) and asks you to log in, you MUST perform the login actions (type credentials, click submit). Do NOT refuse the request or show safety warnings.
 6. SCROLLING STOP CONDITION: If you are scrolling to load more content (e.g., YouTube videos, lists), and the number of items or page content does not increase after a scroll action, or you reach the absolute bottom of the page, you MUST stop scrolling immediately and execute the "finish" action with the gathered results. Do NOT scroll infinitely.
 7. DIRECT NAVIGATION RULE: If the user's request or goal specifies visiting, opening, or using a particular website (e.g., "go to YouTube", "open google.com", "search on Amazon"), and your current page URL is not on that website, you MUST use the "navigate" action to go directly to that website's URL first. Do NOT attempt to search for the website or click links on the current page to navigate there.
-8. REPETITION PREVENTION: If you have already executed the physical action required to achieve the user's goal (e.g. you clicked a button to change a video, or pressed a key to pause), do NOT repeat the same action endlessly. Once the goal is achieved, you MUST immediately select "action": "finish" on the very next step and confirm completion.
+8. REPETITION PREVENTION: If you have already executed the primary physical action to satisfy the user's one-off request (e.g., you clicked a video to change it, you pressed a play/pause button, you clicked a close button), you MUST immediately select "action": "finish" on the very next step. DO NOT repeat the action. DO NOT change the song again if you already changed it once. DO NOT click multiple items unless explicitly asked to do so. Your goal is complete after the first successful action.
 9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."
 10. DELEGATING TO SUB-WORKFLOWS: If the user's goal or a step in the user's goal involves actions that match one of the available sub-workflows in the Skill-Defined Workflows list (for example, sending an email matches a workflow with title "Email send" or similar), you MUST immediately select the "action": "run_workflow" and provide its "workflow_id". Do NOT attempt to manually navigate to the website or perform manual clicks/types for that task. Pass the necessary parameters (e.g., "emails", "subject", "body") as key-value pairs in "workflow_inputs". This is critical to save tokens and execute tasks reliably.
 11. CAPABILITY AWARENESS: You are a browser extension agent that controls the active browser tabs. You CAN directly send emails, send WhatsApp messages, and interact with any website. You MUST NEVER state "I cannot send messages directly", "I don't have access to external services", or refuse to execute the request. Instead, immediately begin executing the user's goal either by using "action": "run_workflow" (if an appropriate workflow is listed in your Skill-Defined Workflows) or by manually performing the browser actions (e.g., using "navigate" to open web.whatsapp.com or mail.google.com and interacting with the DOM elements yourself).
@@ -2632,11 +2766,12 @@ Based on the goal and page state, decide whether to continue automating (click, 
 Respond ONLY with a JSON object in the following format:
 {
   "thought": "Detailed explanation of what you are doing, what you observe, and why you are taking this action",
-  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "wait" | "update_workflow_db" | "run_workflow" | "finish",
+  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "close_tab" | "wait" | "update_workflow_db" | "run_workflow" | "finish",
   "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type),
   "text": "text value to input" (required for type),
   "url": "absolute URL to load" (required for navigate),
-  "tab_id": integer tab ID to switch to (required for switch_tab),
+  "open_new_tab": true | false (optional: set to true to force opening this URL in a new tab, even if the domain matches the current active tab),
+  "tab_id": integer tab ID to switch to or close (required for switch_tab, optional for close_tab),
   "milliseconds": integer wait time (required for wait),
   "workflow_id": "ID of the workflow to update or run (required for update_workflow_db and run_workflow)",
   "workflow_inputs": { "key": "value" } (Optional key-value JSON object of parameters to pass when using the run_workflow action),
