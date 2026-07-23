@@ -92,7 +92,7 @@ function ChatMessageItem({
                     <div className="flex items-start gap-2 w-full max-w-full overflow-x-auto">
                       <IconComponent size={15} className={cn("shrink-0 mt-[2px]", special.className)} />
                       <div className="w-full max-w-full">
-                        <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                        <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400 text-gray-200 prose-p:text-gray-200 prose-headings:text-white prose-strong:text-white prose-ol:text-gray-200 prose-ul:text-gray-200 prose-li:text-gray-200">
                           {contentToRender}
                         </MessageResponse>
                       </div>
@@ -102,7 +102,7 @@ function ChatMessageItem({
 
                 return (
                   <div className="w-full max-w-full overflow-x-auto">
-                    <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400">
+                    <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400 text-gray-200 prose-p:text-gray-200 prose-headings:text-white prose-strong:text-white prose-ol:text-gray-200 prose-ul:text-gray-200 prose-li:text-gray-200">
                       {contentToRender}
                     </MessageResponse>
                   </div>

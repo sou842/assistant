@@ -83,6 +83,8 @@ export default function WorkflowDetailPage() {
 
   // Local state for execution
   const [executionInputs, setExecutionInputs] = useState<Record<string, string>>({});
+  const [executionResult, setExecutionResult] = useState<any>(null);
+  const [isExecutingWorkflow, setIsExecutingWorkflow] = useState(false);
 
   useEffect(() => {
     if (workflow) {
@@ -145,6 +147,8 @@ export default function WorkflowDetailPage() {
       resolvedInputs[inp.name] = val;
     }
 
+    setIsExecutingWorkflow(true);
+    setExecutionResult(null);
     try {
       toast.loading("Starting extension side panel...", { id: "workflow-execution" });
       try {
@@ -156,14 +160,19 @@ export default function WorkflowDetailPage() {
       }
 
       toast.loading("Executing workflow...", { id: "workflow-execution" });
-      await sendBrowserCommand({
+      const response = await sendBrowserCommand({
         action: "run_workflow_sandbox",
         script: script,
-        inputs: resolvedInputs
+        inputs: resolvedInputs,
+        isManual: true
       });
+      setExecutionResult(response);
       toast.success("Workflow executed successfully", { id: "workflow-execution" });
     } catch (error: any) {
+      setExecutionResult({ success: false, error: error.message });
       toast.error(`Execution failed: ${error.message}`, { id: "workflow-execution" });
+    } finally {
+      setIsExecutingWorkflow(false);
     }
   };
 
@@ -343,6 +352,36 @@ export default function WorkflowDetailPage() {
                     {isConnected ? "Execute Now" : "Extension Disconnected"}
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* Execution Result Section */}
+            {(isExecutingWorkflow || executionResult) && (
+              <div className="bg-app-surface border border-app-border-default rounded-2xl p-5 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-2">
+                  <div className="size-6 rounded-full bg-zinc-800 flex items-center justify-center">
+                    <Terminal className="size-3.5 text-zinc-300" />
+                  </div>
+                  Execution Result
+                </h3>
+                {isExecutingWorkflow ? (
+                  <div className="flex items-center gap-2 text-xs text-app-text-muted py-2">
+                    <Loader2 className="size-4 animate-spin text-brand-primary" />
+                    <span>Executing script, please wait...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className={cn(
+                      "text-xs px-3 py-1 rounded-full w-fit font-semibold",
+                      executionResult?.success !== false ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                    )}>
+                      {executionResult?.success !== false ? "Success" : "Failed"}
+                    </div>
+                    <pre className="text-xs font-mono bg-zinc-900/50 p-4 rounded-xl overflow-x-auto max-h-[300px] text-zinc-300 border border-zinc-800/80 scrollbar-thin">
+                      {JSON.stringify(executionResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
           </div>

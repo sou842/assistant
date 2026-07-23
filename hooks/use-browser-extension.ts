@@ -48,14 +48,15 @@ export function useBrowserExtension() {
         message: command
       }, "*");
 
-      // Setup a safety timeout in case extension doesn't respond
+      // Setup a safety timeout in case extension doesn't respond (longer for workflows)
+      const timeoutMs = command.action === "run_workflow_sandbox" ? 300000 : 30000;
       setTimeout(() => {
         const pending = pendingRequestsRef.current.get(messageId);
         if (pending) {
           pendingRequestsRef.current.delete(messageId);
           pending.reject(new Error(`Extension request timed out: ${command.action}`));
         }
-      }, 30000); // 30s timeout
+      }, timeoutMs);
     });
   }, [isConnected]);
 
