@@ -491,7 +491,7 @@ export default function ExtensionPanel() {
 
       <div className="flex flex-col gap-2 shrink-0 px-3 py-2 bg-[#0a0a0a] border-white/5">
 
-        <div className="flex items-center gap-4 px-3">
+        <div className="flex items-center gap-3 px-3">
           <button
             onClick={() => setActiveTab("chat")}
             className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
