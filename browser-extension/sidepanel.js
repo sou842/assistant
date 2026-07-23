@@ -139,7 +139,8 @@ window.addEventListener("message", async (event) => {
       success: data.success,
       result: data.result,
       error: data.error,
-      messageId: data.messageId
+      messageId: data.messageId,
+      isManual: data.isManual
     });
 
     if (nextjsFrame && nextjsFrame.contentWindow) {
@@ -230,7 +231,8 @@ window.addEventListener("message", async (event) => {
           action: "execute",
           script: data.script,
           inputs: data.inputs,
-          messageId: data.messageId
+          messageId: data.messageId,
+          isManual: data.isManual
         }, "*");
         break;
 

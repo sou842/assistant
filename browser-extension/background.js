@@ -875,7 +875,7 @@ async function handleBrowserCommand(command, sender) {
       case "log_sandbox_result": {
         const { success: sandboxSuccess, result, error, messageId } = command;
         
-        let isManual = false;
+        let isManual = command.isManual || false;
         if (messageId && pendingWorkflows.has(messageId)) {
           isManual = pendingWorkflows.get(messageId).isManual;
         }

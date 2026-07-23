@@ -79,7 +79,7 @@ export default function ExtensionPanel() {
     setEditingText("");
   };
 
-  const runSandboxedWorkflow = async (script: string, inputs: any, messageId: string) => {
+  const runSandboxedWorkflow = async (script: string, inputs: any, messageId: string, isManual?: boolean) => {
     try {
       let runnerCode = script;
       if (/async\s+function\s+workflow\b/.test(script) || /function\s+workflow\b/.test(script)) {
@@ -188,9 +188,9 @@ export default function ExtensionPanel() {
       };
 
       const result = await runner(browserProxy, inputs, runWorkflow);
-      window.parent.postMessage({ action: "result", success: true, result, messageId }, "*");
+      window.parent.postMessage({ action: "result", success: true, result, messageId, isManual }, "*");
     } catch (err: any) {
-      window.parent.postMessage({ action: "result", success: false, error: err.message, messageId }, "*");
+      window.parent.postMessage({ action: "result", success: false, error: err.message, messageId, isManual }, "*");
     }
   };
 
@@ -219,7 +219,7 @@ export default function ExtensionPanel() {
             toast.error("Agent attempted to run a workflow that was not found.");
           }
         } else if (data.action === "execute") {
-          runSandboxedWorkflow(data.script, data.inputs, data.messageId);
+          runSandboxedWorkflow(data.script, data.inputs, data.messageId, data.isManual);
         }
       }
     };
@@ -296,7 +296,8 @@ export default function ExtensionPanel() {
       action: "RUN_WORKFLOW",
       script: w.script,
       inputs: inputsObj,
-      messageId: Date.now().toString()
+      messageId: Date.now().toString(),
+      isManual: true
     }, "*");
   };
 
