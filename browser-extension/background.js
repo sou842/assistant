@@ -17,6 +17,21 @@ if (typeof chrome !== "undefined" && chrome.sidePanel && chrome.sidePanel.setPan
 let lastInteractedTabId = null;
 const pendingWorkflows = new Map();
 
+// Global listener to abort pending workflows and reset states immediately on user stop request
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.agentStopRequested && changes.agentStopRequested.newValue === true) {
+    chrome.storage.local.set({ isAgentRunning: false });
+    for (const [messageId, { reject }] of pendingWorkflows.entries()) {
+      try {
+        reject(new Error("Agent stopped by user"));
+      } catch (e) {
+        console.error("Error rejecting pending workflow", e);
+      }
+      pendingWorkflows.delete(messageId);
+    }
+  }
+});
+
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (lastInteractedTabId === tabId) {
     lastInteractedTabId = null;
@@ -883,7 +898,7 @@ async function handleBrowserCommand(command, sender) {
           if (sandboxSuccess) {
             const formattedResult = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
             if (isManual) {
-              await addAgentChatMessage(`✅ Workflow finished successfully! Result:\n\`\`\`json\n${formattedResult}\n\`\`\``);
+              await addAgentChatMessage(`✅ **Workflow finished successfully!**\n\n\`\`\`json\n${formattedResult}\n\`\`\``);
             } else {
               await addAgentChatMessage(`⚙️ Workflow finished successfully! Result: ${JSON.stringify(result)}`);
             }
@@ -901,6 +916,10 @@ async function handleBrowserCommand(command, sender) {
       }
 
       case "execute_sandbox_command": {
+        const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
+        if (stopCheck.agentStopRequested) {
+          return { success: false, error: "Agent stopped by user" };
+        }
         const { command: subCommand, args: subArgs } = command;
         
         switch (subCommand) {
@@ -948,7 +967,15 @@ async function handleBrowserCommand(command, sender) {
           case "waitForTimeout": {
             const ms = subArgs.ms || 1000;
             await addAgentChatMessage(`⏳ Waiting for ${ms / 1000}s...`);
-            await new Promise(resolve => setTimeout(resolve, ms));
+            const chunk = 100;
+            const startTime = Date.now();
+            while (Date.now() - startTime < ms) {
+              const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
+              if (stopCheck.agentStopRequested) {
+                return { success: false, error: "Agent stopped by user" };
+              }
+              await new Promise(resolve => setTimeout(resolve, Math.min(chunk, ms - (Date.now() - startTime))));
+            }
             return { success: true };
           }
           
@@ -968,6 +995,10 @@ async function handleBrowserCommand(command, sender) {
             const timeout = opts.timeout || 15000;
             let found = false;
             while (Date.now() - startTime < timeout) {
+              const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
+              if (stopCheck.agentStopRequested) {
+                return { success: false, error: "Agent stopped by user" };
+              }
               const isVisible = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: (sel) => {

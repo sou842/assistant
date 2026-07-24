@@ -302,6 +302,7 @@ export default function ExtensionPanel() {
   };
 
   const stopAgent = () => {
+    setIsAgentRunning(false);
     window.parent.postMessage({
       type: "FROM_NEXTJS",
       action: "STOP_AGENT"
