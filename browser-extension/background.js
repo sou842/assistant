@@ -270,12 +270,9 @@ async function handleBrowserCommand(command, sender) {
         const tabs = await chrome.tabs.query({});
         const jarvisTab = tabs.find(tab =>
           tab.url && (
-            tab.url.includes("localhost:3000") ||
+            tab.url.includes("localhost") ||
             tab.url.includes("127.0.0.1") ||
-            tab.url.includes("sou842.github.io") ||
-            tab.url.includes("assistant-nine-ecru.vercel.app") ||
-            tab.url.includes("sourav-samnta-fabg.vercel.app")
-          )
+            tab.url.includes("assistant-nine-ecru.vercel.app")          )
         );
 
         if (jarvisTab) {
@@ -327,11 +324,9 @@ async function handleBrowserCommand(command, sender) {
         const tabs = await chrome.tabs.query({});
         const jarvisTab = tabs.find(tab =>
           tab.url && (
-            tab.url.includes("localhost:3000") ||
+            tab.url.includes("localhost") ||
             tab.url.includes("127.0.0.1") ||
-            tab.url.includes("sou842.github.io") ||
-            tab.url.includes("assistant-nine-ecru.vercel.app") ||
-            tab.url.includes("sourav-samnta-fabg.vercel.app")
+            tab.url.includes("assistant-nine-ecru.vercel.app")
           )
         );
 
@@ -350,11 +345,9 @@ async function handleBrowserCommand(command, sender) {
         const tabs = await chrome.tabs.query({});
         const jarvisTab = tabs.find(tab =>
           tab.url && (
-            tab.url.includes("localhost:3000") ||
+            tab.url.includes("localhost") ||
             tab.url.includes("127.0.0.1") ||
-            tab.url.includes("sou842.github.io") ||
-            tab.url.includes("assistant-nine-ecru.vercel.app") ||
-            tab.url.includes("sourav-samnta-fabg.vercel.app")
+            tab.url.includes("assistant-nine-ecru.vercel.app")
           )
         );
 
@@ -1863,7 +1856,9 @@ Respond ONLY with a JSON object in this format:
           };
         } else {
           // 1. Extract DOM from all frames
-          const domResults = await chrome.scripting.executeScript({
+          let domResults;
+          try {
+            domResults = await chrome.scripting.executeScript({
             target: { tabId: targetTabId, allFrames: true },
             func: () => {
               const interactiveSelectors = [
@@ -1961,12 +1956,25 @@ Respond ONLY with a JSON object in this format:
               };
             }
           });
+          } catch (scriptError) {
+            if (scriptError.message.includes("showing error page")) {
+              pageData = {
+                url: tabUrl,
+                title: tab.title || "Browser Error Page",
+                innerText: "CRITICAL: The page failed to load due to a network, DNS error, or the URL is broken. Please inform the user or navigate elsewhere.",
+                elements: []
+              };
+            } else {
+              throw scriptError;
+            }
+          }
 
           const allElements = [];
           frameMapping = {};
           let globalIdx = 0;
 
-          if (domResults && domResults.length > 0) {
+          if (!pageData) {
+            if (domResults && domResults.length > 0) {
             domResults.forEach(frameResult => {
               const frameId = frameResult.frameId;
               const framePageData = frameResult.result;
@@ -1998,8 +2006,9 @@ Respond ONLY with a JSON object in this format:
               elements: allElements,
               innerText: combinedInnerText.substring(0, 15000)
             };
-          } else {
-            pageData = { url: "", title: "", elements: [], innerText: "" };
+            } else {
+              pageData = { url: "", title: "", elements: [], innerText: "" };
+            }
           }
         }
 
@@ -2467,9 +2476,8 @@ Respond ONLY with a JSON object in this format:
             const destDomain = getDomain(destUrl);
 
             const isJarvisPage =
-              currentUrl.includes("localhost:3000") ||
+              currentUrl.includes("localhost") ||
               currentUrl.includes("127.0.0.1") ||
-              currentUrl.includes("sou842.github.io") ||
               currentUrl.includes("vercel.app");
 
             const shouldOpenNewTab =
@@ -2828,7 +2836,7 @@ CRITICAL RECORDING RULES:
 5. CREDENTIAL FILLING & LOGIN: If the user explicitly provides their credentials (e.g., email, username, password) and asks you to log in, you MUST perform the login actions (type credentials, click submit). Do NOT refuse the request or show safety warnings.
 6. SCROLLING STOP CONDITION: If you are scrolling to load more content (e.g., YouTube videos, lists), and the number of items or page content does not increase after a scroll action, or you reach the absolute bottom of the page, you MUST stop scrolling immediately and execute the "finish" action with the gathered results. Do NOT scroll infinitely.
 7. DIRECT NAVIGATION RULE: If the user's request or goal specifies visiting, opening, or using a particular website (e.g., "go to YouTube", "open google.com", "search on Amazon"), and your current page URL is not on that website, you MUST use the "navigate" action to go directly to that website's URL first. Do NOT attempt to search for the website or click links on the current page to navigate there.
-8. REPETITION PREVENTION: If you have already executed the primary physical action to satisfy the user's one-off request (e.g., you clicked a video to change it, you pressed a play/pause button, you clicked a close button), you MUST immediately select "action": "finish" on the very next step. DO NOT repeat the action. DO NOT change the song again if you already changed it once. DO NOT click multiple items unless explicitly asked to do so. Your goal is complete after the first successful action.
+8. REPETITION PREVENTION & MULTI-STEP GOALS: Do NOT repeat the exact same action repeatedly unless necessary. If the user's goal has multiple steps (e.g. "close this tab and open youtube"), you MUST check the 'Previous actions taken' history. If you have already completed the first part of the goal (like closing a tab), do NOT repeat it on the new active tab. Move on to the next part of the goal (e.g., using 'navigate' to open the next site). Once all parts of the goal are fulfilled, use 'finish'.
 9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."
 10. DELEGATING TO SUB-WORKFLOWS: If the user's goal or a step in the user's goal involves actions that match one of the available sub-workflows in the Skill-Defined Workflows list (for example, sending an email matches a workflow with title "Email send" or similar), you MUST immediately select the "action": "run_workflow" and provide its "workflow_id". Do NOT attempt to manually navigate to the website or perform manual clicks/types for that task. Pass the necessary parameters (e.g., "emails", "subject", "body") as key-value pairs in "workflow_inputs". This is critical to save tokens and execute tasks reliably.
 11. CAPABILITY AWARENESS: You are a browser extension agent that controls the active browser tabs. You CAN directly send emails, send WhatsApp messages, and interact with any website. You MUST NEVER state "I cannot send messages directly", "I don't have access to external services", or refuse to execute the request. Instead, immediately begin executing the user's goal either by using "action": "run_workflow" (if an appropriate workflow is listed in your Skill-Defined Workflows) or by manually performing the browser actions (e.g., using "navigate" to open web.whatsapp.com or mail.google.com and interacting with the DOM elements yourself).
@@ -2988,8 +2996,8 @@ Your task is to write the final JavaScript workflow script based on this success
    - await page.evaluate(fn, ...args) (Note: Avoid using page.evaluate() for reading DOM element text or properties, as it is blocked by Content Security Policy on many sites. Always prefer locator.textContent() or locator.getAttribute() to read elements safely.)
    - await page.close()
 3. IMPORTANT: Use the exact CSS selectors from the trace! They have been proven to work.
-4. Input Handling: Abstract specific text inputs from the trace (like a search term the agent typed) into variables from '__inputs'.
-5. Always call 'await locator.waitFor()' before interacting.
+4. Input Handling: Parameterize all specific user intentions, search queries, passwords, emails, and text inputs from the trace into variables from '__inputs'. NEVER hardcode sensitive data or specific test queries into the script.
+5. WAIT STATES: You MUST ALWAYS call 'await locator.waitFor({ state: "visible", timeout: 15000 })' on a selector before performing a click() or type() to prevent race conditions on slow pages.
 6. Execution Return: The script MUST return a JSON object: { success: true } or { success: false, error: "..." }
 7. IMPORTANT: Do NOT wrap your script in a function wrapper like "async function workflow(...)". Instead, write the raw execution statements directly. The system will execute it automatically. Do NOT include function wrappers.
 8. If using a try/catch/finally block, you MUST declare 'let page;' OUTSIDE the try block (e.g., at the very top of your script), otherwise you will get a ReferenceError in the finally block.
@@ -3024,9 +3032,8 @@ Respond ONLY with a JSON object in this format:
     const tabs = await chrome.tabs.query({});
     const jarvisTab = tabs.find(tab =>
       tab.url && (
-        tab.url.includes("localhost:3000") ||
+        tab.url.includes("localhost") ||
         tab.url.includes("127.0.0.1") ||
-        tab.url.includes("sou842.github.io") ||
         tab.url.includes("vercel.app")
       )
     );

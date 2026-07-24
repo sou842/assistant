@@ -538,7 +538,7 @@ export default function ExtensionPanel() {
 
       {/* Input Area (Only visible on chat tab) */}
 
-      <div className="flex flex-col gap-2 shrink-0 px-3 py-2 bg-[#0a0a0a] border-white/5">
+      <div className="flex flex-col gap-2 shrink-0 px-3 pb-2.5 pt-2 bg-[#0a0a0a] border-white/5">
 
         <div className="flex items-center gap-3 px-3">
           <button

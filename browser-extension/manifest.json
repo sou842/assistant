@@ -39,8 +39,6 @@
       "matches": [
         "http://localhost/*",
         "http://127.0.0.1/*",
-        "https://sou842.github.io/*",
-        "https://sourav-samnta-fabg.vercel.app/*",
         "https://assistant-nine-ecru.vercel.app/*"
       ],
       "js": [
