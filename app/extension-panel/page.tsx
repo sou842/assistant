@@ -7,7 +7,8 @@ import { HistoryPanel } from "./components/HistoryPanel";
 import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Chrome } from "lucide-react";
+import { SettingsTab } from "./components/SettingsTab";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -18,7 +19,7 @@ import {
 
 export default function ExtensionPanel() {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<"chat" | "workflows" | "inbox" | "browser">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "workflows" | "inbox" | "settings">("chat");
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [savedChats, setSavedChats] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -30,6 +31,26 @@ export default function ExtensionPanel() {
   const { data: workflows = [] } = useSWR("/api/workflows", fetcher, { onError: () => toast.error("Failed to load workflows") });
   const [input, setInput] = useState("");
   const [model, setModel] = useState("mistral-small-latest");
+  const [settings, setSettings] = useState({
+    sandboxEnabled: true,
+    maxActions: 75,
+    desktopAlerts: true,
+    soundAlerts: false,
+    verboseLogs: false,
+    stealthMode: false,
+    autoSaveEnabled: false,
+    autoSavePath: "/JarvisLogs",
+  });
+
+  const handleUpdateSettings = (updated: any) => {
+    setSettings(updated);
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "SAVE_SETTINGS",
+      settings: updated
+    }, "*");
+  };
+
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
   const [workflowInputs, setWorkflowInputs] = useState<Record<string, any>>({});
   const [tokenUsage, setTokenUsage] = useState<any>(null);
@@ -194,6 +215,26 @@ export default function ExtensionPanel() {
     }
   };
 
+  const playAudibleAlert = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
+      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.error("Audio error", e);
+    }
+  };
+
   // Message Bridge Setup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -204,6 +245,7 @@ export default function ExtensionPanel() {
           if (data.savedChats) setSavedChats(data.savedChats);
           if (data.isAgentRunning !== undefined) setIsAgentRunning(data.isAgentRunning);
           if (data.currentTokenUsage !== undefined) setTokenUsage(data.currentTokenUsage);
+          if (data.settings) setSettings(data.settings);
         } else if (data.action === "WORKFLOW_RESULT") {
           if (data.success) {
             toast.success("Workflow completed successfully!");
@@ -220,6 +262,10 @@ export default function ExtensionPanel() {
           }
         } else if (data.action === "execute") {
           runSandboxedWorkflow(data.script, data.inputs, data.messageId, data.isManual);
+        } else if (data.action === "PLAY_SOUND") {
+          playAudibleAlert();
+        } else if (data.action === "NOTIFICATION_PERMISSION_DENIED") {
+          toast.error("OS Notifications are blocked. Please enable Chrome notifications in your Mac/Windows System Settings.", { duration: 8000 });
         }
       }
     };
@@ -481,12 +527,13 @@ export default function ExtensionPanel() {
           </div>
         )}
 
-        {activeTab === "browser" && (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-            <Chrome size={48} strokeWidth={1} className="mb-4 opacity-20" />
-            <p className="text-sm font-medium">Browser controls</p>
-          </div>
-        )}
+        {/* Settings Tab */}
+        <SettingsTab
+          activeTab={activeTab}
+          session={session}
+          settings={settings}
+          onUpdateSettings={handleUpdateSettings}
+        />
       </div>
 
       {/* Input Area (Only visible on chat tab) */}
@@ -516,11 +563,11 @@ export default function ExtensionPanel() {
             <Inbox size={16} strokeWidth={1} />
           </button>
           <button
-            onClick={() => setActiveTab("browser")}
-            className={`transition-colors cursor-pointer ${activeTab === "browser" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            title="Browser"
+            onClick={() => setActiveTab("settings")}
+            className={`transition-colors cursor-pointer ${activeTab === "settings" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            title="Settings"
           >
-            <Chrome size={16} strokeWidth={1} />
+            <Settings size={16} strokeWidth={1} />
           </button>
         </div>
         {/* {activeTab === "chat" && ( */}

@@ -41,8 +41,15 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // Helper: Add logs to chrome.storage for the sidepanel to render
 async function logAction(action, status, detail, error = null) {
   try {
-    const data = await chrome.storage.local.get({ logs: [] });
+    const data = await chrome.storage.local.get({ logs: [], settings: {} });
     const logs = data.logs;
+    const settings = data.settings || {};
+    
+    if (settings.verboseLogs) {
+      console.log(`[VERBOSE LOGS] [${action}] [${status}] Details: ${detail}`);
+      if (error) console.error(`[VERBOSE LOGS] Error:`, error);
+    }
+
     logs.unshift({
       timestamp: new Date().toISOString(),
       action,
@@ -70,6 +77,46 @@ async function logAction(action, status, detail, error = null) {
     });
   } catch (err) {
     console.error("Failed to save log:", err);
+  }
+}
+
+// Helper: Handle notifications, sound alerts and auto-saves on agent finish
+async function handleAgentFinish(isSuccess, promptText) {
+  try {
+    const { settings } = await chrome.storage.local.get({ settings: {} });
+    const s = settings || {};
+
+    // 1. Play Sound (sends message to sidepanel)
+    if (s.soundAlerts) {
+      chrome.runtime.sendMessage({ action: "PLAY_SOUND" }).catch(() => {});
+    }
+
+    // 2. Desktop Notification
+    if (s.desktopAlerts !== false) { // Default to true
+      chrome.notifications.create({
+        type: "basic",
+        iconUrl: chrome.runtime.getURL("icon.png"),
+        title: isSuccess ? "Jarvis Action Completed" : "Jarvis Action Failed",
+        message: isSuccess 
+          ? `Successfully completed request: "${(promptText || "").substring(0, 60)}"`
+          : `Failed to complete request: "${(promptText || "").substring(0, 60)}"`,
+        priority: 2
+      });
+    }
+
+    // 3. File System Auto-Save (delegated to UI so it works on Firefox)
+    if (s.autoSaveEnabled && s.autoSavePath) {
+      const { chatHistory } = await chrome.storage.local.get({ chatHistory: [] });
+      if (chatHistory.length > 0) {
+        chrome.runtime.sendMessage({
+          action: "TRIGGER_DOWNLOAD",
+          history: chatHistory,
+          path: s.autoSavePath
+        }).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.error("Failed in handleAgentFinish:", e);
   }
 }
 
@@ -1570,6 +1617,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   let promptTokens = currentUsageObj?.prompt || 0;
   let completionTokens = currentUsageObj?.completion || 0;
   let totalTokens = currentUsageObj?.total || 0;
+  let isAgentSuccess = false;
 
   try {
     await logAction("agent", "running", `Analyzing request...`);
@@ -1782,8 +1830,10 @@ Respond ONLY with a JSON object in this format:
       }
     }
 
-    const maxSteps = 40;
+    const { settings } = await chrome.storage.local.get({ settings: {} });
+    const maxSteps = settings?.maxActions || 75;
     const actionHistory = [];
+    isAgentSuccess = false;
     for (let step = 1; step <= maxSteps; step++) {
       // Check if stop requested
       const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
@@ -2028,6 +2078,7 @@ Respond ONLY with a JSON object in this format:
           if (isRecordingWorkflow) {
             await compileWorkflow(workflowTitle, workflowDescription, prompt, actionTrace, model);
           }
+          isAgentSuccess = true;
           break;
         }
 
@@ -2226,7 +2277,7 @@ Respond ONLY with a JSON object in this format:
 
             const typeResult = await chrome.scripting.executeScript({
               target: { tabId: targetTabId, frameIds: [targetFrameId] },
-              func: async (localId, val) => {
+              func: async (localId, val, stealth) => {
                 const el = (() => {
                   function search(root) {
                     if (!root) return null;
@@ -2269,13 +2320,30 @@ Respond ONLY with a JSON object in this format:
                   el.style.transition = origTransition;
 
                   el.focus();
-                  if (el.isContentEditable) {
-                    el.textContent = val;
+                  if (stealth) {
+                    if (el.isContentEditable) {
+                      el.textContent = "";
+                    } else {
+                      el.value = "";
+                    }
+                    for (let char of val) {
+                      if (el.isContentEditable) {
+                        el.textContent += char;
+                      } else {
+                        el.value += char;
+                      }
+                      el.dispatchEvent(new Event("input", { bubbles: true }));
+                      await new Promise(resolve => setTimeout(resolve, 30 + Math.random() * 70));
+                    }
                   } else {
-                    el.value = val;
+                    if (el.isContentEditable) {
+                      el.textContent = val;
+                    } else {
+                      el.value = val;
+                    }
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
                   }
 
-                  el.dispatchEvent(new Event("input", { bubbles: true }));
                   el.dispatchEvent(new Event("change", { bubbles: true }));
 
                   const enterEvent = new KeyboardEvent("keydown", {
@@ -2336,7 +2404,7 @@ Respond ONLY with a JSON object in this format:
                   error: `Element with local agent id '${localId}' not found`
                 };
               },
-              args: [localIndex, textVal]
+              args: [localIndex, textVal, settings?.stealthMode || false]
             });
 
             if (!typeResult[0]?.result?.success) {
@@ -2625,8 +2693,12 @@ Respond ONLY with a JSON object in this format:
           actionHistory.push(`Step ${step}: ${actionDesc}`);
         }
 
-        // Add a small delay between steps
-        await withCancel(new Promise(resolve => setTimeout(resolve, 1500)));
+        // Add a small delay between steps (extra randomized delay in stealth mode)
+        let stepDelay = 1500;
+        if (settings && settings.stealthMode) {
+          stepDelay = 2000 + Math.random() * 1500;
+        }
+        await withCancel(new Promise(resolve => setTimeout(resolve, stepDelay)));
 
       } catch (err) {
         if (err.message === "Agent stopped by user") {
@@ -2648,6 +2720,7 @@ Respond ONLY with a JSON object in this format:
     }
   } finally {
     await chrome.storage.local.set({ isAgentRunning: false });
+    await handleAgentFinish(isAgentSuccess, prompt);
   }
 }
 

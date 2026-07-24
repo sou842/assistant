@@ -53,7 +53,22 @@ async function syncChatToSaved(history) {
 }
 
 async function sendInitialState() {
-  const data = await chrome.storage.local.get({ chatHistory: [], savedChats: [], isAgentRunning: false, currentTokenUsage: null });
+  const data = await chrome.storage.local.get({ 
+    chatHistory: [], 
+    savedChats: [], 
+    isAgentRunning: false, 
+    currentTokenUsage: null,
+    settings: {
+      sandboxEnabled: true,
+      maxActions: 75,
+      desktopAlerts: true,
+      soundAlerts: false,
+      verboseLogs: false,
+      stealthMode: false,
+      autoSaveEnabled: false,
+      autoSavePath: "/JarvisLogs"
+    }
+  });
   if (nextjsFrame && nextjsFrame.contentWindow) {
     nextjsFrame.contentWindow.postMessage({
       type: "FROM_EXTENSION",
@@ -62,7 +77,8 @@ async function sendInitialState() {
       savedChats: data.savedChats,
       isAgentRunning: data.isAgentRunning,
       currentTokenUsage: data.currentTokenUsage,
-      currentChatId: currentChatId
+      currentChatId: currentChatId,
+      settings: data.settings
     }, "*");
   }
 }
@@ -103,6 +119,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           currentTokenUsage: changes.currentTokenUsage.newValue
+        }, "*");
+      }
+    }
+    if (changes.settings) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          settings: changes.settings.newValue
         }, "*");
       }
     }
@@ -160,6 +185,23 @@ window.addEventListener("message", async (event) => {
     switch (data.action) {
       case "REQUEST_INITIAL_STATE":
         sendInitialState();
+        break;
+
+      case "SAVE_SETTINGS":
+        if (data.settings) {
+          // If desktop alerts are enabled, check OS permissions
+          if (data.settings.desktopAlerts) {
+            chrome.notifications.getPermissionLevel((level) => {
+              if (level === "denied") {
+                nextjsFrame.contentWindow.postMessage({
+                  type: "FROM_EXTENSION",
+                  action: "NOTIFICATION_PERMISSION_DENIED"
+                }, "*");
+              }
+            });
+          }
+          await chrome.storage.local.set({ settings: data.settings });
+        }
         break;
 
       case "NEW_CHAT":
@@ -294,6 +336,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         workflowId: message.workflowId,
         inputs: message.inputs || {}
       }, "*");
+    }
+  } else if (message.action === "PLAY_SOUND") {
+    if (nextjsFrame && nextjsFrame.contentWindow) {
+      nextjsFrame.contentWindow.postMessage({
+        type: "FROM_EXTENSION",
+        action: message.action
+      }, "*");
+    }
+  } else if (message.action === "TRIGGER_DOWNLOAD") {
+    // Perform download directly in sidepanel.js context to bypass Firefox cross-origin iframe download blocks
+    try {
+      const content = message.history.map(m => {
+        const date = new Date(m.timestamp || Date.now()).toLocaleTimeString();
+        return `[${date}] ${m.role.toUpperCase()}: ${m.text}`;
+      }).join("\n\n");
+      
+      const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const cleanPath = (message.path || "").replace(/^\/+|\/+$/g, "");
+      const folderName = cleanPath.split("/").pop() || "JarvisLogs";
+      const filename = `${folderName}_chat_log_${Date.now()}.md`;
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Sidepanel download failed:", err);
     }
   }
 });
