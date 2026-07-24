@@ -104,7 +104,7 @@ export function WorkflowsTab({
         <div className="space-y-2 pb-8 animate-in slide-in-from-left-4 duration-300 fade-in">
           {workflows?.map((w: any) => {
             const inputCount = w.inputs?.length || 0;
-            const logoUrl = getWorkflowLogo(w);
+            // const logoUrl = getWorkflowLogo(w);
             return (
               <div
                 key={w._id}
@@ -123,13 +123,13 @@ export function WorkflowsTab({
                   className="relative p-3.5 flex items-center gap-3.5 cursor-pointer hover:bg-white/[0.02] transition duration-200"
                 >
                   {/* Left: Icon Badge */}
-                  <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-blue-400 group-hover:border-zinc-700 transition-all duration-200 shrink-0 overflow-hidden">
+                  {/* <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-blue-400 group-hover:border-zinc-700 transition-all duration-200 shrink-0 overflow-hidden">
                     {logoUrl ? (
                       <img src={logoUrl} alt="" className="w-5 h-5 object-contain rounded" />
                     ) : (
                       <WorkflowIcon size={14} className="text-blue-400" />
                     )}
-                  </div>
+                  </div> */}
 
                   {/* Middle: Content */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center">

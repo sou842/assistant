@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, ToggleLeft, ToggleRight, Info, Sliders, EyeOff, Bell, Volume2, Terminal, FolderOpen, User } from "lucide-react";
+import { Shield, ToggleLeft, ToggleRight, Info, Sliders, EyeOff, Bell, Volume2, Terminal, FolderOpen, User, Keyboard } from "lucide-react";
 
 interface SettingsTabProps {
   activeTab: string;
@@ -278,6 +278,40 @@ export function SettingsTab({
               />
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Keyboard Shortcuts */}
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-zinc-400 block">Keyboard Shortcuts</label>
+        <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-2.5">
+          <div className="flex flex-col items-start justify-between">
+            <div className="flex gap-2.5 items-start">
+              <Keyboard size={16} className="text-zinc-400 mt-0.5" />
+              <div>
+                <span className="text-xs font-medium text-zinc-200 block">Toggle Jarvis Sidepanel</span>
+                <span className="text-[10px] text-zinc-500">
+                  Press shortcut keys <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-zinc-300 bg-white/5 rounded shadow-sm">⌘ + J</kbd> / <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-zinc-300 bg-white/5 rounded shadow-sm">Ctrl + J</kbd> to quickly open or close the extension panel.
+                </span>
+              </div>
+            </div>
+            {/* <div className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+                ⌘
+              </kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+                J
+              </kbd>
+              <span className="text-[10px] text-zinc-600 px-0.5">/</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+                Ctrl
+              </kbd>
+              <span className="text-zinc-600 text-[10px]">+</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+                J
+              </kbd>
+            </div> */}
+          </div>
         </div>
       </div>
 

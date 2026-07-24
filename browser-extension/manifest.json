@@ -53,6 +53,15 @@
     "default_title": "Jarvis Browser Companion",
     "default_icon": "icon.png"
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+J",
+        "mac": "Command+J"
+      },
+      "description": "Open Jarvis Sidepanel"
+    }
+  },
   "side_panel": {
     "default_path": "sidepanel.html"
   },
