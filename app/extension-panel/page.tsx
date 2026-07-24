@@ -337,14 +337,14 @@ export default function ExtensionPanel() {
             <Lock className="size-6 text-brand-primary" />
           </div>
           <h2 className="text-base font-semibold text-zinc-200 mb-2">Authentication Required</h2>
-          <p className="text-xs text-zinc-500 max-w-[240px] leading-relaxed mb-6">
+          <p className="text-xs text-zinc-500 max-w-60 leading-relaxed mb-6">
             Please log in to your account to securely chat with Jarvis and run automation workflows.
           </p>
           <button
             onClick={() => {
               window.parent.postMessage({ type: "FROM_NEXTJS", action: "OPEN_LOGIN_PAGE" }, "*");
             }}
-            className="w-full max-w-[180px] bg-brand-primary text-black font-semibold text-xs py-2 px-4 rounded-full transition hover:opacity-90 active:scale-[0.98] cursor-pointer"
+            className="w-full max-w-45 bg-brand-primary text-black font-semibold text-xs py-2 px-4 rounded-full transition hover:opacity-90 active:scale-[0.98] cursor-pointer"
           >
             Log In
           </button>

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface NoteEditorProps {
   initialData?: any;
@@ -762,17 +763,19 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             },
             onReady: () => {
               setIsReady(true);
-              try {
-                const UndoConstructor = Undo.default || Undo;
-                const undoInstance = new UndoConstructor({ editor });
-                
-                // Initialize undo stack with the parsed initial data to prevent
-                // "can't access property 'data', t[n] is undefined" crash when undoing.
-                if (parsedData && parsedData.blocks && parsedData.blocks.length > 0) {
-                  undoInstance.initialize(parsedData);
+              if (!readOnly) {
+                try {
+                  const UndoConstructor = Undo.default || Undo;
+                  const undoInstance = new UndoConstructor({ editor });
+                  
+                  // Initialize undo stack with the parsed initial data to prevent
+                  // "can't access property 'data', t[n] is undefined" crash when undoing.
+                  if (parsedData && parsedData.blocks && parsedData.blocks.length > 0) {
+                    undoInstance.initialize(parsedData);
+                  }
+                } catch (e) {
+                  console.error("Failed to initialize EditorJS Undo plugin:", e);
                 }
-              } catch (e) {
-                console.error("Failed to initialize EditorJS Undo plugin:", e);
               }
               try {
                 let dragDropInstance;
