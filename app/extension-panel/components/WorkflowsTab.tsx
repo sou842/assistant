@@ -120,7 +120,7 @@ export function WorkflowsTab({
                       setExpandedWorkflow(w._id);
                     }
                   }}
-                  className="relative p-3.5 flex items-center gap-3.5 cursor-pointer hover:bg-white/[0.02] transition duration-200"
+                  className="relative p-3.5 flex items-center gap-3.5 cursor-pointer hover:bg-white/2 transition duration-200"
                 >
                   {/* Left: Icon Badge */}
                   {/* <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-blue-400 group-hover:border-zinc-700 transition-all duration-200 shrink-0 overflow-hidden">

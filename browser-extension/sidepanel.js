@@ -204,6 +204,10 @@ window.addEventListener("message", async (event) => {
         }
         break;
 
+      case "RELOAD_EXTENSION":
+        chrome.runtime.reload();
+        break;
+
       case "NEW_CHAT":
         currentChatId = Date.now().toString();
         await chrome.storage.local.set({ chatHistory: [], currentTokenUsage: null });

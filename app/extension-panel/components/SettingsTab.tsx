@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Shield, ToggleLeft, ToggleRight, Info, Sliders, EyeOff, Bell, Volume2, Terminal, FolderOpen, User, Keyboard } from "lucide-react";
+import { useState } from "react";
+import { ToggleLeft, ToggleRight, Sliders, EyeOff, Bell, Volume2, Terminal, FolderOpen, Keyboard, RotateCcw } from "lucide-react";
 
 interface SettingsTabProps {
   activeTab: string;
@@ -84,6 +84,17 @@ export function SettingsTab({
               <div className="text-sm font-medium text-zinc-200 truncate">{session.user.name || "Unknown User"}</div>
               <div className="text-[11px] text-zinc-500 truncate">{session.user.email || "No email available"}</div>
             </div>
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined" && window.parent) {
+                  window.parent.postMessage({ type: "FROM_NEXTJS", action: "RELOAD_EXTENSION" }, "*");
+                }
+              }}
+              title="Reload Extension Connection"
+              className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-full transition duration-200 cursor-pointer shrink-0"
+            >
+              <RotateCcw size={14} />
+            </button>
           </div>
         )}
       </div>
@@ -315,13 +326,6 @@ export function SettingsTab({
         </div>
       </div>
 
-      {/* About Info */}
-      <div className="flex gap-2 px-1 text-zinc-500 text-[10px] items-start">
-        <Info size={12} className="mt-0.5 flex-shrink-0" />
-        <span>
-          Jarvis Extension Panel v1.2.0. Changes made here apply immediately to the current browsing session.
-        </span>
-      </div>
     </div>
   );
 }
