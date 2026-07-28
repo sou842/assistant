@@ -48,6 +48,16 @@
         "content.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "animation.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "action": {

@@ -21,6 +21,15 @@ const pendingWorkflows = new Map();
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "local" && changes.agentStopRequested && changes.agentStopRequested.newValue === true) {
     chrome.storage.local.set({ isAgentRunning: false });
+    // Proactively clean up overlay on all tabs immediately when user stops the agent
+    chrome.tabs.query({}).then((tabs) => {
+      for (const t of tabs) {
+        if (t.id) {
+          removeOceanWaves(t.id).catch(() => {});
+        }
+      }
+    }).catch(() => {});
+
     for (const [messageId, { reject }] of pendingWorkflows.entries()) {
       try {
         reject(new Error("Agent stopped by user"));
@@ -1596,8 +1605,16 @@ function withCancel(promise) {
   });
 }
 
+async function injectOceanWaves(tabId) {
+  // Handled natively by animation.js content script
+}
+
+async function removeOceanWaves(tabId) {
+  // Handled natively by animation.js content script
+}
+
 async function runAgentLoop(prompt, model, chatId = null, sender = null) {
-  await chrome.storage.local.set({ isAgentRunning: true, agentStopRequested: false });
+  await chrome.storage.local.set({ isAgentRunning: true, isAgentAutomating: false, agentStopRequested: false });
   let isRecordingWorkflow = false;
   let workflowTitle = "";
   let workflowDescription = "";
@@ -1784,6 +1801,7 @@ Respond ONLY with a JSON object in this format:
       console.warn("Pre-check failed, proceeding to browser agent loop", e);
     }
 
+    await chrome.storage.local.set({ isAgentAutomating: true });
     await logAction("agent", "running", `Starting Browser Agent [${model}] with goal: "${prompt}"`);
     await addAgentChatMessage(`🔍 Page analysis started [${model}] to accomplish your request: "${prompt}"`);
 
@@ -1808,6 +1826,8 @@ Respond ONLY with a JSON object in this format:
       targetTabId = tab.id;
       lastInteractedTabId = targetTabId;
     }
+
+    await injectOceanWaves(targetTabId);
 
     // Ensure workflows are loaded from skills so agent can use them as sub-routines
     if (!workflowsContext && self.SkillRegistry && self.SkillRegistry.skills) {
@@ -1837,6 +1857,7 @@ Respond ONLY with a JSON object in this format:
       }
 
       try {
+        await injectOceanWaves(targetTabId);
         // Get tab details to check for restricted URLs
         const tab = await chrome.tabs.get(targetTabId);
         const tabUrl = tab.url || "";
@@ -2949,7 +2970,19 @@ Respond ONLY with a JSON object in this format:
       }
     }
   } finally {
-    await chrome.storage.local.set({ isAgentRunning: false });
+    try {
+      await removeOceanWaves(targetTabId);
+      // Clean up overlay on all tabs to ensure no leftover artifacts
+      const tabs = await chrome.tabs.query({});
+      for (const t of tabs) {
+        if (t.id && t.id !== targetTabId) {
+          await removeOceanWaves(t.id).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn("Clean up waves failed", e);
+    }
+    await chrome.storage.local.set({ isAgentRunning: false, isAgentAutomating: false });
     await handleAgentFinish(isAgentSuccess, prompt);
   }
 }
