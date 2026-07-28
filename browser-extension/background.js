@@ -1,6 +1,6 @@
 // background.js - Manages browser actions and state
 try {
-  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js');
+  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js', 'skills/sheets.js');
 } catch (e) {
   console.error("[Jarvis Skills] Failed to load skills:", e);
 }
@@ -2431,6 +2431,222 @@ Respond ONLY with a JSON object in this format:
             break;
           }
 
+          case "paste_data": {
+            const pasteText = decision.text;
+            if (!pasteText) throw new Error("text is required for paste_data action");
+
+            const targetCell = decision.cell;
+            const typeSelector = decision.selector;
+            let globalIndex = null;
+
+            if (typeSelector) {
+              const numMatch = typeSelector.match(/\d+/);
+              if (numMatch) globalIndex = parseInt(numMatch[0], 10);
+            }
+
+            if (!chrome.debugger) {
+              throw new Error("chrome.debugger is undefined. You MUST go to chrome://extensions/ and click the 'Reload' icon for the extension to apply the new manifest permissions.");
+            }
+
+            const debuggerTarget = { tabId: targetTabId };
+
+            // 1. Navigate to target cell if specified (Google Sheets Name Box navigation)
+            if (targetCell) {
+              await logAction("agent_action", "running", `Action: Selecting cell ${targetCell}`);
+              await addAgentChatMessage(`🎯 Navigating to cell ${targetCell}...`);
+              try {
+                await chrome.debugger.attach(debuggerTarget, "1.3");
+                const platformInfo = await chrome.runtime.getPlatformInfo();
+                const isMac = platformInfo.os === "mac";
+                const modifier = isMac ? 4 : 2;
+                const modifierKey = isMac ? "Meta" : "Control";
+                const modifierCode = isMac ? "MetaLeft" : "ControlLeft";
+                const modifierKeyCode = isMac ? 91 : 17;
+
+                // Cmd+J / Ctrl+J to focus the Name Box
+                await sendKeyCombo(debuggerTarget, modifierKey, modifierCode, modifierKeyCode, "j", "KeyJ", 74, modifier);
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Insert the cell address
+                await chrome.debugger.sendCommand(debuggerTarget, "Input.insertText", { text: targetCell });
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Press Enter to confirm navigation
+                await pressEnterKey(debuggerTarget);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Wait for selection to update
+              } catch (dbgErr) {
+                console.error("Cell navigation failed:", dbgErr);
+              } finally {
+                await chrome.debugger.detach(debuggerTarget).catch(() => {});
+              }
+            }
+
+            // 2. Click selector if provided to focus it
+            if (globalIndex !== null) {
+              const targetMapping = frameMapping[globalIndex];
+              if (targetMapping) {
+                const targetFrameId = targetMapping.frameId;
+                const localIndex = targetMapping.localIndex;
+
+                await chrome.scripting.executeScript({
+                  target: { tabId: targetTabId, frameIds: [targetFrameId] },
+                  func: async (localId) => {
+                    const el = (() => {
+                      function search(root) {
+                        if (!root) return null;
+                        if (root.nodeType === Node.ELEMENT_NODE) {
+                          if (root.getAttribute('data-agent-id') === String(localId)) return root;
+                          if (root.shadowRoot) {
+                            const found = search(root.shadowRoot);
+                            if (found) return found;
+                          }
+                        }
+                        let child = root.firstChild;
+                        while (child) {
+                          const found = search(child);
+                          if (found) return found;
+                          child = child.nextSibling;
+                        }
+                        return null;
+                      }
+                      return search(document.body);
+                    })();
+                    if (el) {
+                      el.scrollIntoView({ block: "center" });
+                      el.focus();
+                      if (el.tagName.toLowerCase() === 'canvas' || el.tagName.toLowerCase() === 'button') {
+                        el.click();
+                      }
+                    }
+                  },
+                  args: [localIndex]
+                });
+              }
+            }
+
+            await logAction("agent_action", "running", `Action: Pasting data into element`);
+            await addAgentChatMessage(`📋 Copying data to clipboard and pasting via native keystrokes...`);
+
+            // 3. Copy text to system clipboard via executing a copy script inside the tab context
+            const copyResult = await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              func: (textToCopy) => {
+                try {
+                  const textarea = document.createElement("textarea");
+                  textarea.value = textToCopy;
+                  textarea.style.position = "fixed";
+                  textarea.style.opacity = "0";
+                  document.body.appendChild(textarea);
+                  textarea.select();
+                  document.execCommand("copy");
+                  document.body.removeChild(textarea);
+                  return { success: true };
+                } catch (e) {
+                  return { success: false, error: e.message };
+                }
+              },
+              args: [pasteText]
+            });
+
+            if (!copyResult[0]?.result?.success) {
+              throw new Error(`Failed to copy data to clipboard: ${copyResult[0]?.result?.error || "Unknown error"}`);
+            }
+
+            // 4. Dispatch native Ctrl+V / Cmd+V via Chrome Debugger API
+            try {
+              await chrome.debugger.attach(debuggerTarget, "1.3");
+
+              const platformInfo = await chrome.runtime.getPlatformInfo();
+              const isMac = platformInfo.os === "mac";
+              const modifier = isMac ? 4 : 2;
+              const modifierKey = isMac ? "Meta" : "Control";
+              const modifierCode = isMac ? "MetaLeft" : "ControlLeft";
+              const modifierKeyCode = isMac ? 91 : 17;
+
+              await sendKeyCombo(debuggerTarget, modifierKey, modifierCode, modifierKeyCode, "v", "KeyV", 86, modifier);
+            } catch (dbgError) {
+              console.error("Debugger paste failed:", dbgError);
+              throw new Error(`Native paste failed: ${dbgError.message}`);
+            } finally {
+              if (chrome.debugger) {
+                await chrome.debugger.detach(debuggerTarget).catch(() => {});
+              }
+            }
+
+            await logAction("agent_action", "success", "Pasted data successfully");
+
+            if (isRecordingWorkflow) {
+              actionTrace.push({ action: "paste_data", selector: typeSelector, text: pasteText, cell: targetCell });
+            }
+
+            break;
+          }
+
+          case "read_sheet": {
+            await logAction("agent_action", "running", `Action: Reading Google Sheet data`);
+            await addAgentChatMessage(`📋 Selecting all cells and copying data from Sheet...`);
+
+            if (!chrome.debugger) {
+              throw new Error("chrome.debugger is undefined. You MUST go to chrome://extensions/ and click the 'Reload' icon for the extension to apply the new manifest permissions.");
+            }
+
+            const debuggerTarget = { tabId: targetTabId };
+            try {
+              await chrome.debugger.attach(debuggerTarget, "1.3");
+
+              const platformInfo = await chrome.runtime.getPlatformInfo();
+              const isMac = platformInfo.os === "mac";
+              const modifier = isMac ? 4 : 2;
+              const modifierKey = isMac ? "Meta" : "Control";
+              const modifierCode = isMac ? "MetaLeft" : "ControlLeft";
+              const modifierKeyCode = isMac ? 91 : 17;
+
+              // Select All (Cmd+A / Ctrl+A)
+              await sendKeyCombo(debuggerTarget, modifierKey, modifierCode, modifierKeyCode, "a", "KeyA", 65, modifier);
+              await new Promise(resolve => setTimeout(resolve, 300));
+
+              // Copy (Cmd+C / Ctrl+C)
+              await sendKeyCombo(debuggerTarget, modifierKey, modifierCode, modifierKeyCode, "c", "KeyC", 67, modifier);
+              await new Promise(resolve => setTimeout(resolve, 300));
+            } catch (dbgError) {
+              console.error("Debugger copy failed:", dbgError);
+              throw new Error(`Failed to copy sheet data: ${dbgError.message}`);
+            } finally {
+              if (chrome.debugger) {
+                await chrome.debugger.detach(debuggerTarget).catch(() => {});
+              }
+            }
+
+            // Read copied text from clipboard in the tab context (requires clipboardRead permission)
+            const clipboardResult = await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              func: async () => {
+                try {
+                  const text = await navigator.clipboard.readText();
+                  return { success: true, text };
+                } catch (e) {
+                  return { success: false, error: e.message };
+                }
+              }
+            });
+
+            if (!clipboardResult[0]?.result?.success) {
+              throw new Error(`Failed to read clipboard: ${clipboardResult[0]?.result?.error || "Unknown error"}`);
+            }
+
+            const sheetText = clipboardResult[0]?.result?.text || "";
+            await logAction("agent_action", "success", "Read sheet data successfully");
+            await addAgentChatMessage(`✅ Read sheet data successfully.`);
+
+            actionHistory.push(`Step ${step}: read_sheet Succeeded. Retrieved spreadsheet data:\n"""\n${sheetText}\n"""`);
+
+            if (isRecordingWorkflow) {
+              actionTrace.push({ action: "read_sheet" });
+            }
+
+            break;
+          }
+
           case "scroll": {
             const direction = decision.text === "up" ? -500 : 500;
 
@@ -2685,6 +2901,12 @@ Respond ONLY with a JSON object in this format:
             const targetEl = pageData?.elements?.find(e => e.index === globalIndex);
             const detailStr = targetEl ? `"${targetEl.text || targetEl.ariaLabel || targetEl.title || targetEl.placeholder || targetEl.tag}"` : typeSelector;
             actionDesc = `type "${decision.text}" into ${detailStr}`;
+          } else if (decision.action === "paste_data") {
+            const pasteSelector = String(decision.selector || '');
+            const pasteCell = String(decision.cell || '');
+            actionDesc = `paste data${pasteCell ? ' at ' + pasteCell : ''}${pasteSelector ? ' into ' + pasteSelector : ''}`;
+          } else if (decision.action === "read_sheet") {
+            actionDesc = `read spreadsheet data`;
           } else if (decision.action === "navigate") {
             actionDesc = `navigate to URL "${decision.url}"`;
           } else if (decision.action === "scroll") {
@@ -2840,7 +3062,9 @@ CRITICAL RECORDING RULES:
 9. CREATING WORKFLOWS: If the user explicitly asks you to "create a workflow", "make an empty workflow", or anything similar, DO NOT attempt to navigate the web to sites like n8n or Zapier. You cannot write or save workflows from this browser automation interface. You MUST immediately select "action": "finish" and reply EXACTLY with: "I cannot create and save workflows from the extension sidepanel. Please open the main Jarvis web dashboard and ask me there, as I have the backend tools to write and save workflows from the main app."
 10. DELEGATING TO SUB-WORKFLOWS: If the user's goal or a step in the user's goal involves actions that match one of the available sub-workflows in the Skill-Defined Workflows list (for example, sending an email matches a workflow with title "Email send" or similar), you MUST immediately select the "action": "run_workflow" and provide its "workflow_id". Do NOT attempt to manually navigate to the website or perform manual clicks/types for that task. Pass the necessary parameters (e.g., "emails", "subject", "body") as key-value pairs in "workflow_inputs". This is critical to save tokens and execute tasks reliably.
 11. CAPABILITY AWARENESS: You are a browser extension agent that controls the active browser tabs. You CAN directly send emails, send WhatsApp messages, and interact with any website. You MUST NEVER state "I cannot send messages directly", "I don't have access to external services", or refuse to execute the request. Instead, immediately begin executing the user's goal either by using "action": "run_workflow" (if an appropriate workflow is listed in your Skill-Defined Workflows) or by manually performing the browser actions (e.g., using "navigate" to open web.whatsapp.com or mail.google.com and interacting with the DOM elements yourself).
-12. STYLE RULE: Do NOT use em-dashes ('—') or long dashes in your conversational responses. Use commas, semicolons, parentheses, or standard punctuation instead.`;
+12. STYLE RULE: Do NOT use em-dashes ('—') or long dashes in your conversational responses. Use commas, semicolons, parentheses, or standard punctuation instead.
+13. PASTE DATA FOR TABLES/SPREADSHEETS: If the user asks you to fill out or paste details into a Google Spreadsheet, an HTML5 canvas sheet, or any tabular data structure (where individual cells are not interactable HTML input boxes), you MUST use the "paste_data" action. Format the table as a TSV string (columns separated by '\\t', rows separated by '\\n') and provide it in the "text" parameter. If the user specifies a starting cell (e.g. A1, B3), provide it in the "cell" parameter so the extension automatically navigates to that cell before pasting. Immediately after successfully executing a "paste_data" action to fill a spreadsheet or table, you MUST select the "finish" action on the very next step. Do NOT repeat the paste action. Your task is complete once the data is pasted.
+14. READING SPREADSHEETS: If you need to read the contents of a spreadsheet or a table to answer questions or verify state, you MUST use the "read_sheet" action. Do NOT attempt to read individual cells from DOM elements. "read_sheet" will automatically copy the active sheet and expose the entire TSV structure in the next step's history context.`;
 
   const recordingRules = `CRITICAL RECORDING RULES:
 1. YOU ARE CURRENTLY RECORDING A WORKFLOW. You MUST NOT hallucinate results or finish immediately.
@@ -2878,9 +3102,10 @@ Based on the goal and page state, decide whether to continue automating (click, 
 Respond ONLY with a JSON object in the following format:
 {
   "thought": "Detailed explanation of what you are doing, what you observe, and why you are taking this action",
-  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "close_tab" | "wait" | "update_workflow_db" | "run_workflow" | "finish",
-  "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type),
-  "text": "text value to input" (required for type),
+  "action": "click" | "type" | "scroll" | "navigate" | "switch_tab" | "close_tab" | "wait" | "paste_data" | "read_sheet" | "update_workflow_db" | "run_workflow" | "finish",
+  "selector": "[data-agent-id='X']" where X is the index of the element (required for click/type, optional for paste_data),
+  "text": "text value to input or paste" (required for type and paste_data),
+  "cell": "A1" or "B3" coordinate of the starting cell in a spreadsheet (optional: use with paste_data to target a cell),
   "url": "absolute URL to load" (required for navigate),
   "open_new_tab": true | false (optional: set to true to force opening this URL in a new tab, even if the domain matches the current active tab),
   "tab_id": integer tab ID to switch to or close (required for switch_tab, optional for close_tab),
@@ -3066,4 +3291,53 @@ Respond ONLY with a JSON object in this format:
     await logAction("compile_workflow", "error", `Compilation failed: ${err.message}`, err);
     await addAgentChatMessage(`❌ **Compilation failed:** ${err.message}`);
   }
+}
+
+async function sendKeyCombo(debuggerTarget, modifierKey, modifierCode, modifierKeyCode, key, code, keyCode, modifierValue) {
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyDown",
+    modifiers: modifierValue,
+    key: modifierKey,
+    code: modifierCode,
+    windowsVirtualKeyCode: modifierKeyCode
+  });
+
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyDown",
+    modifiers: modifierValue,
+    key: key,
+    code: code,
+    windowsVirtualKeyCode: keyCode
+  });
+
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyUp",
+    modifiers: modifierValue,
+    key: key,
+    code: code,
+    windowsVirtualKeyCode: keyCode
+  });
+
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyUp",
+    modifiers: 0,
+    key: modifierKey,
+    code: modifierCode,
+    windowsVirtualKeyCode: modifierKeyCode
+  });
+}
+
+async function pressEnterKey(debuggerTarget) {
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyDown",
+    key: "Enter",
+    code: "Enter",
+    windowsVirtualKeyCode: 13
+  });
+  await chrome.debugger.sendCommand(debuggerTarget, "Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key: "Enter",
+    code: "Enter",
+    windowsVirtualKeyCode: 13
+  });
 }

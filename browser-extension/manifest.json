@@ -19,7 +19,10 @@
     "storage",
     "history",
     "downloads",
-    "notifications"
+    "notifications",
+    "debugger",
+    "clipboardWrite",
+    "clipboardRead"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';",
