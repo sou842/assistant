@@ -198,13 +198,7 @@ export function Sidebar({
               active={pathname.startsWith("/ai/workflows")}
               isCollapsed={isCollapsed}
             />
-            <SidebarNavItem
-              href="/ai/automation"
-              icon={<Workflow size={16} />}
-              label="Automations"
-              active={pathname.startsWith("/ai/automation")}
-              isCollapsed={isCollapsed}
-            />
+
             {/* <SidebarNavItem
               href="/ai/playground"
               icon={<Blocks size={16} />}
