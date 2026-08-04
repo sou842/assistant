@@ -278,8 +278,6 @@ export default function ExtensionPanel() {
     return () => window.removeEventListener("message", handleMessage);
   }, [workflows, workflowInputs]);
 
-
-
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
