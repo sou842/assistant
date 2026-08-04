@@ -1,6 +1,6 @@
 // background.js - Manages browser actions and state
 try {
-  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js', 'skills/sheets.js');
+  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js', 'skills/sheets.js', 'skills/google-maps.js');
 } catch (e) {
   console.error("[Jarvis Skills] Failed to load skills:", e);
 }
