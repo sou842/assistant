@@ -38,7 +38,7 @@ export default async function ArticlePage(props: { params: Promise<{ id: string 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <div className="container mx-auto py-32 px-4 max-w-3xl flex-grow">
+      <div className="container mx-auto py-32 px-4 max-w-3xl grow">
         <div className="mb-10">
           <Link href="/articles" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10">
             &larr; Back to all articles
@@ -53,7 +53,7 @@ export default async function ArticlePage(props: { params: Promise<{ id: string 
               <img 
                 src={article.thumbnail} 
                 alt={article.title} 
-                className="w-full h-auto object-cover max-h-[600px]"
+                className="w-full h-auto object-cover max-h-150"
               />
             </div>
           )}

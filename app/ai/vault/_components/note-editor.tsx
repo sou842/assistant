@@ -853,7 +853,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
       <style>
         {`
           #editorjs-instance {
-            color: #a0a0a5;
+            color: cdcdcd;
             caret-color: #ffffff;
           }
 
@@ -1243,6 +1243,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
           }
           .tc-row {
             border-color: rgba(255, 255, 255, 0.1) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
           }
           .tc-row::after {
             border-color: rgba(255, 255, 255, 0.1) !important;
