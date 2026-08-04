@@ -1635,7 +1635,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
     // Pre-check: Determine if this is a general query/chat, a workflow creation request, or a browser action
       try {
         const data = await chrome.storage.local.get({ chatHistory: [] });
-        const recentHistory = data.chatHistory.slice(-5).map(m => {
+        const recentHistory = data.chatHistory.slice(-75).map(m => {
           let text = `${m.role}: ${m.text}`;
           if (m.tags && m.tags.length > 0) {
             text += `\n[Attached Contexts: ${JSON.stringify(m.tags)}]`;
@@ -1647,7 +1647,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         const tabs = await chrome.tabs.query({});
         let tabsContext = `\n[Browser Context: ${tabs.length} tabs currently open.`;
         if (tabs.length > 0) {
-           const maxTabsToInclude = 20;
+           const maxTabsToInclude = 150;
            const tabsToInclude = tabs.slice(0, maxTabsToInclude);
            tabsContext += `\nTabs:\n` + tabsToInclude.map((t, i) => `- [ID: ${t.id}] [${t.active ? 'ACTIVE' : 'INACTIVE'}] ${t.title || 'Unknown'} - ${t.url || 'Unknown'}`).join('\n');
            if (tabs.length > maxTabsToInclude) {
@@ -1686,15 +1686,19 @@ Decide if the request should be classified as:
 4. 'update_workflow': A request to modify, edit, or update an EXISTING workflow that the user has attached in the context.
 5. 'browser_action': An active browser task requiring immediate execution of physical page actions OR any request to read, analyze, check, or audit the current webpage or the entire website.
 6. 'fetch_workflows': Use this if the user asks ANY questions about their saved workflows, automation scripts, or the workflows database in general (e.g., "how many workflows do I have?", "list my workflows"). Do NOT use 'browser_action' for these questions.
+7. 'open_links': A request to simply open, load, or navigate to one or more URLs/links (especially a list of URLs/links) without needing to check, read, or verify the pages, or perform any page interactions on them.
+8. 'close_tabs': A request to close one or more tabs in the browser (e.g., closing specific tab IDs, closing tabs matching a pattern or domain, or closing all/most tabs), without needing to perform any page interactions or read/check page contents.
 
 Respond ONLY with a JSON object in this format:
 {
-  "type": "chat" | "record_workflow" | "run_workflow" | "update_workflow" | "browser_action" | "fetch_workflows",
+  "type": "chat" | "record_workflow" | "run_workflow" | "update_workflow" | "browser_action" | "fetch_workflows" | "open_links" | "close_tabs",
   "reply": "Your direct reply/summary/clarifying question to the user if type is 'chat'.",
   "workflow_title": "Short, capitalised title for the workflow (required ONLY if type is 'record_workflow')",
   "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')",
   "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')",
-  "workflow_inputs": { "key": "value" } // A JSON object of key-value pairs representing the inputs to pass to the workflow (ONLY if type is 'run_workflow' and the user provides inputs in their request)
+  "workflow_inputs": { "key": "value" }, // A JSON object of key-value pairs representing the inputs to pass to the workflow (ONLY if type is 'run_workflow' and the user provides inputs in their request)
+  "urls": ["https://url1.com", "https://url2.com"], // Required ONLY if type is 'open_links'. A flat JSON array of absolute URLs extracted from the prompt/user query to open.
+  "tab_ids": [123, 456] // Required ONLY if type is 'close_tabs'. A flat JSON array of integer tab IDs to close, selected based on the user's request and the Browser Context.
 }`;
 
           console.log(sysInstruction, "##################[ROUTER_PROMPT]##################");
@@ -1796,6 +1800,98 @@ Respond ONLY with a JSON object in this format:
           if (!decision.workflow_id) throw new Error("Workflow ID is required to update a workflow");
           await logAction("agent", "running", `Updating workflow ID: ${decision.workflow_id}`);
           // Fall through to the browser agent loop where the update_workflow_db action will be handled
+        }
+
+        if (decision.type === "open_links") {
+          const urls = decision.urls || [];
+          if (urls.length > 0) {
+            await logAction("agent_decision", "running", `Thought: Opening ${urls.length} links in new tabs...`);
+            await addAgentChatMessage(`💡 Thinking: Opening ${urls.length} links in new tabs...`);
+            const shouldDelay = urls.length > 7;
+            const delayMs = shouldDelay ? Math.min(800, Math.max(150, urls.length * 7)) : 0;
+            let openedCount = 0;
+            for (let i = 0; i < urls.length; i++) {
+              if (shouldDelay && i > 0) {
+                const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
+                if (stopCheck.agentStopRequested) {
+                  await logAction("agent", "error", "Agent execution stopped by user while opening links.");
+                  await addAgentChatMessage("🛑 **Stopped by user.**");
+                  return;
+                }
+              }
+              
+              let targetUrl = urls[i];
+              if (targetUrl && typeof targetUrl === "string") {
+                targetUrl = targetUrl.trim();
+                if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+                  targetUrl = "https://" + targetUrl;
+                }
+                try {
+                  await logAction("agent_action", "running", `Action: Opening new tab for ${targetUrl}`);
+                  await addAgentChatMessage(`🌐 Opening new tab for: ${targetUrl}`);
+                  await chrome.tabs.create({ url: targetUrl, active: false });
+                  openedCount++;
+                } catch (err) {
+                  console.error(`Failed to open URL: ${urls[i]}`, err);
+                  await logAction("agent", "error", `Failed to open ${urls[i]}: ${err.message}`);
+                }
+              }
+
+              if (shouldDelay && i < urls.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+            }
+            isAgentSuccess = true;
+            await logAction("agent", "success", `Successfully opened ${openedCount} of ${urls.length} links`);
+            await addAgentChatMessage(`✅ **Successfully opened ${openedCount} of ${urls.length} links!**`);
+            return;
+          }
+        }
+
+        if (decision.type === "close_tabs") {
+          const tabIds = decision.tab_ids || [];
+          if (tabIds.length > 0) {
+            await logAction("agent_decision", "running", `Thought: Closing ${tabIds.length} tabs...`);
+            await addAgentChatMessage(`💡 Thinking: Closing ${tabIds.length} tabs...`);
+            const shouldDelay = tabIds.length > 7;
+            const delayMs = shouldDelay ? Math.min(800, Math.max(120, tabIds.length * 3)) : 0;
+            let closedCount = 0;
+            for (let i = 0; i < tabIds.length; i++) {
+              if (shouldDelay && i > 0) {
+                const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
+                if (stopCheck.agentStopRequested) {
+                  await logAction("agent", "error", "Agent execution stopped by user while closing tabs.");
+                  await addAgentChatMessage("🛑 **Stopped by user.**");
+                  return;
+                }
+              }
+              const tabId = parseInt(tabIds[i], 10);
+              if (!isNaN(tabId)) {
+                try {
+                  let tabTitle = `Tab ID ${tabId}`;
+                  try {
+                    const tabInfo = await chrome.tabs.get(tabId);
+                    tabTitle = tabInfo.title || tabInfo.url || tabTitle;
+                  } catch (e) {}
+                  
+                  await logAction("agent_decision", "running", `Thought: Closing tab: ${tabTitle}`);
+                  await addAgentChatMessage(`🗑️ Closing tab: ${tabTitle}`);
+                  await chrome.tabs.remove(tabId);
+                  closedCount++;
+                } catch (err) {
+                  console.error(`Failed to close tab ID: ${tabId}`, err);
+                  await logAction("agent", "error", `Failed to close tab ID ${tabId}: ${err.message}`);
+                }
+              }
+              if (shouldDelay && i < tabIds.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+            }
+            isAgentSuccess = true;
+            await logAction("agent", "success", `Successfully closed ${closedCount} of ${tabIds.length} tabs`);
+            await addAgentChatMessage(`✅ **Successfully closed ${closedCount} of ${tabIds.length} tabs!**`);
+            return;
+          }
         }
     } catch (e) {
       console.warn("Pre-check failed, proceeding to browser agent loop", e);
@@ -2726,7 +2822,7 @@ Respond ONLY with a JSON object in this format:
             if (shouldOpenNewTab) {
               await logAction("agent_action", "running", `Action: Opening new tab for ${destUrl}`);
 
-              await addAgentChatMessage(`Opening new tab for: ${destUrl}`);
+              await addAgentChatMessage(`🌐 Opening new tab for: ${destUrl}`);
 
               const newTab = await chrome.tabs.create({
                 url: destUrl
@@ -2736,7 +2832,7 @@ Respond ONLY with a JSON object in this format:
               lastInteractedTabId = newTab.id;
             } else {
               await logAction("agent_action", "running", `Action: Navigating current tab to ${destUrl}`);
-              await addAgentChatMessage(`Navigating current tab to: ${destUrl}`);
+              await addAgentChatMessage(`🧭 Navigating current tab to: ${destUrl}`);
               await chrome.tabs.update(targetTabId, {
                 url: destUrl
               });
@@ -3049,7 +3145,7 @@ async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory =
   }).join('\n');
 
   const data = await chrome.storage.local.get({ chatHistory: [] });
-  const recentHistory = data.chatHistory.slice(-30).map(m => {
+  const recentHistory = data.chatHistory.slice(-75).map(m => {
     let text = `${m.role}: ${m.text}`;
     if (m.tags && m.tags.length > 0) {
       text += `\n[Attached Contexts: ${JSON.stringify(m.tags)}]`;
@@ -3072,7 +3168,7 @@ CRITICAL RECORDING RULES:
   const tabs = await chrome.tabs.query({});
   let tabsContext = `\n[Browser Context: ${tabs.length} tabs currently open.`;
   if (tabs.length > 0) {
-     const maxTabsToInclude = 20;
+     const maxTabsToInclude = 150;
      const tabsToInclude = tabs.slice(0, maxTabsToInclude);
      tabsContext += `\nTabs:\n` + tabsToInclude.map((t, i) => `- [ID: ${t.id}] [${t.active ? 'ACTIVE' : 'INACTIVE'}] ${t.title || 'Unknown'} - ${t.url || 'Unknown'}`).join('\n');
      if (tabs.length > maxTabsToInclude) {
