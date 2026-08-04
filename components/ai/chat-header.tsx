@@ -38,7 +38,7 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
           </button>
 
           {/* Extension Connection Badge */}
-          <button
+          {/* <button
             onClick={() => {
               if (extensionConnected) {
                 openCompanion?.();
@@ -62,14 +62,25 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
                 <p>Extension offline. Click to view instructions on how to install the browser extension.</p>
               )}
             </div>
-          </button>
+          </button> */}
 
-          <div className="items-center gap-2 px-3 py-1 bg-app-surface-glass rounded-full md:flex hidden">
-            <Earth size={10} className={'text-app-text-soft animate-pulse duration-1000'} />
+          <button
+            onClick={() => {
+              if (extensionConnected) {
+                openCompanion?.();
+              } else {
+                setIsModalOpen(true);
+              }
+            }}
+            className="items-center gap-2 px-2 py-1 bg-app-surface-glass rounded-full md:flex hidden hover:bg-app-surface-glass-strong active:scale-95 transition-all cursor-pointer"
+            title={extensionConnected ? "Click to open Jarvis Companion Panel" : "Click to view install guide"}
+            type="button"
+          >
+            <Earth size={10} className={`text-app-text-soft animate-pulse duration-1000 ${extensionConnected ? '' : 'text-red-400'}`} />
             <span className="text-[10px] font-medium capitalize text-app-text-soft">
-              {isSyncing ? 'Syncing with Database...' : 'connected'}
+              {extensionConnected ? 'Connected' : 'Extension Offline'}
             </span>
-          </div>
+          </button>
         </div>
       </header>
 

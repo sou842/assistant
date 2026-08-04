@@ -128,7 +128,7 @@ export function Sidebar({
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-bold text-app-text-primary truncate">Jarvis AI</span>
-                  <span className="text-xs text-app-text-muted font-medium truncate uppercase tracking-wider">Neural Shell</span>
+                  {/* <span className="text-xs text-app-text-muted font-medium truncate uppercase tracking-wider">Neural Shell</span> */}
                 </div>
               </div>
               <button
