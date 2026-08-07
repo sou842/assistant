@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -12,7 +12,8 @@ function ChatMessageItem({
   setEditingText, 
   handleSaveEdit, 
   handleCopy, 
-  handleDeleteMessage 
+  handleDeleteMessage,
+  handleRetryMessage
 }: any) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExpanding, setIsExpanding] = useState(false);
@@ -78,7 +79,7 @@ function ChatMessageItem({
                       {msg.tags.map((tag: any, idx: number) => (
                         <div key={idx} className="flex items-center gap-1 bg-white/20 border border-white/10 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap shadow-sm">
                           {tag.type === 'w' ? <Workflow size={10} className="opacity-80" /> : tag.type === 't' ? <AppWindow size={10} className="opacity-80" /> : <Globe size={10} className="opacity-80" />}
-                          <span className="truncate max-w-[150px]">{tag.label}</span>
+                          <span className="truncate max-w-37.5">{tag.label}</span>
                         </div>
                       ))}
                     </div>
@@ -90,7 +91,7 @@ function ChatMessageItem({
                   const IconComponent = special.Icon;
                   return (
                     <div className="flex items-start gap-2 w-full max-w-full overflow-x-auto">
-                      <IconComponent size={15} className={cn("shrink-0 mt-[2px]", special.className)} />
+                      <IconComponent size={15} className={cn("shrink-0 mt-0.5", special.className)} />
                       <div className="w-full max-w-full">
                         <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400 text-gray-200 prose-p:text-gray-200 prose-headings:text-white prose-strong:text-white prose-ol:text-gray-200 prose-ul:text-gray-200 prose-li:text-gray-200">
                           {contentToRender}
@@ -116,23 +117,28 @@ function ChatMessageItem({
               "mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
               isUser && "justify-end"
             )}>
-              <MessageActions className="bg-black/80 border border-white/10 px-1.5 py-0.5 rounded-full backdrop-blur-sm shadow-xl flex gap-1 items-center">
+              <MessageActions className="bg-black/80 border border-white/10 px-1 py-0 rounded-full backdrop-blur-sm shadow-xl flex gap-1 items-center">
                 {isLong && !isUser && (
                   <MessageAction tooltip={isExpanded ? "Collapse" : "Expand"} onClick={handleExpandToggle} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer flex items-center gap-1 px-2" variant="ghost" size="icon-sm">
-                    {isExpanding ? <Loader2 size={10} className="animate-spin" /> : (!isExpanded ? <Maximize2 size={10} /> : <ChevronsDownUp size={10} />)}
+                    {isExpanding ? <Loader2 size={8} className="animate-spin" /> : (!isExpanded ? <Maximize2 size={8} /> : <ChevronsDownUp size={8} />)}
                     {/* <span className="text-[10px] font-medium">{isExpanded ? "Show Less" : "Show More"}</span> */}
                   </MessageAction>
                 )}
-                <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
-                  <Copy size={8} />
+                <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                  <Copy size={6} />
                 </MessageAction>
                 {isUser && (
-                  <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
-                    <Edit2 size={8} />
-                  </MessageAction>
+                  <>
+                    <MessageAction tooltip="Retry" onClick={() => handleRetryMessage(i)} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                      <RotateCcw size={6} />
+                    </MessageAction>
+                    <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                      <Edit2 size={6} />
+                    </MessageAction>
+                  </>
                 )}
-                <MessageAction tooltip="Delete" onClick={() => handleDeleteMessage(i)} className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" variant="ghost" size="icon-sm">
-                  <Trash size={8} />
+                <MessageAction tooltip="Delete" onClick={() => handleDeleteMessage(i)} className="p-0.5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                  <Trash size={6} />
                 </MessageAction>
               </MessageActions>
             </MessageToolbar>
@@ -154,8 +160,11 @@ export function ChatTab({
   handleSaveEdit,
   handleCopy,
   handleDeleteMessage,
+  handleRetryMessage,
   chatEndRef
 }: any) {
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+
   return (
     <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${activeTab === "chat" ? "block" : "hidden"}`}>
       {chatHistory?.length === 0 ? (
@@ -232,6 +241,17 @@ export function ChatTab({
           return groupedHistory?.map((group, groupIdx) => {
             if (group.type === 'message') {
               const { msg, originalIndex: i } = group;
+              if (msg.text.includes("Stopped by user")) {
+                return (
+                  <div key={i} className="flex items-center my-6 w-full select-none">
+                    <div className="grow border-t border-gray-500/20"></div>
+                    <span className="mx-4 text-[10px] font-normal tracking-wider text-gray-500/70 rounded-full">
+                      Stopped by user
+                    </span>
+                    <div className="grow border-t border-gray-500/20"></div>
+                  </div>
+                );
+              }
               return (
                 <ChatMessageItem
                   key={i}
@@ -243,7 +263,8 @@ export function ChatTab({
                   setEditingText={setEditingText}
                   handleSaveEdit={handleSaveEdit}
                   handleCopy={handleCopy}
-                  handleDeleteMessage={handleDeleteMessage}
+                  handleDeleteMessage={(idx: number) => setDeleteIndex(idx)}
+                  handleRetryMessage={handleRetryMessage}
                 />
               );
             } else {
@@ -258,7 +279,7 @@ export function ChatTab({
                       <span>Chain of Thought</span>
                       <span className="text-[10px] text-gray-600 group-open:rotate-180 transition-transform"><ChevronDown className="size-4" /></span>
                     </summary>
-                    <div className="space-y-3 pl-[5px] border-l border-white/5 ml-[6px]">
+                    <div className="space-y-3 pl-1.25 border-l border-white/5 ml-1.5">
                       {group?.items?.map((item: any) => (
                         <div key={item?.originalIndex}>
                           {renderAgentStep(item?.msg?.text)}
@@ -286,6 +307,44 @@ export function ChatTab({
             </div>
           </div>
         </Message>
+      )}
+
+      {deleteIndex !== null && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-default"
+          onClick={() => setDeleteIndex(null)}
+        >
+          <div 
+            className="bg-[#121212] border border-white/10 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 text-red-400">
+              <h3 className="font-semibold text-sm text-white">Delete Messages</h3>
+            </div>
+            
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Are you sure you want to delete this message? This action cannot be undone.
+            </p>
+            
+            <div className="flex gap-2.5 justify-end pt-2">
+              <button
+                onClick={() => setDeleteIndex(null)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteMessage(deleteIndex);
+                  setDeleteIndex(null);
+                }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-white bg-red-600 hover:bg-red-500 transition cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div ref={chatEndRef} />

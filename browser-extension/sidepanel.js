@@ -254,8 +254,29 @@ window.addEventListener("message", async (event) => {
       case "DELETE_MESSAGE": {
         const histData = await chrome.storage.local.get({ chatHistory: [] });
         const history = histData.chatHistory;
-        history.splice(data.index, 1);
+        history.splice(data.index);
         await chrome.storage.local.set({ chatHistory: history });
+        break;
+      }
+
+      case "RETRY_MESSAGE": {
+        const histData = await chrome.storage.local.get({ chatHistory: [] });
+        const history = histData.chatHistory;
+        if (history[data.index]) {
+          const targetMsg = history[data.index];
+          // Truncate history after the target user message
+          history.splice(data.index + 1);
+          await chrome.storage.local.set({ chatHistory: history });
+
+          // Re-trigger the agent running loop
+          chrome.runtime.sendMessage({
+            action: "run_agent",
+            prompt: targetMsg.text,
+            tags: targetMsg.tags || [],
+            model: data.model || "mistral-small-latest",
+            chatId: currentChatId
+          });
+        }
         break;
       }
 

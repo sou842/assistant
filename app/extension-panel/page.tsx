@@ -93,6 +93,10 @@ export default function ExtensionPanel() {
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "DELETE_MESSAGE", index }, "*");
   };
 
+  const handleRetryMessage = (index: number) => {
+    window.parent.postMessage({ type: "FROM_NEXTJS", action: "RETRY_MESSAGE", index }, "*");
+  };
+
   const handleSaveEdit = (index: number) => {
     if (!editingText.trim()) return;
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "EDIT_MESSAGE", index, text: editingText }, "*");
@@ -503,6 +507,7 @@ export default function ExtensionPanel() {
           handleSaveEdit={handleSaveEdit}
           handleCopy={handleCopy}
           handleDeleteMessage={handleDeleteMessage}
+          handleRetryMessage={handleRetryMessage}
           chatEndRef={chatEndRef}
         />
 

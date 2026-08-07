@@ -2197,9 +2197,9 @@ Respond ONLY with a JSON object in this format:
 
           await logAction("agent", "success", `Agent complete! Answer: ${answerText}`);
           if (isJson) {
-            await addAgentChatMessage(`✅ **Completed successfully!** \n\n\`\`\`json\n${answerText}\n\`\`\``);
+            await addAgentChatMessage(`\n\n\`\`\`json\n${answerText}\n\`\`\``);
           } else {
-            await addAgentChatMessage(`✅ **Completed successfully !** ${answerText}`);
+            await addAgentChatMessage(`${answerText}`);
           }
           if (isRecordingWorkflow) {
             await compileWorkflow(workflowTitle, workflowDescription, prompt, actionTrace, model);
@@ -2832,7 +2832,7 @@ Respond ONLY with a JSON object in this format:
               lastInteractedTabId = newTab.id;
             } else {
               await logAction("agent_action", "running", `Action: Navigating current tab to ${destUrl}`);
-              await addAgentChatMessage(`🧭 Navigating current tab to: ${destUrl}`);
+              await addAgentChatMessage(`🌐 Navigating current tab to: ${destUrl}`);
               await chrome.tabs.update(targetTabId, {
                 url: destUrl
               });
