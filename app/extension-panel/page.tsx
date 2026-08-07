@@ -8,7 +8,7 @@ import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
 import { SettingsTab } from "./components/SettingsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote, Target, MousePointerClick, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -66,6 +66,9 @@ export default function ExtensionPanel() {
   const [editingText, setEditingText] = useState("");
   const [isLocal, setIsLocal] = useState(false);
   const [pendingNotes, setPendingNotes] = useState<string[]>([]);
+  const [isFocusModeEnabled, setIsFocusModeEnabled] = useState(false);
+  const [focusChain, setFocusChain] = useState<any[]>([]);
+  const [focusChainIndex, setFocusChainIndex] = useState(0);
   const hasOpenedLogin = useRef(false);
 
   useEffect(() => {
@@ -88,6 +91,46 @@ export default function ExtensionPanel() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard!");
+  };
+
+  const toggleFocusMode = () => {
+    const nextVal = !isFocusModeEnabled;
+    setIsFocusModeEnabled(nextVal);
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "TOGGLE_FOCUS_MODE",
+      enabled: nextVal
+    }, "*");
+    if (nextVal) {
+      toast.success("Focus Mode enabled! Click on any element in the active browser tab to target it.");
+    }
+  };
+
+  const clearFocusChain = () => {
+    setFocusChain([]);
+    setFocusChainIndex(0);
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "CLEAR_FOCUS_CHAIN"
+    }, "*");
+    toast.success("Focus steering chain cleared.");
+  };
+
+  const setFocusStep = (index: number) => {
+    setFocusChainIndex(index);
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "SET_FOCUS_CHAIN_INDEX",
+      index
+    }, "*");
+  };
+
+  const removeFocusStep = (index: number) => {
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "REMOVE_FOCUS_STEP",
+      index
+    }, "*");
   };
 
   const handleDeleteMessage = (index: number) => {
@@ -251,6 +294,9 @@ export default function ExtensionPanel() {
           if (data.isAgentRunning !== undefined) setIsAgentRunning(data.isAgentRunning);
           if (data.currentTokenUsage !== undefined) setTokenUsage(data.currentTokenUsage);
           if (data.pendingNotes !== undefined) setPendingNotes(data.pendingNotes);
+          if (data.isFocusModeEnabled !== undefined) setIsFocusModeEnabled(data.isFocusModeEnabled);
+          if (data.focusChain !== undefined) setFocusChain(data.focusChain);
+          if (data.focusChainIndex !== undefined) setFocusChainIndex(data.focusChainIndex);
           if (data.settings) setSettings(data.settings);
         } else if (data.action === "WORKFLOW_RESULT") {
           if (data.success) {
@@ -586,6 +632,92 @@ export default function ExtensionPanel() {
           </button>
         </div>
         <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
+          {/* Focus Steering Chain */}
+          {(focusChain.length > 0 || isFocusModeEnabled) && (
+            <div className="px-3 py-2 bg-[#121212]/50 rounded-xl border-b border-white/5 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-zinc-400 font-normal tracking-wider font-mono flex items-center gap-1.5">
+                  <MousePointerClick size={14} className="text-zinc-400" />
+                  Focus Points
+                </span>
+                <button
+                  type="button"
+                  onClick={clearFocusChain}
+                  className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+
+              {focusChain.length > 0 && (
+                <div className="relative pl-2.5 flex flex-col gap-4 max-h-40 overflow-y-auto pr-1 py-1">
+                  {/* Vertical Connector Line */}
+                  <div className="absolute left-4.25 top-2 bottom-2 w-px bg-zinc-800 pointer-events-none" />
+
+                  {focusChain?.map((step, idx) => {
+                    const isCompleted = idx < focusChainIndex;
+                    const isActive = idx === focusChainIndex;
+                    return (
+                      <div 
+                        key={idx}
+                        className="relative flex gap-3 items-start group/step"
+                      >
+                        {/* Bullet / Step Indicator */}
+                        <button
+                          type="button"
+                          onClick={() => setFocusStep(idx)}
+                          className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all cursor-pointer border text-[8px] font-bold ${
+                            isCompleted 
+                              ? 'bg-brand-primary border-brand-primary text-white shadow-sm shadow-blue-500/30' 
+                              : isActive 
+                                ? 'bg-[#121212] border-blue-100 text-brand-primary' 
+                                : 'bg-[#161616] border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-400'
+                          }`}
+                          title={`Jump to Step ${idx + 1}`}
+                        >
+                          {isCompleted ? (
+                            <Check size={8} strokeWidth={3} />
+                          ) : isActive ? (
+                            <span className="w-1 h-1 rounded-full bg-blue-100" />
+                          ) : (
+                            <span>{idx + 1}</span>
+                          )}
+                        </button>
+
+                        {/* Step Details */}
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFocusStep(idx)}
+                            className="flex-1 text-left cursor-pointer min-w-0"
+                          >
+                            <p className={`text-[11px] font-medium font-sans truncate transition-colors mt-0.5 ${
+                              isActive 
+                                ? 'text-app-primary font-normal' 
+                                : isCompleted 
+                                  ? 'text-zinc-500' 
+                                  : 'text-zinc-400 hover:text-zinc-300'
+                            }`}>
+                              Step {idx + 1}: {step.description}
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => removeFocusStep(idx)}
+                            className="opacity-0 group-hover/step:opacity-100 p-1 rounded-full hover:bg-red-400/10 text-zinc-500 hover:text-red-400 transition-opacity cursor-pointer shrink-0"
+                            title="Remove Step"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           {pendingNotes?.length > 0 && (
             <div className="flex flex-col gap-2.5 px-3 py-1 bg-[#121212]/30 rounded-t-2xl border-b border-white/5">
               <div className="space-y-3 pl-2.5 ml-2 my-1">
@@ -668,7 +800,17 @@ export default function ExtensionPanel() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
+              <button
+                type="button"
+                onClick={toggleFocusMode}
+                className={`p-1 rounded-full transition-colors flex items-center justify-center cursor-pointer ${isFocusModeEnabled
+                    ? 'bg-brand-primary text-white animate-pulse'
+                    : 'hover:bg-white/10 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                title="Toggle Element Focus Selection Mode"
+              >
+                <MousePointerClick size={16} />
+              </button>
               {/* <div className="relative">
                   <select
                     className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-2 py-1 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-1"

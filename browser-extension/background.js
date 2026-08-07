@@ -1620,6 +1620,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   let workflowDescription = "";
   const actionTrace = [];
   let workflowsContext = "";
+  let bookmarksContext = "";
 
   const chatUsageKey = chatId ? `tokenUsage_${chatId}` : 'currentTokenUsage';
   const usageData = await chrome.storage.local.get({ [chatUsageKey]: null });
@@ -1634,6 +1635,16 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
 
     // Pre-check: Determine if this is a general query/chat, a workflow creation request, or a browser action
       try {
+        const focusData = await chrome.storage.local.get({ focusChain: [], focusChainIndex: 0 });
+        const focusChain = focusData.focusChain || [];
+        const focusChainIndex = focusData.focusChainIndex || 0;
+        let focusContext = "";
+        if (focusChain.length > 0) {
+          focusContext = `\n[Focus Steering Context: The user has selected a sequence/chain of page elements to focus on step-by-step. The current focus step index is ${focusChainIndex} (0-indexed) out of ${focusChain.length} total steps.\n`;
+          focusContext += `Focus Steps:\n` + focusChain.map((step, idx) => `- Step ${idx + 1}: ${step.description}${idx === focusChainIndex ? ' (CURRENT ACTIVE STEP TO EXECUTE)' : idx < focusChainIndex ? ' (COMPLETED)' : ' (PENDING)'}`).join('\n') + '\n';
+          focusContext += `]\n`;
+        }
+
         const data = await chrome.storage.local.get({ chatHistory: [] });
         const recentHistory = data.chatHistory.slice(-75).map(m => {
           let text = `${m.role}: ${m.text}`;
@@ -1661,7 +1672,7 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
         let workflowsContext = "";
 
         const getRouterDecision = async (additionalContext = "") => {
-          const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${additionalContext}
+          const sysInstruction = `You are Jarvis, a full-fledged browser assistant. Analyze the user's request: "${prompt}".${historyContext}${tabsContext}${focusContext}${additionalContext}
 
 You possess the capability to:
 - Chat normally with the user (greetings, general chat, basic talk).
@@ -1678,27 +1689,33 @@ CRITICAL INSTRUCTIONS ON CAPABILITIES:
 3. If a matching workflow exists in the Skill-Defined Workflows list, classify the request as 'run_workflow'.
 4. If no matching workflow exists, but the task is a browser automation task (e.g., navigating to any website and clicking/typing), you MUST classify it as 'browser_action' so you can execute it step-by-step. Do NOT classify it as 'chat' or refuse it. Only use 'chat' for general conversation, explanations, or clarifying questions.
 5. STYLE RULE: Do NOT use em-dashes ('—') or long dashes in your replies. Use commas, semicolons, parentheses, or standard punctuation instead.
+6. If the user asks to follow, execute, run, start, or proceed with the focus steps, focus path, or steering chain, you MUST classify it as 'browser_action' to start executing them.
 
 Decide if the request should be classified as:
 1. 'chat': General talk, greetings, general knowledge questions, asking clarifying questions, OR asking to explain/tell about a workflow attached in the context. Do NOT classify as 'chat' if the request asks to read, analyze, summarize, or extract information from the current webpage, website, or tab.
 2. 'record_workflow': A request to write, build, create, or save a NEW browser automation workflow script.
 3. 'run_workflow': A request to ACTUALLY RUN or EXECUTE an existing workflow that the user has attached in the context. Do NOT use this if the user just asks to explain or tell them about the workflow.
 4. 'update_workflow': A request to modify, edit, or update an EXISTING workflow that the user has attached in the context.
-5. 'browser_action': An active browser task requiring immediate execution of physical page actions OR any request to read, analyze, check, or audit the current webpage or the entire website.
+5. 'browser_action': An active browser task requiring immediate execution of physical page actions, any request to execute or follow the selected focus steps/steering path, OR any request to read, analyze, check, or audit the current webpage or the entire website.
 6. 'fetch_workflows': Use this if the user asks ANY questions about their saved workflows, automation scripts, or the workflows database in general (e.g., "how many workflows do I have?", "list my workflows"). Do NOT use 'browser_action' for these questions.
 7. 'open_links': A request to simply open, load, or navigate to one or more URLs/links (especially a list of URLs/links) without needing to check, read, or verify the pages, or perform any page interactions on them.
 8. 'close_tabs': A request to close one or more tabs in the browser (e.g., closing specific tab IDs, closing tabs matching a pattern or domain, or closing all/most tabs), without needing to perform any page interactions or read/check page contents.
+9. 'fetch_bookmarks': Use this if the user asks any questions about their bookmarks (e.g., "show my bookmarks", "what bookmarks do I have?", "find bookmark for google", "is this tab bookmarked?", "check if this page is bookmarked"). Do NOT use 'browser_action' or 'chat' for this.
+10. 'create_bookmark': Use this if the user asks to bookmark the current page, bookmark a website, or save a specific URL/link as a bookmark.
+11. 'delete_bookmark': Use this if the user asks to delete a bookmark, remove a bookmark, or unbookmark the current page or a specific URL/title.
 
 Respond ONLY with a JSON object in this format:
 {
-  "type": "chat" | "record_workflow" | "run_workflow" | "update_workflow" | "browser_action" | "fetch_workflows" | "open_links" | "close_tabs",
+  "type": "chat" | "record_workflow" | "run_workflow" | "update_workflow" | "browser_action" | "fetch_workflows" | "open_links" | "close_tabs" | "fetch_bookmarks" | "create_bookmark" | "delete_bookmark",
   "reply": "Your direct reply/summary/clarifying question to the user if type is 'chat'.",
   "workflow_title": "Short, capitalised title for the workflow (required ONLY if type is 'record_workflow')",
   "workflow_description": "A clear description of what this workflow script does (required ONLY if type is 'record_workflow')",
   "workflow_id": "The ID of the workflow to run or update (required ONLY if type is 'run_workflow' or 'update_workflow')",
   "workflow_inputs": { "key": "value" }, // A JSON object of key-value pairs representing the inputs to pass to the workflow (ONLY if type is 'run_workflow' and the user provides inputs in their request)
   "urls": ["https://url1.com", "https://url2.com"], // Required ONLY if type is 'open_links'. A flat JSON array of absolute URLs extracted from the prompt/user query to open.
-  "tab_ids": [123, 456] // Required ONLY if type is 'close_tabs'. A flat JSON array of integer tab IDs to close, selected based on the user's request and the Browser Context.
+  "tab_ids": [123, 456], // Required ONLY if type is 'close_tabs'. A flat JSON array of integer tab IDs to close, selected based on the user's request and the Browser Context.
+  "bookmark_url": "https://example.com", // Required ONLY if type is 'create_bookmark' or 'delete_bookmark'. The absolute URL of the bookmark. If they ask to unbookmark/bookmark the current/active page, omit this or leave empty.
+  "bookmark_title": "Example Title" // Optional if type is 'create_bookmark' or 'delete_bookmark'. The title of the bookmark to search for or create.
 }`;
 
           console.log(sysInstruction, "##################[ROUTER_PROMPT]##################");
@@ -1769,6 +1786,46 @@ Respond ONLY with a JSON object in this format:
           decision = await getRouterDecision(workflowsContext + "\n[CRITICAL INSTRUCTION: You have just fetched the user's workflows from the database. You MUST now use 'chat' type to answer the user's question using this Database Context. Do NOT use 'browser_action' or 'fetch_workflows' again.]");
         }
 
+        if (decision.type === "fetch_bookmarks") {
+          await logAction("agent", "running", "Fetching bookmarks context...");
+          try {
+            // Find active tab URL to check if it's bookmarked
+            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            let activeTabStatus = "";
+            if (activeTab && activeTab.url) {
+              const activeMatches = await new Promise((resolve) => {
+                chrome.bookmarks.search({ url: activeTab.url }, (results) => {
+                  if (chrome.runtime.lastError) resolve([]);
+                  else resolve(results || []);
+                });
+              });
+              if (activeMatches && activeMatches.length > 0) {
+                activeTabStatus = `\n[Active Tab Bookmark Status: The current tab (${activeTab.url}) is BOOKMARKED with the title "${activeMatches[0].title}".]\n`;
+              } else {
+                activeTabStatus = `\n[Active Tab Bookmark Status: The current tab (${activeTab.url}) is NOT bookmarked.]\n`;
+              }
+            }
+
+            const bookmarks = await new Promise((resolve) => {
+              chrome.bookmarks.getRecent(100, (results) => {
+                if (chrome.runtime.lastError) resolve([]);
+                else resolve(results || []);
+              });
+            });
+            bookmarksContext = `\n[Bookmarks Context: The user has recently bookmarked the following pages:\n`;
+            if (bookmarks && bookmarks.length > 0) {
+              bookmarksContext += bookmarks.map(b => `- [${b.title || "No Title"}](${b.url})`).join('\n');
+            } else {
+              bookmarksContext += "No recent bookmarks found.";
+            }
+            bookmarksContext += `]\n${activeTabStatus}`;
+          } catch (e) {
+            bookmarksContext = `\n[Bookmarks Context: Error fetching bookmarks: ${e.message}]\n`;
+          }
+          // Re-query with the new bookmarks context
+          decision = await getRouterDecision(bookmarksContext + "\n[CRITICAL INSTRUCTION: You have just fetched the user's bookmarks. You MUST now use 'chat' type to answer the user's question using this Bookmarks Context. Do NOT use 'browser_action' or 'fetch_bookmarks' again.]");
+        }
+
         if (decision.type === "chat") {
           await logAction("agent", "success", "Responded to chat query");
           await addAgentChatMessage(decision.reply);
@@ -1800,6 +1857,108 @@ Respond ONLY with a JSON object in this format:
           if (!decision.workflow_id) throw new Error("Workflow ID is required to update a workflow");
           await logAction("agent", "running", `Updating workflow ID: ${decision.workflow_id}`);
           // Fall through to the browser agent loop where the update_workflow_db action will be handled
+        }
+
+        if (decision.type === "create_bookmark") {
+          let targetUrl = decision.bookmark_url;
+          let targetTitle = decision.bookmark_title || "";
+
+          // If no URL is provided, try to get the active tab's URL and title
+          if (!targetUrl) {
+            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (activeTab) {
+              targetUrl = activeTab.url;
+              if (!targetTitle) {
+                targetTitle = activeTab.title || "";
+              }
+            }
+          }
+
+          if (!targetUrl) {
+            await logAction("agent", "error", "No URL found to bookmark.");
+            await addAgentChatMessage("❌ **Could not bookmark page:** No valid URL was provided or found.");
+            return;
+          }
+
+          await logAction("agent_action", "running", `Action: Bookmarking ${targetUrl}`);
+          try {
+            const bookmark = await new Promise((resolve, reject) => {
+              chrome.bookmarks.create({ url: targetUrl, title: targetTitle }, (newBookmark) => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else resolve(newBookmark);
+              });
+            });
+            isAgentSuccess = true;
+            await logAction("agent", "success", `Successfully bookmarked: ${bookmark.title || bookmark.url}`);
+            await addAgentChatMessage(`**Bookmarked page:** [${bookmark.title || "Bookmark"}](${bookmark.url})`);
+          } catch (err) {
+            console.error(`Failed to create bookmark:`, err);
+            await logAction("agent", "error", `Failed to create bookmark: ${err.message}`);
+            await addAgentChatMessage(`❌ **Failed to create bookmark:** ${err.message}`);
+          }
+          return;
+        }
+
+        if (decision.type === "delete_bookmark") {
+          let targetUrl = decision.bookmark_url;
+          let targetTitle = decision.bookmark_title || "";
+
+          // If no URL is provided, try to get the active tab's URL and title
+          if (!targetUrl && !targetTitle) {
+            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (activeTab) {
+              targetUrl = activeTab.url;
+            }
+          }
+
+          if (!targetUrl && !targetTitle) {
+            await logAction("agent", "error", "No URL or title found to unbookmark.");
+            await addAgentChatMessage("❌ **Could not remove bookmark:** No valid URL or title was provided or found.");
+            return;
+          }
+
+          await logAction("agent_action", "running", `Action: Searching for bookmarks to remove...`);
+          try {
+            const searchParam = targetUrl ? { url: targetUrl } : { query: targetTitle };
+            const matches = await new Promise((resolve) => {
+              chrome.bookmarks.search(searchParam, (results) => {
+                if (chrome.runtime.lastError) resolve([]);
+                else resolve(results || []);
+              });
+            });
+
+            // Filter out folders if we searched by query
+            const bookmarkNodes = matches.filter(node => node.url);
+
+            if (bookmarkNodes.length === 0) {
+              await logAction("agent", "error", `No bookmarks found matching ${targetUrl || targetTitle}`);
+              await addAgentChatMessage(`❌ No bookmarks found matching: ${targetUrl || targetTitle}`);
+              return;
+            }
+
+            await logAction("agent_action", "running", `Action: Removing ${bookmarkNodes.length} bookmark(s)`);
+            let removedCount = 0;
+            for (const node of bookmarkNodes) {
+              await new Promise((resolve, reject) => {
+                chrome.bookmarks.remove(node.id, () => {
+                  if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                  else {
+                    removedCount++;
+                    resolve();
+                  }
+                });
+              });
+            }
+
+            isAgentSuccess = true;
+            await logAction("agent", "success", `Successfully removed ${removedCount} bookmark(s).`);
+            await addAgentChatMessage(`Removed ${removedCount} bookmark(s) matching: ${targetUrl || targetTitle}`);
+          } catch (err) {
+            console.error(`Failed to delete bookmark:`, err);
+            await logAction("agent", "error", `Failed to delete bookmark: ${err.message}`);
+            await addAgentChatMessage(`❌ **Failed to remove bookmark:** ${err.message}`);
+          }
+          return;
         }
 
         if (decision.type === "open_links") {
@@ -1944,6 +2103,16 @@ Respond ONLY with a JSON object in this format:
     const maxSteps = settings?.maxActions || 75;
     const actionHistory = [];
     isAgentSuccess = false;
+
+    const checkAndAdvanceFocusChain = async (targetEl) => {
+      if (targetEl && targetEl.userFocused) {
+        const focusData = await chrome.storage.local.get({ focusChainIndex: 0 });
+        const nextIdx = (focusData.focusChainIndex || 0) + 1;
+        await chrome.storage.local.set({ focusChainIndex: nextIdx });
+        await logAction("agent", "running", `Steering: User focus element matched! Advancing focus chain to step ${nextIdx}.`);
+      }
+    };
+
     for (let step = 1; step <= maxSteps; step++) {
       // Check if stop requested
       const stopCheck = await chrome.storage.local.get({ agentStopRequested: false });
@@ -1976,12 +2145,19 @@ Respond ONLY with a JSON object in this format:
           // 1. Extract DOM from all frames
           let domResults;
           try {
+            const focusData = await chrome.storage.local.get({ focusChain: [], focusChainIndex: 0 });
+            const focusChain = focusData.focusChain || [];
+            const focusChainIndex = focusData.focusChainIndex || 0;
+            const currentFocusStep = focusChainIndex < focusChain.length ? focusChain[focusChainIndex] : null;
+            const currentFocusSelector = currentFocusStep ? currentFocusStep.selector : null;
+
             domResults = await chrome.scripting.executeScript({
             target: { tabId: targetTabId, allFrames: true },
-            func: () => {
+            func: (focusSelector) => {
               const interactiveSelectors = [
                 'a', 'button', 'input', 'textarea', 'select', 'label',
                 '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
+                '[role="option"]', '[role="tab"]', '[role="treeitem"]', '[role="combobox"]',
                 '[role="textbox"]', '[contenteditable="true"]',
                 '[onclick]', '[cursor="pointer"]'
               ];
@@ -2007,6 +2183,18 @@ Respond ONLY with a JSON object in this format:
                     if (isVisible) {
                       el.setAttribute('data-agent-id', String(idx));
                       const elData = { index: idx, tag: el.tagName.toLowerCase() };
+                      
+                      let matchesFocus = false;
+                      if (focusSelector) {
+                        try {
+                          const targetNode = document.querySelector(focusSelector);
+                          if (targetNode && (el === targetNode || el.contains(targetNode))) {
+                            matchesFocus = true;
+                          }
+                        } catch (e) {}
+                      }
+                      if (matchesFocus) elData.userFocused = true;
+
                       const type = el.getAttribute('type'); if (type) elData.type = type;
                       const name = el.getAttribute('name'); if (name) elData.name = name;
                       const id = el.getAttribute('id'); if (id) elData.id = id;
@@ -2072,7 +2260,8 @@ Respond ONLY with a JSON object in this format:
                 elements: elements,
                 innerText: document.body ? document.body.innerText.substring(0, 10000) : ""
               };
-            }
+            },
+            args: [currentFocusSelector]
           });
           } catch (scriptError) {
             if (scriptError.message.includes("showing error page")) {
@@ -2375,6 +2564,7 @@ Respond ONLY with a JSON object in this format:
             }
 
             await logAction("agent_action", "success", "Clicked element successfully");
+            await checkAndAdvanceFocusChain(targetEl);
             
             if (isRecordingWorkflow) {
               actionTrace.push({ action: "click", selector: clickResult[0].result.selector });
@@ -2557,6 +2747,7 @@ Respond ONLY with a JSON object in this format:
             }
 
             await logAction("agent_action", "success", "Typed and submitted text successfully");
+            await checkAndAdvanceFocusChain(targetEl);
             
             if (isRecordingWorkflow) {
               actionTrace.push({ action: "type", selector: typeResult[0].result.selector, text: textVal });
@@ -3146,7 +3337,8 @@ function safeJsonParse(str) {
 
 async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false, workflowsContext = "", activeNoteInstruction = "") {
   const compactElements = pageData?.elements?.map(e => {
-    let s = `[data-agent-id="${e.index}"] ${e.tag}`;
+    let prefix = e.userFocused ? "⭐ [USER FOCUS TARGET] " : "";
+    let s = `${prefix}[data-agent-id="${e.index}"] ${e.tag}`;
     if (e.id) s += ` id="${e.id}"`;
     if (e.name) s += ` name="${e.name}"`;
     if (e.type) s += ` type="${e.type}"`;
@@ -3228,10 +3420,50 @@ CRITICAL RECORDING RULES:
   const activeSkill = self.SkillRegistry ? self.SkillRegistry.getSkillForUrl(pageData.url) : null;
   const skillContext = activeSkill ? `\n[WEBSITE SKILL LOADED: ${activeSkill.name}]\n${activeSkill.systemInstruction}\n` : '';
 
+  const focusData = await chrome.storage.local.get({ focusChain: [], focusChainIndex: 0 });
+  const focusChain = focusData.focusChain || [];
+  const focusChainIndex = focusData.focusChainIndex || 0;
+  const currentStep = focusChainIndex < focusChain.length ? focusChain[focusChainIndex] : null;
+  const currentStepDesc = currentStep ? currentStep.description : null;
+
+  let focusPathSummary = "";
+  if (focusChain.length > 0) {
+    focusPathSummary = `\n[Focus Steering Timeline Context: The user has defined a sequential path of targets for you to follow. Here is the full timeline of steps:\n`;
+    focusPathSummary += focusChain.map((step, idx) => {
+      if (idx === focusChainIndex) {
+        return `- Step ${idx + 1}: ${step.description} <--- (CURRENT ACTIVE STEP - YOU ARE HERE)`;
+      } else if (idx < focusChainIndex) {
+        return `- Step ${idx + 1}: ${step.description} (COMPLETED)`;
+      } else {
+        return `- Step ${idx + 1}: ${step.description} (PENDING FUTURE STEP)`;
+      }
+    }).join('\n');
+    focusPathSummary += `]\n`;
+  }
+
+  const targetEl = pageData?.elements?.find(e => e.userFocused);
+  const focusStepText = targetEl
+    ? `\n[FOCUS DIRECTIVE: The user has marked the element [data-agent-id="${targetEl.index}"] (annotated with '⭐ [USER FOCUS TARGET]' below) as the target element.
+- If the user's prompt/request refers to "this element", "that element", "it", or requests an action to perform on a page element, you MUST target this element [data-agent-id="${targetEl.index}"].
+- The user's active focus step description is: "${currentStepDesc || "Interact with this element"}". Use this description as context for what the user wants to accomplish at this step, but prioritize the user's immediate instruction in their message if they specified a different action (e.g., typing specific text instead of just clicking).
+- If the user's request is completely unrelated to this element, you may proceed with the general task naturally without using this focus target.]\n`
+    : '';
+
+  const pendingStepsCount = focusChain.length - focusChainIndex;
+  let focusGeneralText = "";
+  if (focusChain.length > 0) {
+    if (pendingStepsCount > 0) {
+      focusGeneralText = `\n[CRITICAL STEERING DIRECTIVE: There is an active Focus Steering Path with ${pendingStepsCount} pending step(s) remaining. You MUST NOT select the "finish" action, stop, or conclude the execution until all focus steps are completed. Continue automating to reach and interact with the highlighted elements.]\n`;
+    } else {
+      focusGeneralText = `\n[STEERING DIRECTIVE: All steps in the user's Focus Steering Path have been successfully completed! Since you have successfully executed all target actions in the path, you MUST select the "finish" action on this step to conclude the execution and notify the user.]\n`;
+    }
+  }
+
   const systemInstruction = `You are Jarvis, a premium browser assistant. ${goalText}
 You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).${skillContext}${activeNoteInstruction}
 ${tabsContext}
 ${workflowsContext}
+${focusPathSummary}
 ${historyContext}
 Step: ${step}/${maxSteps}
 Current page URL: ${pageData.url}
@@ -3264,7 +3496,7 @@ Respond ONLY with a JSON object in the following format:
   "answer": "Your comprehensive reply to the user. Use this to summarize the page, answer questions, ask for input, or describe what you accomplished (required for finish)"
 }
 
-${isRecordingWorkflow ? recordingRules : standardRules}`;
+${isRecordingWorkflow ? recordingRules : standardRules}${focusStepText}${focusGeneralText}`;
 
 console.log(systemInstruction, "##################[SYSTEM_PROMPT]##################")
 

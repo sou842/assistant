@@ -59,6 +59,9 @@ async function sendInitialState() {
     isAgentRunning: false, 
     currentTokenUsage: null,
     pendingNotes: [],
+    isFocusModeEnabled: false,
+    focusChain: [],
+    focusChainIndex: 0,
     settings: {
       sandboxEnabled: true,
       maxActions: 75,
@@ -80,6 +83,9 @@ async function sendInitialState() {
       currentTokenUsage: data.currentTokenUsage,
       currentChatId: currentChatId,
       pendingNotes: data.pendingNotes,
+      isFocusModeEnabled: data.isFocusModeEnabled,
+      focusChain: data.focusChain,
+      focusChainIndex: data.focusChainIndex,
       settings: data.settings
     }, "*");
   }
@@ -139,6 +145,33 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           pendingNotes: changes.pendingNotes.newValue || []
+        }, "*");
+      }
+    }
+    if (changes.isFocusModeEnabled) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          isFocusModeEnabled: changes.isFocusModeEnabled.newValue
+        }, "*");
+      }
+    }
+    if (changes.focusChain) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          focusChain: changes.focusChain.newValue
+        }, "*");
+      }
+    }
+    if (changes.focusChainIndex) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          focusChainIndex: changes.focusChainIndex.newValue
         }, "*");
       }
     }
@@ -374,6 +407,30 @@ window.addEventListener("message", async (event) => {
       case "STOP_AGENT":
         await chrome.storage.local.set({ agentStopRequested: true });
         break;
+
+      case "TOGGLE_FOCUS_MODE":
+        await chrome.storage.local.set({ isFocusModeEnabled: data.enabled });
+        break;
+
+      case "CLEAR_FOCUS_CHAIN":
+        await chrome.storage.local.set({ focusChain: [], focusChainIndex: 0 });
+        break;
+
+      case "SET_FOCUS_CHAIN_INDEX":
+        await chrome.storage.local.set({ focusChainIndex: data.index });
+        break;
+
+      case "REMOVE_FOCUS_STEP": {
+        const chainData = await chrome.storage.local.get({ focusChain: [], focusChainIndex: 0 });
+        const chain = chainData.focusChain || [];
+        let index = chainData.focusChainIndex || 0;
+        chain.splice(data.index, 1);
+        if (index >= chain.length && index > 0) {
+          index = Math.max(0, chain.length - 1);
+        }
+        await chrome.storage.local.set({ focusChain: chain, focusChainIndex: index });
+        break;
+      }
 
       case "OPEN_LOGIN_PAGE": {
         const url = nextjsFrame.src.includes("localhost") 

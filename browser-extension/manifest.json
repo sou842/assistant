@@ -22,7 +22,8 @@
     "notifications",
     "debugger",
     "clipboardWrite",
-    "clipboardRead"
+    "clipboardRead",
+    "bookmarks"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';",
