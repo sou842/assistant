@@ -8,7 +8,7 @@ import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
 import { SettingsTab } from "./components/SettingsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -65,6 +65,7 @@ export default function ExtensionPanel() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [isLocal, setIsLocal] = useState(false);
+  const [pendingNotes, setPendingNotes] = useState<string[]>([]);
   const hasOpenedLogin = useRef(false);
 
   useEffect(() => {
@@ -224,14 +225,14 @@ export default function ExtensionPanel() {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-      
+
       oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
       gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      
+
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + 0.15);
     } catch (e) {
@@ -249,6 +250,7 @@ export default function ExtensionPanel() {
           if (data.savedChats) setSavedChats(data.savedChats);
           if (data.isAgentRunning !== undefined) setIsAgentRunning(data.isAgentRunning);
           if (data.currentTokenUsage !== undefined) setTokenUsage(data.currentTokenUsage);
+          if (data.pendingNotes !== undefined) setPendingNotes(data.pendingNotes);
           if (data.settings) setSettings(data.settings);
         } else if (data.action === "WORKFLOW_RESULT") {
           if (data.success) {
@@ -310,6 +312,16 @@ export default function ExtensionPanel() {
 
     setInput("");
     setMentionTags([]);
+  };
+
+  const sendRuntimeNote = () => {
+    if (!input.trim()) return;
+    window.parent.postMessage({
+      type: "FROM_NEXTJS",
+      action: "ADD_RUNTIME_NOTE",
+      text: input.trim()
+    }, "*");
+    setInput("");
   };
 
   const clearChat = () => {
@@ -443,7 +455,7 @@ export default function ExtensionPanel() {
 
       {/* Tabs & Status Bar */}
       {/* <div className="flex items-center justify-start p-2 gap-2 border-b border-white/10 shrink-0 bg-black/20"> */}
-        {/* <div className="flex items-center gap-4 px-2">
+      {/* <div className="flex items-center gap-4 px-2">
           <button
             onClick={() => setActiveTab("chat")}
             className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -474,7 +486,7 @@ export default function ExtensionPanel() {
           </button>
         </div> */}
 
-        {/* <div className="flex items-center gap-3 pr-1">
+      {/* <div className="flex items-center gap-3 pr-1">
           <div className="flex items-center gap-1.5 text-xs font-medium">
             <span className="relative flex h-2 w-2">
               {isAgentRunning && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
@@ -573,60 +585,91 @@ export default function ExtensionPanel() {
             <Settings size={16} strokeWidth={1} />
           </button>
         </div>
-        {/* {activeTab === "chat" && ( */}
-          <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
-            <MentionsInput
-              ref={mentionsInputRef}
-              value={input}
-              onChange={(val) => setInput(val)}
-              onEnter={() => {
-                if (!isAgentRunning && input.trim()) sendMessage();
-              }}
-              disabled={isAgentRunning}
-              placeholder={isAgentRunning ? "Agent is running..." : "Ask Jarvis to do something... (@w: for workflows)"}
-              workflows={workflows}
-              tags={mentionTags}
-              onTagsChange={setMentionTags}
-            />
-            <div className="flex items-center justify-between pt-2 px-1">
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+        <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
+          {pendingNotes?.length > 0 && (
+            <div className="flex flex-col gap-2.5 px-3 py-1 bg-[#121212]/30 rounded-t-2xl border-b border-white/5">
+              <div className="space-y-3 pl-2.5 ml-2 my-1">
+                {pendingNotes?.map((note, index) => (
+                  <div
+                    key={index}
+                    className="flex gap-2 items-center group/note -ml-4"
+                  >
+                    <StickyNote size={12} className="text-zinc-500 group-hover/note:text-blue-400 transition-colors shrink-0" />
+                    <span className="text-xs text-zinc-300 transition-colors font-sans flex-1 truncate">{note || ''}</span>
                     <button
                       type="button"
-                      disabled={isAgentRunning}
-                      className="bg-white/5 hover:bg-white/10 p-1 text-zinc-400 hover:text-zinc-200 rounded-full transition-colors flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                      title="Insert reference"
+                      onClick={() => {
+                        window.parent.postMessage({ type: "FROM_NEXTJS", action: "REMOVE_RUNTIME_NOTE", index }, "*");
+                      }}
+                      className="p-1 rounded-full hover:bg-white/5 text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer shrink-0 mr-1"
+                      title="Remove Note"
                     >
-                      <Plus size={16} />
+                      <X size={12} />
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="bg-[#161616] border border-white/10 text-zinc-300 min-w-[180px] rounded-lg">
-                    <DropdownMenuItem
-                      onClick={() => handleTriggerMention('w')}
-                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
-                    >
-                      <Workflow size={12} className="text-zinc-400" />
-                      <span>Workflow</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleTriggerMention('t')}
-                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
-                    >
-                      <AppWindow size={12} className="text-zinc-400" />
-                      <span>Tabs</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleTriggerMention('p')}
-                      className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
-                    >
-                      <Globe size={12} className="text-zinc-400" />
-                      <span>Pages</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <MentionsInput
+            ref={mentionsInputRef}
+            value={input}
+            onChange={(val) => setInput(val)}
+            onEnter={() => {
+              if (input.trim()) {
+                if (isAgentRunning) {
+                  sendRuntimeNote();
+                } else {
+                  sendMessage();
+                }
+              }
+            }}
+            disabled={false}
+            placeholder={isAgentRunning ? "Send a note/guidance to the running agent..." : "Ask Jarvis to do something... (@w: for workflows)"}
+            workflows={workflows}
+            tags={mentionTags}
+            onTagsChange={setMentionTags}
+            pendingNotes={pendingNotes}
+          />
+          <div className="flex items-center justify-between pt-2 px-1">
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isAgentRunning}
+                    className="bg-white/5 hover:bg-white/10 p-1 text-zinc-400 hover:text-zinc-200 rounded-full transition-colors flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Insert reference"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="bg-[#161616] border border-white/10 text-zinc-300 min-w-[180px] rounded-lg">
+                  <DropdownMenuItem
+                    onClick={() => handleTriggerMention('w')}
+                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                  >
+                    <Workflow size={12} className="text-zinc-400" />
+                    <span>Workflow</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTriggerMention('t')}
+                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                  >
+                    <AppWindow size={12} className="text-zinc-400" />
+                    <span>Tabs</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTriggerMention('p')}
+                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                  >
+                    <Globe size={12} className="text-zinc-400" />
+                    <span>Pages</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                {/* <div className="relative">
+              {/* <div className="relative">
                   <select
                     className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-2 py-1 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-1"
                     value={model}
@@ -644,16 +687,17 @@ export default function ExtensionPanel() {
                   </div>
                 </div> */}
 
-                {tokenUsage && (
-                  <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 shadow-sm shrink-0">
-                    <span className="text-zinc-500">Token:</span>
-                    <span className="text-zinc-200 font-semibold">{tokenUsage.total.toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
+              {tokenUsage && (
+                <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 shadow-sm shrink-0">
+                  <span className="text-zinc-500">Token:</span>
+                  <span className="text-zinc-200 font-semibold">{tokenUsage.total.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
 
-              <div>
-                {isAgentRunning ? (
+            <div className="flex items-center gap-2">
+              {isAgentRunning ? (
+                <>
                   <button
                     onClick={stopAgent}
                     className="p-2 bg-brand-primary hover:bg-brand-primary/80 text-white rounded-full transition flex items-center justify-center shadow-md shadow-red-950/20 cursor-pointer"
@@ -661,18 +705,28 @@ export default function ExtensionPanel() {
                   >
                     <Square size={14} fill="currentColor" />
                   </button>
-                ) : (
                   <button
-                    onClick={sendMessage}
+                    onClick={isAgentRunning ? sendRuntimeNote : sendMessage}
                     disabled={!input.trim()}
-                    className="p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md"
+                    className={`p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md cursor-pointer ${!input.trim() ? "hidden" : ""}`}
+                    title={isAgentRunning ? "Send Note to Agent" : "Send message"}
                   >
                     <Send size={14} fill="currentColor" />
                   </button>
-                )}
-              </div>
+                </>
+              ) :
+                <button
+                  onClick={isAgentRunning ? sendRuntimeNote : sendMessage}
+                  disabled={!input.trim()}
+                  className="p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md cursor-pointer"
+                  title={isAgentRunning ? "Send Note to Agent" : "Send message"}
+                >
+                  <Send size={14} fill="currentColor" />
+                </button>
+              }
             </div>
           </div>
+        </div>
         {/* )} */}
       </div>
     </div>

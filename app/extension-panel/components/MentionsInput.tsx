@@ -35,6 +35,7 @@ interface MentionsInputProps {
   workflows: WorkflowItem[];
   tags: MentionTag[];
   onTagsChange: (tags: MentionTag[]) => void;
+  pendingNotes?: string[];
 }
 
 export interface MentionsInputRef {
@@ -49,7 +50,8 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
   placeholder,
   workflows,
   tags,
-  onTagsChange
+  onTagsChange,
+  pendingNotes = []
 }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -375,6 +377,8 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
           </div>
         )}
       </div>
+
+
 
       <div
         ref={editorRef}

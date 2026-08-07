@@ -1829,7 +1829,8 @@ Respond ONLY with a JSON object in this format:
                 try {
                   await logAction("agent_action", "running", `Action: Opening new tab for ${targetUrl}`);
                   await addAgentChatMessage(`🌐 Opening new tab for: ${targetUrl}`);
-                  await chrome.tabs.create({ url: targetUrl, active: false });
+                  const isActive = urls.length < 7;
+                  await chrome.tabs.create({ url: targetUrl, active: isActive });
                   openedCount++;
                 } catch (err) {
                   console.error(`Failed to open URL: ${urls[i]}`, err);
@@ -1843,7 +1844,7 @@ Respond ONLY with a JSON object in this format:
             }
             isAgentSuccess = true;
             await logAction("agent", "success", `Successfully opened ${openedCount} of ${urls.length} links`);
-            await addAgentChatMessage(`✅ **Successfully opened ${openedCount} of ${urls.length} links!**`);
+            await addAgentChatMessage(`Successfully opened ${openedCount} of ${urls.length} links!`);
             return;
           }
         }
@@ -1889,7 +1890,7 @@ Respond ONLY with a JSON object in this format:
             }
             isAgentSuccess = true;
             await logAction("agent", "success", `Successfully closed ${closedCount} of ${tabIds.length} tabs`);
-            await addAgentChatMessage(`✅ **Successfully closed ${closedCount} of ${tabIds.length} tabs!**`);
+            await addAgentChatMessage(`Successfully closed ${closedCount} of ${tabIds.length} tabs!`);
             return;
           }
         }
@@ -2134,6 +2135,22 @@ Respond ONLY with a JSON object in this format:
         }
 
         await logAction("dom_extraction", "success", JSON.stringify(pageData));
+
+        // Retrieve and consume real-time user notes/interventions
+        const notesData = await chrome.storage.local.get({ pendingNotes: [] });
+        const pendingNotes = notesData.pendingNotes || [];
+        let activeNoteInstruction = "";
+        if (pendingNotes.length > 0) {
+          const noteText = pendingNotes.join("; ");
+          activeNoteInstruction = `\n[Real-time User Guidance: The user has sent this correction/note in real-time. YOU MUST PRIORITIZE THIS INSTRUCTION: "${noteText}"]\n`;
+          
+          await logAction("agent_decision", "running", `Thought: User note received: "${noteText}"`);
+          await addAgentChatMessage(`💡 *Thinking:* 📝 User note received: "${noteText}"`);
+          
+          // Clear notes in storage
+          await chrome.storage.local.set({ pendingNotes: [] });
+        }
+
         await logAction("agent_reasoning", "running", `Step ${step}/${maxSteps}: Analyzing page and deciding next step...`);
         await addAgentChatMessage(`⚡ Step ${step}/${maxSteps}: Reading elements on the page...`);
 
@@ -2149,7 +2166,7 @@ Respond ONLY with a JSON object in this format:
         };
         await logAction("api_call", "running", JSON.stringify(requestPayload));
 
-        const llmResult = await withCancel(queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow, workflowsContext));
+        const llmResult = await withCancel(queryLLM(model, prompt, step, maxSteps, pageData, actionHistory, isRecordingWorkflow, workflowsContext, activeNoteInstruction));
         const rawText = llmResult.text;
 
         promptTokens += llmResult.promptTokens;
@@ -3127,7 +3144,7 @@ function safeJsonParse(str) {
   }
 }
 
-async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false, workflowsContext = "") {
+async function queryLLM(model, prompt, step, maxSteps, pageData, actionHistory = [], isRecordingWorkflow = false, workflowsContext = "", activeNoteInstruction = "") {
   const compactElements = pageData?.elements?.map(e => {
     let s = `[data-agent-id="${e.index}"] ${e.tag}`;
     if (e.id) s += ` id="${e.id}"`;
@@ -3212,7 +3229,7 @@ CRITICAL RECORDING RULES:
   const skillContext = activeSkill ? `\n[WEBSITE SKILL LOADED: ${activeSkill.name}]\n${activeSkill.systemInstruction}\n` : '';
 
   const systemInstruction = `You are Jarvis, a premium browser assistant. ${goalText}
-You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).${skillContext}
+You are fully capable of understanding page content and performing any actions a user can (clicks, scrolls, typing, navigation, tab switching).${skillContext}${activeNoteInstruction}
 ${tabsContext}
 ${workflowsContext}
 ${historyContext}

@@ -58,6 +58,7 @@ async function sendInitialState() {
     savedChats: [], 
     isAgentRunning: false, 
     currentTokenUsage: null,
+    pendingNotes: [],
     settings: {
       sandboxEnabled: true,
       maxActions: 75,
@@ -78,6 +79,7 @@ async function sendInitialState() {
       isAgentRunning: data.isAgentRunning,
       currentTokenUsage: data.currentTokenUsage,
       currentChatId: currentChatId,
+      pendingNotes: data.pendingNotes,
       settings: data.settings
     }, "*");
   }
@@ -128,6 +130,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           settings: changes.settings.newValue
+        }, "*");
+      }
+    }
+    if (changes.pendingNotes) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          pendingNotes: changes.pendingNotes.newValue || []
         }, "*");
       }
     }
@@ -256,6 +267,22 @@ window.addEventListener("message", async (event) => {
         const history = histData.chatHistory;
         history.splice(data.index);
         await chrome.storage.local.set({ chatHistory: history });
+        break;
+      }
+
+      case "ADD_RUNTIME_NOTE": {
+        const notesData = await chrome.storage.local.get({ pendingNotes: [] });
+        const pendingNotes = notesData.pendingNotes || [];
+        pendingNotes.push(data.text);
+        await chrome.storage.local.set({ pendingNotes });
+        break;
+      }
+
+      case "REMOVE_RUNTIME_NOTE": {
+        const notesData = await chrome.storage.local.get({ pendingNotes: [] });
+        const pendingNotes = notesData.pendingNotes || [];
+        pendingNotes.splice(data.index, 1);
+        await chrome.storage.local.set({ pendingNotes });
         break;
       }
 

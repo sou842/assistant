@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome, RotateCcw } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome, RotateCcw, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -180,6 +180,7 @@ export function ChatTab({
           let currentGroup: any = null;
 
           const AGENT_STEP_CONFIG = [
+            { match: (text: string) => text.includes('📝 User note received:'), Icon: StickyNote, clean: (text: string) => text.replace('💡 *Thinking:*', '').replace('📝 User note received:', '').trim() },
             { match: (text: string) => text.startsWith('💡 *Thinking:*'), Icon: Brain, clean: (text: string) => text.replace('💡 *Thinking:*', '').trim() },
             { match: (text: string) => text.startsWith('🌐'), Icon: Globe, clean: (text: string) => text.replace('🌐', '').trim() },
             { match: (text: string) => text.startsWith('📄'), Icon: FileText, clean: (text: string) => text.replace('📄', '').trim() },
