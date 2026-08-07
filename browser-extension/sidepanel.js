@@ -284,10 +284,27 @@ window.addEventListener("message", async (event) => {
         const histData = await chrome.storage.local.get({ chatHistory: [] });
         const history = histData.chatHistory;
         if (history[data.index]) {
-          history[data.index].text = data.text;
-          history[data.index].timestamp = Date.now();
+          const targetMsg = history[data.index];
+          targetMsg.text = data.text;
+          targetMsg.timestamp = Date.now();
+
+          if (targetMsg.role === "user") {
+            // Truncate history after the edited user message
+            history.splice(data.index + 1);
+            await chrome.storage.local.set({ chatHistory: history });
+
+            // Re-trigger the agent running loop with the updated prompt
+            chrome.runtime.sendMessage({
+              action: "run_agent",
+              prompt: targetMsg.text,
+              tags: targetMsg.tags || [],
+              model: data.model || "mistral-small-latest",
+              chatId: currentChatId
+            });
+          } else {
+            await chrome.storage.local.set({ chatHistory: history });
+          }
         }
-        await chrome.storage.local.set({ chatHistory: history });
         break;
       }
 

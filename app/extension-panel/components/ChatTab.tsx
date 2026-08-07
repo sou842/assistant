@@ -60,7 +60,7 @@ function ChatMessageItem({
           {isEditing ? (
             <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
               <textarea
-                className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none border-b border-white/5 pb-2 focus:border-blue-500/30 font-sans"
+                className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none pb-2 focus:border-blue-500/30 font-sans"
                 value={editingText}
                 onChange={(e) => setEditingText(e.target.value)}
                 rows={2}
