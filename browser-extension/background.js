@@ -1630,6 +1630,8 @@ async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   let totalTokens = currentUsageObj?.total || 0;
   let isAgentSuccess = false;
 
+  let targetTabId = null;
+
   try {
     await logAction("agent", "running", `Analyzing request...`);
 
@@ -1720,12 +1722,23 @@ Respond ONLY with a JSON object in this format:
 
           console.log(sysInstruction, "##################[ROUTER_PROMPT]##################");
 
+          const { settings } = await chrome.storage.local.get({ settings: {} });
+          const customModels = settings?.customModels || [];
+          const activeCustomModelId = settings?.activeCustomModelId || "";
+          const activeModel = customModels.find(m => m.id === activeCustomModelId);
+          const customModelName = activeModel ? activeModel.modelName : "";
+          const customApiToken = activeModel ? activeModel.apiToken : "";
+          const allowFallback = activeModel ? activeModel.allowFallback !== false : true;
+
           const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               model,
-              systemInstruction: sysInstruction
+              systemInstruction: sysInstruction,
+              customModelName,
+              customApiToken,
+              allowFallback
             })
           });
 
@@ -2057,11 +2070,11 @@ Respond ONLY with a JSON object in this format:
       console.warn("Pre-check failed, proceeding to browser agent loop", e);
     }
 
-    await chrome.storage.local.set({ isAgentAutomating: true });
+    await chrome.storage.local.set({ isAgentAutomating: true, agentError: null });
     await logAction("agent", "running", `Starting Browser Agent [${model}] with goal: "${prompt}"`);
     await addAgentChatMessage(`🔍 Page analysis started [${model}] to accomplish your request: "${prompt}"`);
 
-    let targetTabId = lastInteractedTabId;
+    targetTabId = lastInteractedTabId;
     
     // Verify targetTabId is valid
     if (targetTabId) {
@@ -3263,7 +3276,17 @@ Respond ONLY with a JSON object in this format:
         }
         await logAction("agent", "error", `Step ${step} failed: ${err.message}`, err);
         
-        if (err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("key") || err.message.toLowerCase().includes("rate limit")) {
+        if (err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("key") || err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("unauthorized") || err.message.toLowerCase().includes("authentication") || err.message.toLowerCase().includes("500")) {
+          const customModels = settings?.customModels || [];
+          const activeCustomModelId = settings?.activeCustomModelId || "";
+          const activeModel = customModels.find(m => m.id === activeCustomModelId);
+          await chrome.storage.local.set({
+            agentError: {
+              title: activeModel ? "Custom Model Error" : "API Provider Error",
+              message: err.message,
+              modelName: activeModel ? `${activeModel.label} (${activeModel.modelName})` : model
+            }
+          });
           await addAgentChatMessage(`🚨 Failed at step ${step}: ${err.message}`);
           break;
         }
@@ -3501,12 +3524,23 @@ ${isRecordingWorkflow ? recordingRules : standardRules}${focusStepText}${focusGe
 console.log(systemInstruction, "##################[SYSTEM_PROMPT]##################")
 
   const baseUrl = await getBackendBaseUrl();
+  const { settings } = await chrome.storage.local.get({ settings: {} });
+  const customModels = settings?.customModels || [];
+  const activeCustomModelId = settings?.activeCustomModelId || "";
+  const activeModel = customModels.find(m => m.id === activeCustomModelId);
+  const customModelName = activeModel ? activeModel.modelName : "";
+  const customApiToken = activeModel ? activeModel.apiToken : "";
+  const allowFallback = activeModel ? activeModel.allowFallback !== false : true;
+
   const response = await fetch(`${baseUrl}/api/extension/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      systemInstruction
+      systemInstruction,
+      customModelName,
+      customApiToken,
+      allowFallback
     })
   });
 
@@ -3613,12 +3647,23 @@ Respond ONLY with a JSON object in this format:
 }`;
 
     const baseUrl = await getBackendBaseUrl();
+    const { settings } = await chrome.storage.local.get({ settings: {} });
+    const customModels = settings?.customModels || [];
+    const activeCustomModelId = settings?.activeCustomModelId || "";
+    const activeModel = customModels.find(m => m.id === activeCustomModelId);
+    const customModelName = activeModel ? activeModel.modelName : "";
+    const customApiToken = activeModel ? activeModel.apiToken : "";
+    const allowFallback = activeModel ? activeModel.allowFallback !== false : true;
+
     const routerResponse = await fetch(`${baseUrl}/api/extension/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        systemInstruction
+        systemInstruction,
+        customModelName,
+        customApiToken,
+        allowFallback
       })
     });
 

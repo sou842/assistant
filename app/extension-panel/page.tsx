@@ -8,7 +8,7 @@ import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
 import { SettingsTab } from "./components/SettingsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote, Target, MousePointerClick, Check } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote, Target, MousePointerClick, Check, BrainCog } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -69,6 +69,7 @@ export default function ExtensionPanel() {
   const [isFocusModeEnabled, setIsFocusModeEnabled] = useState(false);
   const [focusChain, setFocusChain] = useState<any[]>([]);
   const [focusChainIndex, setFocusChainIndex] = useState(0);
+  const [agentError, setAgentError] = useState<any>(null);
   const hasOpenedLogin = useRef(false);
 
   useEffect(() => {
@@ -298,6 +299,7 @@ export default function ExtensionPanel() {
           if (data.focusChain !== undefined) setFocusChain(data.focusChain);
           if (data.focusChainIndex !== undefined) setFocusChainIndex(data.focusChainIndex);
           if (data.settings) setSettings(data.settings);
+          if (data.agentError !== undefined) setAgentError(data.agentError);
         } else if (data.action === "WORKFLOW_RESULT") {
           if (data.success) {
             toast.success("Workflow completed successfully!");
@@ -871,6 +873,61 @@ export default function ExtensionPanel() {
         </div>
         {/* )} */}
       </div>
+      {agentError && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md animate-in fade-in duration-200 cursor-default"
+          onClick={() => {
+            setAgentError(null);
+            window.parent.postMessage({ type: "FROM_NEXTJS", action: "CLEAR_AGENT_ERROR" }, "*");
+          }}
+        >
+          <div 
+            className="bg-[#121212] border border-white/10 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Warning Icon with red glowing background */}
+            <div className="w-12 h-12 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary mb-1 shadow-[0_0_15px_rgba(236,72,153,0.15)]">
+              <BrainCog size={20} />
+            </div>
+
+            <div className="space-y-1.5 w-full">
+              <h3 className="font-semibold text-sm text-white font-sans">{agentError.title || "Authentication Error"}</h3>
+              {agentError.modelName && (
+                <div className="text-[10px] text-zinc-400 font-mono py-0.5 px-2 rounded w-fit mx-auto">
+                  {agentError.modelName}
+                </div>
+              )}
+            </div>
+            
+            <p className="text-xs text-zinc-400 leading-relaxed font-sans max-h-32 overflow-y-auto w-full px-2.5 py-2 bg-black/20 rounded-xl border border-white/5">
+              {agentError.message || "Failed to authenticate with AI provider. Please verify your API Key/Token."}
+            </p>
+            
+            <div className="flex gap-2.5 w-full pt-1.5">
+              <button
+                onClick={() => {
+                  setAgentError(null);
+                  window.parent.postMessage({ type: "FROM_NEXTJS", action: "CLEAR_AGENT_ERROR" }, "*");
+                }}
+                className="flex-1 py-2 rounded-full text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer font-sans"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  setAgentError(null);
+                  window.parent.postMessage({ type: "FROM_NEXTJS", action: "CLEAR_AGENT_ERROR" }, "*");
+                  setActiveTab("settings");
+                }}
+                className="flex-1 py-2 rounded-full text-xs font-medium text-white bg-brand-primary hover:bg-brand-primary/80 transition cursor-pointer font-sans"
+              >
+                Go to Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

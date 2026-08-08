@@ -30,10 +30,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { model, systemInstruction } = await req.json();
+    const { model, systemInstruction, customModelName, customApiToken, allowFallback = true } = await req.json();
 
     if (!model || !systemInstruction) {
       return NextResponse.json({ error: 'Missing model or systemInstruction' }, { status: 400 });
+    }
+
+    let customModelInstance: any = null;
+    if (customModelName && customApiToken) {
+      try {
+        if (customModelName.startsWith("openrouter/") || customModelName.includes("/")) {
+          const modelId = customModelName.replace(/^openrouter\//, "");
+          const customOpenRouter = createOpenAI({
+            apiKey: customApiToken,
+            baseURL: "https://openrouter.ai/api/v1",
+          });
+          customModelInstance = customOpenRouter(modelId);
+        } else if (customModelName.startsWith("gemini")) {
+          const customGoogle = createGoogleGenerativeAI({ apiKey: customApiToken });
+          customModelInstance = customGoogle(customModelName);
+        } else if (customModelName.startsWith("mistral")) {
+          const customMistral = createMistral({ apiKey: customApiToken });
+          customModelInstance = customMistral(customModelName);
+        } else {
+          const customOpenAI = createOpenAI({ apiKey: customApiToken });
+          customModelInstance = customOpenAI(customModelName);
+        }
+      } catch (err) {
+        console.error("Error creating custom model provider:", err);
+      }
     }
 
     const isGemini = model.startsWith("gemini");
@@ -42,27 +67,38 @@ export async function POST(req: Request) {
 
     let modelsToTry: any[] = [];
 
-    if (isGemini) {
-      modelsToTry = [
-        google(model),
-        openai("gpt-4o-mini"),
-        ...mistralProviders.map(p => p("mistral-small-latest"))
-      ].filter(Boolean);
-    } else if (isOpenAI) {
-      modelsToTry = [
-        openai(model),
-        google("gemini-2.5-flash"),
-        ...mistralProviders.map(p => p("mistral-small-latest"))
-      ].filter(Boolean);
-    } else if (isMistral) {
-      modelsToTry = [
-        ...mistralProviders.map(p => p(model)),
-        google("gemini-2.5-flash"),
-        openai("gpt-4o-mini")
-      ].filter(Boolean);
-    } else {
-      return NextResponse.json({ error: `Unsupported model: ${model}` }, { status: 400 });
+    if (customModelInstance) {
+      modelsToTry.push(customModelInstance);
     }
+
+    // Only populate default fallbacks if fallback is allowed or if no custom model is defined
+    if (!customModelInstance || allowFallback) {
+      if (isGemini) {
+        modelsToTry.push(
+          google(model),
+          openai("gpt-4o-mini"),
+          ...mistralProviders.map(p => p("mistral-small-latest"))
+        );
+      } else if (isOpenAI) {
+        modelsToTry.push(
+          openai(model),
+          google("gemini-2.5-flash"),
+          ...mistralProviders.map(p => p("mistral-small-latest"))
+        );
+      } else if (isMistral) {
+        modelsToTry.push(
+          ...mistralProviders.map(p => p(model)),
+          google("gemini-2.5-flash"),
+          openai("gpt-4o-mini")
+        );
+      } else {
+        if (!customModelInstance) {
+          return NextResponse.json({ error: `Unsupported model: ${model}` }, { status: 400 });
+        }
+      }
+    }
+
+    modelsToTry = modelsToTry.filter(Boolean);
 
     let lastError: any;
     let text = "";

@@ -71,7 +71,8 @@ async function sendInitialState() {
       stealthMode: false,
       autoSaveEnabled: false,
       autoSavePath: "/JarvisLogs"
-    }
+    },
+    agentError: null
   });
   if (nextjsFrame && nextjsFrame.contentWindow) {
     nextjsFrame.contentWindow.postMessage({
@@ -86,7 +87,8 @@ async function sendInitialState() {
       isFocusModeEnabled: data.isFocusModeEnabled,
       focusChain: data.focusChain,
       focusChainIndex: data.focusChainIndex,
-      settings: data.settings
+      settings: data.settings,
+      agentError: data.agentError
     }, "*");
   }
 }
@@ -118,6 +120,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
           type: "FROM_EXTENSION",
           action: "UPDATE_STATE",
           isAgentRunning: changes.isAgentRunning.newValue
+        }, "*");
+      }
+    }
+    if (changes.agentError) {
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "UPDATE_STATE",
+          agentError: changes.agentError.newValue
         }, "*");
       }
     }
@@ -246,6 +257,10 @@ window.addEventListener("message", async (event) => {
           }
           await chrome.storage.local.set({ settings: data.settings });
         }
+        break;
+
+      case "CLEAR_AGENT_ERROR":
+        await chrome.storage.local.set({ agentError: null });
         break;
 
       case "RELOAD_EXTENSION":
