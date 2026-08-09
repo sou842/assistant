@@ -263,6 +263,18 @@ window.addEventListener("message", async (event) => {
         await chrome.storage.local.set({ agentError: null });
         break;
 
+      case "REQUEST_MIC_PERMISSION":
+        chrome.tabs.create({ url: chrome.runtime.getURL("permission.html") });
+        break;
+
+      case "START_SPEECH_RECOGNITION":
+        startSpeechRecognition();
+        break;
+
+      case "STOP_SPEECH_RECOGNITION":
+        stopSpeechRecognition();
+        break;
+
       case "RELOAD_EXTENSION":
         chrome.runtime.reload();
         break;
@@ -512,4 +524,114 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 });
+
+let sidepanelRecognition = null;
+let isListeningSpeech = false;
+
+function isFirefox() {
+  return typeof navigator !== "undefined" && navigator.userAgent.includes("Firefox");
+}
+
+function notifyError(message) {
+  if (nextjsFrame && nextjsFrame.contentWindow) {
+    nextjsFrame.contentWindow.postMessage({
+      type: "FROM_EXTENSION",
+      action: "SPEECH_STATUS",
+      isListening: false
+    }, "*");
+    nextjsFrame.contentWindow.postMessage({
+      type: "FROM_EXTENSION",
+      action: "SPEECH_ERROR",
+      error: message
+    }, "*");
+  }
+}
+
+function startSpeechRecognition() {
+  // Firefox does not support Web Speech API in extension contexts — it throws "network" errors
+  // because Mozilla's speech backend requires a remote server connection that is blocked in extensions.
+  if (isFirefox()) {
+    notifyError("firefox-unsupported");
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    notifyError("unsupported");
+    return;
+  }
+
+  if (isListeningSpeech && sidepanelRecognition) {
+    sidepanelRecognition.stop();
+    return;
+  }
+
+  try {
+    sidepanelRecognition = new SpeechRecognition();
+    sidepanelRecognition.continuous = false;
+    sidepanelRecognition.interimResults = false;
+    sidepanelRecognition.lang = "en-US";
+
+    sidepanelRecognition.onstart = () => {
+      isListeningSpeech = true;
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "SPEECH_STATUS",
+          isListening: true
+        }, "*");
+      }
+    };
+
+    sidepanelRecognition.onerror = (event) => {
+      console.error("Sidepanel speech error:", event.error);
+      isListeningSpeech = false;
+
+      if (event.error === "network") {
+        // Network error in Chromium can also mean the Speech Recognition server
+        // is unreachable (e.g. offline or corporate firewall).
+        notifyError("network");
+      } else if (event.error === "not-allowed") {
+        notifyError("not-allowed");
+      } else {
+        notifyError(event.error);
+      }
+    };
+
+    sidepanelRecognition.onend = () => {
+      isListeningSpeech = false;
+      if (nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "SPEECH_STATUS",
+          isListening: false
+        }, "*");
+      }
+    };
+
+    sidepanelRecognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript && nextjsFrame && nextjsFrame.contentWindow) {
+        nextjsFrame.contentWindow.postMessage({
+          type: "FROM_EXTENSION",
+          action: "SPEECH_TRANSCRIPT",
+          text: transcript
+        }, "*");
+      }
+    };
+
+    sidepanelRecognition.start();
+  } catch (err) {
+    console.error("Failed to start sidepanel speech:", err);
+    isListeningSpeech = false;
+    notifyError("start-failed");
+  }
+}
+
+function stopSpeechRecognition() {
+  if (sidepanelRecognition) {
+    sidepanelRecognition.stop();
+  }
+  isListeningSpeech = false;
+}
 

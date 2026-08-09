@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ToggleLeft, ToggleRight, Sliders, EyeOff, Bell, Volume2, Terminal, FolderOpen, Keyboard, RotateCcw, Trash2, Plus, Check, Pencil } from "lucide-react";
 
 export interface CustomModelConfig {
@@ -61,6 +61,27 @@ export function SettingsTab({
   const [editModelName, setEditModelName] = useState("gemini-2.5-flash");
   const [editModelToken, setEditModelToken] = useState("");
   const [editModelAllowFallback, setEditModelAllowFallback] = useState(true);
+
+  const [micPermission, setMicPermission] = useState<string>("unknown");
+  const [isFirefox, setIsFirefox] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsFirefox(navigator.userAgent.includes("Firefox"));
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: "microphone" as PermissionName })
+          .then((status) => {
+            setMicPermission(status.state);
+            status.onchange = () => {
+              setMicPermission(status.state);
+            };
+          })
+          .catch(() => {
+            setMicPermission("unknown");
+          });
+      }
+    }
+  }, []);
 
   const handleToggle = (key: string, currentValue: boolean) => {
     onUpdateSettings({
@@ -170,6 +191,81 @@ export function SettingsTab({
               )}
             </button>
           </div>
+
+          {!isFirefox && (
+            <>
+              {/* Voice Input & Permission Status */}
+              <div className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2.5 items-start">
+                    <Sliders size={16} className="text-zinc-400 mt-0.5" />
+                    <div>
+                      <span className="text-xs font-medium text-zinc-200 block">Voice Input / Microphone</span>
+                      <span className="text-[10px] text-zinc-500 leading-normal">
+                        Enable microphone recording for speech-to-text commands.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggle("audioEnabled", settings.audioEnabled !== false)}
+                    className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer shrink-0"
+                  >
+                    {settings.audioEnabled !== false ? (
+                      <ToggleRight size={24} className="text-brand-primary" />
+                    ) : (
+                      <ToggleLeft size={24} className="text-zinc-600" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Status bar */}
+                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-white/5 text-[9px]">
+                  <span className="text-zinc-500 font-sans">Browser Permission Status:</span>
+                  <span className={`font-semibold px-2 py-0.5 rounded-full font-sans ${
+                    micPermission === "granted" 
+                      ? "bg-green-500/10 text-green-400" 
+                      : micPermission === "denied"
+                        ? "bg-red-500/10 text-red-400"
+                        : "bg-zinc-500/10 text-zinc-400"
+                  }`}>
+                    {micPermission === "granted" 
+                      ? "Granted" 
+                      : micPermission === "denied"
+                        ? "Blocked / Denied"
+                        : "Not Requested"}
+                  </span>
+                </div>
+                {micPermission === "denied" && (
+                  <p className="text-[8px] text-amber-500/80 leading-relaxed mt-0.5 font-sans">
+                    ⚠️ Microphone access is blocked. Click the URL settings icon in your Chrome address bar to reset permissions.
+                  </p>
+                )}
+              </div>
+
+              {/* Hands-free Voice Mode */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                <div className="flex gap-2.5 items-start">
+                  <Volume2 size={16} className="text-zinc-400 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-medium text-zinc-200 block">Hands-free Voice Mode</span>
+                    <span className="text-[10px] text-zinc-500 leading-normal">
+                      Automatically start listening again after Jarvis finishes executing a task.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggle("handsFreeMode", settings.handsFreeMode ?? false)}
+                  className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                >
+                  {settings.handsFreeMode ? (
+                    <ToggleRight size={24} className="text-brand-primary" />
+                  ) : (
+                    <ToggleLeft size={24} className="text-zinc-600" />
+                  )}
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Sound Alerts */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
@@ -329,7 +425,7 @@ export function SettingsTab({
                     : "bg-white/5 border-white/5 text-zinc-400 hover:text-zinc-300 hover:bg-white/10"
                 }`}
               >
-                <span>System Defaults (Gemini / OpenAI / Mistral)</span>
+                <span>System Defaults</span>
                 {activeCustomModelId === "" && <Check size={11} />}
               </button>
 

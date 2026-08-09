@@ -8,7 +8,7 @@ import { ChatTab } from "./components/ChatTab";
 import { MentionsInput, MentionTag, MentionsInputRef } from "./components/MentionsInput";
 import { WorkflowsTab } from "./components/WorkflowsTab";
 import { SettingsTab } from "./components/SettingsTab";
-import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote, Target, MousePointerClick, Check, BrainCog } from "lucide-react";
+import { Send, Square, History, Plus, Lock, Loader2, Workflow, AppWindow, Globe, FileText, SquareTerminal, Inbox, Settings, X, StickyNote, Target, MousePointerClick, Check, BrainCog, Mic, AudioLines } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ export default function ExtensionPanel() {
     stealthMode: false,
     autoSaveEnabled: false,
     autoSavePath: "/JarvisLogs",
+    handsFreeMode: true,
   });
 
   const handleUpdateSettings = (updated: any) => {
@@ -65,12 +66,23 @@ export default function ExtensionPanel() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [isLocal, setIsLocal] = useState(false);
+  const [isFirefox, setIsFirefox] = useState(false);
   const [pendingNotes, setPendingNotes] = useState<string[]>([]);
   const [isFocusModeEnabled, setIsFocusModeEnabled] = useState(false);
   const [focusChain, setFocusChain] = useState<any[]>([]);
   const [focusChainIndex, setFocusChainIndex] = useState(0);
   const [agentError, setAgentError] = useState<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const hasOpenedLogin = useRef(false);
+
+  const toggleSpeechRecognition = () => {
+    if (isListening) {
+      window.parent.postMessage({ type: "FROM_NEXTJS", action: "STOP_SPEECH_RECOGNITION" }, "*");
+    } else {
+      window.parent.postMessage({ type: "FROM_NEXTJS", action: "START_SPEECH_RECOGNITION" }, "*");
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -79,6 +91,7 @@ export default function ExtensionPanel() {
         window.location.hostname === "127.0.0.1" ||
         window.location.search.includes("env=local")
       );
+      setIsFirefox(window.navigator.userAgent.includes("Firefox"));
     }
   }, []);
 
@@ -133,6 +146,14 @@ export default function ExtensionPanel() {
       index
     }, "*");
   };
+
+  const prevIsRunningRef = useRef(isAgentRunning);
+  useEffect(() => {
+    if (settings.handsFreeMode && prevIsRunningRef.current === true && isAgentRunning === false) {
+      window.parent.postMessage({ type: "FROM_NEXTJS", action: "START_SPEECH_RECOGNITION" }, "*");
+    }
+    prevIsRunningRef.current = isAgentRunning;
+  }, [isAgentRunning, settings.handsFreeMode]);
 
   const handleDeleteMessage = (index: number) => {
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "DELETE_MESSAGE", index }, "*");
@@ -320,6 +341,49 @@ export default function ExtensionPanel() {
           playAudibleAlert();
         } else if (data.action === "NOTIFICATION_PERMISSION_DENIED") {
           toast.error("OS Notifications are blocked. Please enable Chrome notifications in your Mac/Windows System Settings.", { duration: 8000 });
+        } else if (data.action === "SPEECH_STATUS") {
+          setIsListening(data.isListening);
+        } else if (data.action === "SPEECH_TRANSCRIPT") {
+          const transcript = data.text;
+          if (transcript) {
+            setInput(transcript);
+            if (isAgentRunning) {
+              window.parent.postMessage({
+                type: "FROM_NEXTJS",
+                action: "ADD_RUNTIME_NOTE",
+                text: transcript
+              }, "*");
+            } else {
+              window.parent.postMessage({
+                type: "FROM_NEXTJS",
+                action: "RUN_AGENT",
+                prompt: transcript,
+                model: model,
+                tags: []
+              }, "*");
+            }
+            setTimeout(() => {
+              setInput("");
+            }, 600);
+          }
+        } else if (data.action === "SPEECH_ERROR") {
+          setIsListening(false);
+          if (data.error === "not-allowed") {
+            toast.error("Microphone access denied. Opening permission request page...", { duration: 4000 });
+            window.parent.postMessage({ type: "FROM_NEXTJS", action: "REQUEST_MIC_PERMISSION" }, "*");
+          } else if (data.error === "firefox-unsupported") {
+            toast.error("Voice input is not supported in Firefox extensions. Please use Chrome or Edge for voice commands.", { duration: 6000 });
+          } else if (data.error === "network") {
+            toast.error("Voice recognition requires internet access. Check your connection or try again.", { duration: 5000 });
+          } else if (data.error === "unsupported") {
+            toast.error("Your browser does not support voice input. Try Chrome or Edge.", { duration: 5000 });
+          } else if (data.error === "no-speech") {
+            toast.error("No speech detected. Try again and speak clearly.", { duration: 3000 });
+          } else if (data.error === "audio-capture") {
+            toast.error("Microphone not found or could not be accessed.", { duration: 4000 });
+          } else {
+            toast.error("Voice input failed. Please try again.", { duration: 3000 });
+          }
         }
       }
     };
@@ -330,7 +394,7 @@ export default function ExtensionPanel() {
     window.parent.postMessage({ type: "FROM_NEXTJS", action: "REQUEST_INITIAL_STATE" }, "*");
 
     return () => window.removeEventListener("message", handleMessage);
-  }, [workflows, workflowInputs]);
+  }, [workflows, workflowInputs, isAgentRunning, model]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -660,7 +724,7 @@ export default function ExtensionPanel() {
                     const isCompleted = idx < focusChainIndex;
                     const isActive = idx === focusChainIndex;
                     return (
-                      <div 
+                      <div
                         key={idx}
                         className="relative flex gap-3 items-start group/step"
                       >
@@ -668,13 +732,12 @@ export default function ExtensionPanel() {
                         <button
                           type="button"
                           onClick={() => setFocusStep(idx)}
-                          className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all cursor-pointer border text-[8px] font-bold ${
-                            isCompleted 
-                              ? 'bg-brand-primary border-brand-primary text-white shadow-sm shadow-blue-500/30' 
-                              : isActive 
-                                ? 'bg-[#121212] border-blue-100 text-brand-primary' 
+                          className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all cursor-pointer border text-[8px] font-bold ${isCompleted
+                              ? 'bg-brand-primary border-brand-primary text-white shadow-sm shadow-blue-500/30'
+                              : isActive
+                                ? 'bg-[#121212] border-blue-100 text-brand-primary'
                                 : 'bg-[#161616] border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-400'
-                          }`}
+                            }`}
                           title={`Jump to Step ${idx + 1}`}
                         >
                           {isCompleted ? (
@@ -693,13 +756,12 @@ export default function ExtensionPanel() {
                             onClick={() => setFocusStep(idx)}
                             className="flex-1 text-left cursor-pointer min-w-0"
                           >
-                            <p className={`text-[11px] font-medium font-sans truncate transition-colors mt-0.5 ${
-                              isActive 
-                                ? 'text-app-primary font-normal' 
-                                : isCompleted 
-                                  ? 'text-zinc-500' 
+                            <p className={`text-[11px] font-medium font-sans truncate transition-colors mt-0.5 ${isActive
+                                ? 'text-app-primary font-normal'
+                                : isCompleted
+                                  ? 'text-zinc-500'
                                   : 'text-zinc-400 hover:text-zinc-300'
-                            }`}>
+                              }`}>
                               Step {idx + 1}: {step.description}
                             </p>
                           </button>
@@ -806,8 +868,8 @@ export default function ExtensionPanel() {
                 type="button"
                 onClick={toggleFocusMode}
                 className={`p-1 rounded-full transition-colors flex items-center justify-center cursor-pointer ${isFocusModeEnabled
-                    ? 'bg-brand-primary text-white animate-pulse'
-                    : 'hover:bg-white/10 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-brand-primary text-white animate-pulse'
+                  : 'hover:bg-white/10 text-zinc-400 hover:text-zinc-200'
                   }`}
                 title="Toggle Element Focus Selection Mode"
               >
@@ -840,6 +902,20 @@ export default function ExtensionPanel() {
             </div>
 
             <div className="flex items-center gap-2">
+              {!isFirefox && settings.audioEnabled !== false && (
+                <button
+                  type="button"
+                  onClick={toggleSpeechRecognition}
+                  className={`p-1 rounded-full transition-colors flex items-center justify-center cursor-pointer ${isListening
+                    ? "bg-brand-primary/20 text-brand-primary animate-pulse border border-brand-primary/30"
+                    : "hover:bg-white/10 text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  title={isListening ? "Stop listening" : "Voice typing / Voice command"}
+                >
+                  {isListening ? <AudioLines size={14} /> : <Mic size={14} />}
+                </button>
+              )}
+
               {isAgentRunning ? (
                 <>
                   <button
@@ -874,14 +950,14 @@ export default function ExtensionPanel() {
         {/* )} */}
       </div>
       {agentError && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md animate-in fade-in duration-200 cursor-default"
           onClick={() => {
             setAgentError(null);
             window.parent.postMessage({ type: "FROM_NEXTJS", action: "CLEAR_AGENT_ERROR" }, "*");
           }}
         >
-          <div 
+          <div
             className="bg-[#121212] border border-white/10 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default flex flex-col items-center text-center"
             onClick={(e) => e.stopPropagation()}
           >
@@ -898,11 +974,11 @@ export default function ExtensionPanel() {
                 </div>
               )}
             </div>
-            
+
             <p className="text-xs text-zinc-400 leading-relaxed font-sans max-h-32 overflow-y-auto w-full px-2.5 py-2 bg-black/20 rounded-xl border border-white/5">
               {agentError.message || "Failed to authenticate with AI provider. Please verify your API Key/Token."}
             </p>
-            
+
             <div className="flex gap-2.5 w-full pt-1.5">
               <button
                 onClick={() => {
