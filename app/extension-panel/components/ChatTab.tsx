@@ -1,4 +1,4 @@
-import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome, RotateCcw, StickyNote } from "lucide-react";
+import { Terminal, Brain, Globe, FileText, Hourglass, MousePointer2, Code, Search, Keyboard, Info, ChevronDown, OctagonAlert, Copy, Edit2, Trash, CheckCircle2, Rocket, AlertTriangle, XCircle, Loader2, Maximize2, ChevronsDownUp, ArrowRightLeft, Workflow, AppWindow, Chrome, RotateCcw, StickyNote, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message, MessageContent, MessageResponse, MessageToolbar, MessageAction, MessageActions } from "@/components/ai-elements/message";
 import { useState, useMemo } from "react";
@@ -41,7 +41,8 @@ function ChatMessageItem({
       { prefix: '✅', Icon: CheckCircle2, className: 'text-green-400 opacity-60' },
       { prefix: '🚀', Icon: Rocket, className: 'text-blue-400 opacity-60' },
       { prefix: '⚠️', Icon: AlertTriangle, className: 'text-yellow-400 opacity-80' },
-      { prefix: '❌', Icon: XCircle, className: 'text-red-400 opacity-60' }
+      { prefix: '❌', Icon: XCircle, className: 'text-red-400 opacity-60' },
+      { prefix: '📡', Icon: WifiOff, className: 'text-red-400 opacity-80' }
     ].find(item => msg.text.startsWith(item.prefix));
   }, [msg.text]);
 
