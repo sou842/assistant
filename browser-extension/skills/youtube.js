@@ -14,6 +14,7 @@ CRITICAL YOUTUBE INSTRUCTIONS:
 - If asked to 'skip ad', look for a button with text like "Skip" or "Skip Ads" and use the 'click' action on it.
 - If asked to summarize the video, click the "Expand" or "...more" button in the description first to reveal text, then read it.
 - Do NOT read the comments unless the user explicitly asks for comments or community opinions.
+- To check if a video is currently playing or paused, you can inspect the play/pause button (using selector ".ytp-play-button") and check its "data-title-no-tooltip" attribute. If it contains "Pause", it is currently playing. If it contains "Play", it is currently paused.
     `
   });
 }

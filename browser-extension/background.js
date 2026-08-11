@@ -1,9 +1,31 @@
 // background.js - Manages browser actions and state
-try {
-  importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js', 'skills/sheets.js', 'skills/google-maps.js');
-  importScripts('helpers/emulator.js', 'helpers/agent.js');
-} catch (e) {
-  console.error("[Jarvis Skills/Helpers] Failed to load:", e);
+if (typeof importScripts !== "undefined") {
+  try {
+    importScripts('skills/index.js', 'skills/youtube.js', 'skills/naukri.js', 'skills/gmail.js', 'skills/whatsapp.js', 'skills/sheets.js', 'skills/google-maps.js');
+    importScripts('helpers/emulator.js', 'helpers/agent.js');
+  } catch (e) {
+    console.error("[Jarvis Skills/Helpers] Failed to load via importScripts:", e);
+  }
+} else if (typeof document !== "undefined") {
+  const scripts = [
+    'skills/index.js',
+    'skills/youtube.js',
+    'skills/naukri.js',
+    'skills/gmail.js',
+    'skills/whatsapp.js',
+    'skills/sheets.js',
+    'skills/google-maps.js',
+    'helpers/emulator.js',
+    'helpers/agent.js'
+  ];
+  for (const src of scripts) {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = false;
+    document.head.appendChild(s);
+  }
+} else {
+  console.error("[Jarvis Extension] Neither importScripts nor document is available to load dependencies.");
 }
 console.log("[Jarvis Extension] Service worker started.");
 

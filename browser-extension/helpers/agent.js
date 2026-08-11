@@ -61,6 +61,14 @@ function withCancel(promise) {
   });
 }
 
+async function injectOceanWaves(tabId) {
+  // Handled natively by animation.js content script
+}
+
+async function removeOceanWaves(tabId) {
+  // Handled natively by animation.js content script
+}
+
 async function runAgentLoop(prompt, model, chatId = null, sender = null) {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     await logAction("agent", "error", "Device is offline. Cannot start agent loop.");
@@ -597,6 +605,7 @@ Respond ONLY with a JSON object in this format:
         const tabUrl = tab.url || "";
         const isRestricted = tabUrl.startsWith("chrome://") ||
           tabUrl.startsWith("chrome-extension://") ||
+          tabUrl.startsWith("moz-extension://") ||
           tabUrl.startsWith("edge://") ||
           tabUrl.startsWith("about:");
 
@@ -619,118 +628,133 @@ Respond ONLY with a JSON object in this format:
             const currentFocusStep = focusChainIndex < focusChain.length ? focusChain[focusChainIndex] : null;
             const currentFocusSelector = currentFocusStep ? currentFocusStep.selector : null;
 
-            domResults = await chrome.scripting.executeScript({
-            target: { tabId: targetTabId, allFrames: true },
-            func: (focusSelector) => {
-              const interactiveSelectors = [
-                'a', 'button', 'input', 'textarea', 'select', 'label',
-                '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
-                '[role="option"]', '[role="tab"]', '[role="treeitem"]', '[role="combobox"]',
-                '[role="textbox"]', '[contenteditable="true"]',
-                '[onclick]', '[cursor="pointer"]'
-              ];
-              const elements = [];
-              let idx = 0;
+            const runScript = (allFramesFlag) => chrome.scripting.executeScript({
+              target: { tabId: targetTabId, allFrames: allFramesFlag },
+              func: (focusSelector) => {
+                const interactiveSelectors = [
+                  'a', 'button', 'input', 'textarea', 'select', 'label',
+                  '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
+                  '[role="option"]', '[role="tab"]', '[role="treeitem"]', '[role="combobox"]',
+                  '[role="textbox"]', '[contenteditable="true"]',
+                  '[onclick]', '[cursor="pointer"]'
+                ];
+                const elements = [];
+                let idx = 0;
 
-              function traverse(root) {
-                if (!root) return;
-                if (root.nodeType === Node.ELEMENT_NODE) {
-                  const el = root;
-                  let isInteractive = false;
-                  try {
-                    isInteractive = el.matches(interactiveSelectors.join(','));
-                  } catch (e) { }
+                function traverse(root) {
+                  if (!root) return;
+                  if (root.nodeType === Node.ELEMENT_NODE) {
+                    const el = root;
+                    let isInteractive = false;
+                    try {
+                      isInteractive = el.matches(interactiveSelectors.join(','));
+                    } catch (e) { }
 
-                  if (isInteractive) {
-                    const rect = el.getBoundingClientRect();
-                    const style = window.getComputedStyle(el);
-                    const isVisible = rect.width > 0 && rect.height > 0 &&
-                      style.display !== 'none' &&
-                      style.visibility !== 'hidden' &&
-                      style.opacity !== '0';
-                    if (isVisible) {
-                      el.setAttribute('data-agent-id', String(idx));
-                      const elData = { index: idx, tag: el.tagName.toLowerCase() };
-                      
-                      let matchesFocus = false;
-                      if (focusSelector) {
-                        try {
-                          const targetNode = document.querySelector(focusSelector);
-                          if (targetNode && (el === targetNode || el.contains(targetNode))) {
-                            matchesFocus = true;
-                          }
-                        } catch (e) {}
-                      }
-                      if (matchesFocus) elData.userFocused = true;
+                    if (isInteractive) {
+                      const rect = el.getBoundingClientRect();
+                      const style = window.getComputedStyle(el);
+                      const isVisible = rect.width > 0 && rect.height > 0 &&
+                        style.display !== 'none' &&
+                        style.visibility !== 'hidden' &&
+                        style.opacity !== '0';
+                      if (isVisible) {
+                        el.setAttribute('data-agent-id', String(idx));
+                        const elData = { index: idx, tag: el.tagName.toLowerCase() };
+                        
+                        let matchesFocus = false;
+                        if (focusSelector) {
+                          try {
+                            const targetNode = document.querySelector(focusSelector);
+                            if (targetNode && (el === targetNode || el.contains(targetNode))) {
+                              matchesFocus = true;
+                            }
+                          } catch (e) {}
+                        }
+                        if (matchesFocus) elData.userFocused = true;
 
-                      const type = el.getAttribute('type'); if (type) elData.type = type;
-                      const name = el.getAttribute('name'); if (name) elData.name = name;
-                      const id = el.getAttribute('id'); if (id) elData.id = id;
-                      const placeholder = el.getAttribute('placeholder'); if (placeholder) elData.placeholder = placeholder;
-                      const ariaLabel = el.getAttribute('aria-label'); if (ariaLabel) elData.ariaLabel = ariaLabel;
-                      const title = el.getAttribute('title'); if (title) elData.title = title;
-                      const ariaPressed = el.getAttribute('aria-pressed'); if (ariaPressed !== null) elData.ariaPressed = ariaPressed;
-                      let ariaChecked = el.getAttribute('aria-checked');
-                      if (el.tagName.toLowerCase() === 'label' && el.hasAttribute('for')) {
-                        const targetInput = document.getElementById(el.getAttribute('for'));
-                        if (targetInput) {
-                          if (targetInput.hasAttribute('aria-checked')) {
-                            ariaChecked = targetInput.getAttribute('aria-checked');
-                          } else if (targetInput.checked !== undefined) {
-                            ariaChecked = targetInput.checked ? "true" : "false";
+                        const type = el.getAttribute('type'); if (type) elData.type = type;
+                        const name = el.getAttribute('name'); if (name) elData.name = name;
+                        const id = el.getAttribute('id'); if (id) elData.id = id;
+                        const placeholder = el.getAttribute('placeholder'); if (placeholder) elData.placeholder = placeholder;
+                        const ariaLabel = el.getAttribute('aria-label'); if (ariaLabel) elData.ariaLabel = ariaLabel;
+                        const title = el.getAttribute('title'); if (title) elData.title = title;
+                        const ariaPressed = el.getAttribute('aria-pressed'); if (ariaPressed !== null) elData.ariaPressed = ariaPressed;
+                        let ariaChecked = el.getAttribute('aria-checked');
+                        if (el.tagName.toLowerCase() === 'label' && el.hasAttribute('for')) {
+                          const targetInput = document.getElementById(el.getAttribute('for'));
+                          if (targetInput) {
+                            if (targetInput.hasAttribute('aria-checked')) {
+                              ariaChecked = targetInput.getAttribute('aria-checked');
+                            } else if (targetInput.checked !== undefined) {
+                              ariaChecked = targetInput.checked ? "true" : "false";
+                            }
                           }
                         }
+                        if (ariaChecked !== null) elData.ariaChecked = ariaChecked;
+                        const ariaExpanded = el.getAttribute('aria-expanded'); if (ariaExpanded !== null) elData.ariaExpanded = ariaExpanded;
+                        const text = el.innerText ? el.innerText.trim().substring(0, 80) : ""; if (text) elData.text = text;
+                        const value = el.value ? el.value.substring(0, 100) : null; if (value) elData.value = value;
+                        elements.push(elData);
+                        idx++;
                       }
-                      if (ariaChecked !== null) elData.ariaChecked = ariaChecked;
-                      const ariaExpanded = el.getAttribute('aria-expanded'); if (ariaExpanded !== null) elData.ariaExpanded = ariaExpanded;
-                      const text = el.innerText ? el.innerText.trim().substring(0, 80) : ""; if (text) elData.text = text;
-                      const value = el.value ? el.value.substring(0, 100) : null; if (value) elData.value = value;
-                      elements.push(elData);
-                      idx++;
+                    }
+
+                    if (el.shadowRoot) {
+                      traverse(el.shadowRoot);
                     }
                   }
 
-                  if (el.shadowRoot) {
-                    traverse(el.shadowRoot);
+                  let child = root.firstChild;
+                  while (child) {
+                    traverse(child);
+                    child = child.nextSibling;
                   }
                 }
 
-                let child = root.firstChild;
-                while (child) {
-                  traverse(child);
-                  child = child.nextSibling;
-                }
-              }
-
-              function clearAgentIds(root) {
-                if (!root) return;
-                if (root.nodeType === Node.ELEMENT_NODE) {
-                  root.removeAttribute('data-agent-id');
-                  if (root.shadowRoot) {
-                    clearAgentIds(root.shadowRoot);
+                function clearAgentIds(root) {
+                  if (!root) return;
+                  if (root.nodeType === Node.ELEMENT_NODE) {
+                    root.removeAttribute('data-agent-id');
+                    if (root.shadowRoot) {
+                      clearAgentIds(root.shadowRoot);
+                    }
+                  }
+                  let child = root.firstChild;
+                  while (child) {
+                    clearAgentIds(child);
+                    child = child.nextSibling;
                   }
                 }
-                let child = root.firstChild;
-                while (child) {
-                  clearAgentIds(child);
-                  child = child.nextSibling;
+
+                if (document.body) {
+                  clearAgentIds(document.body);
+                  traverse(document.body);
                 }
-              }
 
-              if (document.body) {
-                clearAgentIds(document.body);
-                traverse(document.body);
-              }
+                return {
+                  url: window.location.href,
+                  title: document.title,
+                  elements: elements,
+                  innerText: document.body ? document.body.innerText.substring(0, 10000) : ""
+                };
+              },
+              args: [currentFocusSelector]
+            });
 
-              return {
-                url: window.location.href,
-                title: document.title,
-                elements: elements,
-                innerText: document.body ? document.body.innerText.substring(0, 10000) : ""
-              };
-            },
-            args: [currentFocusSelector]
-          });
+            // Race the executeScript call with allFrames: true against a timeout
+            const allFramesPromise = runScript(true);
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("allFramesTimeout")), 3000));
+
+            try {
+              domResults = await Promise.race([allFramesPromise, timeoutPromise]);
+            } catch (err) {
+              if (err.message === "allFramesTimeout") {
+                console.warn("executeScript allFrames timed out. Falling back to main frame only.");
+                domResults = await runScript(false);
+              } else {
+                throw err;
+              }
+            }
           } catch (scriptError) {
             if (scriptError.message.includes("showing error page")) {
               pageData = {
