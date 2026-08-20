@@ -638,8 +638,8 @@ function AIPageContent() {
           openCompanion={handleOpenCompanion}
         />
 
-        <div className="flex-1 overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
-          <div className="mx-auto w-full max-w-3xl space-y-12 pb-60">
+        <div className="flex h-full items-center overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
+          <div className="mx-auto w-full max-w-3xl space-y-12 pb-10">
               {renderMessages.length === 0 && !params?.chatId && !isLoading ? (
                   <EmptyState setInput={setInput}>
                     <ChatInput

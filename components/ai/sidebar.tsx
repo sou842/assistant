@@ -139,14 +139,14 @@ export function Sidebar({
                     className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <SidebarIcon size={18} />
+                    <SidebarIcon size={16} />
                   </button>
                   
                   <button 
                     onClick={() => setIsSearchOpen(true)}
-                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
+                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-full transition-all cursor-pointer"
                   >
-                    <Search size={18} />
+                    <Search size={16} />
                   </button>
                 </>
               ) : (
@@ -176,7 +176,7 @@ export function Sidebar({
         </div>
 
         {/* Content */}
-        <div className={`flex-1 overflow-y-auto p-3 space-y-8 scrollbar-hide ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
+        <div className={`flex-1 overflow-y-auto p-3 space-y-5 scrollbar-hide ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
           {/* Workspace Section */}
           <div className={`${isCollapsed ? 'w-full flex flex-col items-center gap-4' : 'w-full flex flex-col gap-1'}`}>
             {!isCollapsed && <div className="px-3 py-2 text-xs font-medium text-app-text-faint">Workspace</div>}
