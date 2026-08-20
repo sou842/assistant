@@ -49,18 +49,13 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
 
   return (
     <>
-      <header className="h-16 flex items-center justify-between px-6 z-20 bg-app-canvas sticky top-0">
-
+      <header className="h-16 md:pt-0 pt-3  flex items-center justify-between px-6 z-20 bg-app-canvas sticky top-0">
         {/* Left info badge */}
         <div className="flex items-center gap-3 select-none mr-auto">
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 cursor-pointer group">
-              <span className="text-[15px] font-bold text-app-text-primary tracking-tight">Jarvis AI</span>
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-app-text-muted group-hover:text-app-text-primary transition-colors">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <span className="text-[15px] font-bold text-app-text-primary tracking-tight">Jarvis</span>
             </div>
-            <span className="text-[10px] text-app-text-muted leading-none mt-1 font-medium">Free Plan</span>
           </div>
         </div>
 
@@ -77,39 +72,12 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
           )}
 
           <button
-            className="rounded-xl border border-app-border-subtle bg-app-surface-glass p-2 text-app-text-muted md:hidden"
+            className="rounded-xl p-2 text-app-text-muted md:hidden"
             onClick={onOpenMobileSidebar}
             type="button"
           >
             <Menu size={16} />
           </button>
-
-          {/* Extension Connection Badge */}
-          {/* <button
-            onClick={() => {
-              if (extensionConnected) {
-                openCompanion?.();
-              } else {
-                setIsModalOpen(true);
-              }
-            }}
-            className="flex items-center gap-2 px-3 py-1 bg-app-surface-glass rounded-full relative group hover:bg-app-surface-glass-strong active:scale-95 transition-all border border-app-border-subtle cursor-pointer"
-            title={extensionConnected ? "Click to open Jarvis Companion Panel" : "Click to view install guide"}
-            type="button"
-          >
-            <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${extensionConnected ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.4)]'}`} />
-            <span className="text-[10px] font-medium capitalize text-app-text-soft">
-              {extensionConnected ? 'Companion Active' : 'Companion Offline'}
-            </span>
-            <div className="absolute right-0 top-8 w-60 p-3 bg-app-surface border border-app-border-default rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-[10px] text-app-text-soft space-y-1 text-left leading-relaxed pointer-events-none">
-              <p className="font-semibold text-app-text-secondary">Browser Control Companion</p>
-              {extensionConnected ? (
-                <p className="text-emerald-400/80">Successfully connected to extension sidepanel. Click to re-open if closed.</p>
-              ) : (
-                <p>Extension offline. Click to view instructions on how to install the browser extension.</p>
-              )}
-            </div>
-          </button> */}
 
           <button
             onClick={() => {
