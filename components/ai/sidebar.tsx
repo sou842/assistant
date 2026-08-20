@@ -135,22 +135,22 @@ export function Sidebar({
             <>
               {!isSearchOpen ? (
                 <>
-                  <button
-                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <SidebarIcon size={16} />
-                  </button>
-                  
                   <button 
                     onClick={() => setIsSearchOpen(true)}
                     className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-full transition-all cursor-pointer"
                   >
                     <Search size={16} />
                   </button>
+
+                  <button
+                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <SidebarIcon size={16} />
+                  </button>                  
                 </>
               ) : (
-                <div className="flex items-center w-full gap-2 relative animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center w-full gap-2 mt-2 relative animate-in fade-in zoom-in-95 duration-200">
                   <Search size={14} className="text-app-text-muted absolute left-2" />
                   <input
                     type="text"

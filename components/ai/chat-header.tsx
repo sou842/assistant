@@ -69,7 +69,7 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
           {activeChat && (
             <button 
               onClick={() => setIsShareModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer shadow-sm"
             >
               <Share2 size={13} />
               <span>Share</span>
