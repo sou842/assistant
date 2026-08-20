@@ -208,10 +208,10 @@ export function ChatTab({
 
             return (
               <div className="flex gap-3 items-start group/step -ml-4">
-                <span className="p-1 rounded-full bg-app-canvas border border-app-border-default/10 shadow-xs">
-                  <Icon size={13} className={cn("mt-[2px] rounded shrink-0 transition-colors text-app-text-ghost group-hover/step:text-app-text-primary")} />
+                <span className="px-1 pb-1 rounded-full bg-app-canvas border border-app-border-default/10 shadow-xs">
+                  <Icon size={14} className={cn("mt-0.5 rounded shrink-0 transition-colors text-app-text-muted group-hover/step:text-app-text-primary")} />
                 </span>
-                <span className={cn("whitespace-pre-wrap leading-relaxed text-xs text-app-text-secondary")}>{cleanText}</span>
+                <span className={cn("whitespace-pre-wrap leading-relaxed font-normal text-xs text-app-text-muted transition-colors")}>{cleanText}</span>
               </div>
             );
           };
@@ -276,11 +276,11 @@ export function ChatTab({
                     open={isAgentRunning && groupIdx === groupedHistory.length - 1 ? true : undefined}
                   >
                     <summary className="flex items-center justify-start gap-2 cursor-pointer font-medium select-none text-app-text-muted hover:text-app-text-primary list-none [&::-webkit-details-marker]:hidden mb-3">
-                      <Brain size={14} className="text-app-text-ghost shrink-0" />
-                      <span className="text-xs">Chain of Thought</span>
+                      <Brain size={14} className="text-app-text-muted shrink-0" />
+                      <span className="text-xs text-app-text-muted">Chain of Thought</span>
                       <span className="text-[10px] text-app-text-ghost group-open:rotate-180 transition-transform"><ChevronDown className="size-4" /></span>
                     </summary>
-                    <div className="space-y-3 pl-1.25 border-l border-app-border-default/15 ml-1.5">
+                    <div className="space-y-3 pl-1 border-l border-app-border-default ml-1.5">
                       {group?.items?.map((item: any) => (
                         <div key={item?.originalIndex}>
                           {renderAgentStep(item?.msg?.text)}

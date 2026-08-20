@@ -24,17 +24,18 @@ interface KanbanViewProps {
 
 export function KanbanView({ tasks, onEdit, onAddTask }: KanbanViewProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-start h-full">
+    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start h-full overflow-x-auto pb-4 scrollbar-hide snap-x">
       {COLUMNS.map((column) => (
-        <KanbanColumn
-          key={column.id}
-          id={column.id}
-          title={column.title}
-          tasks={tasks.filter((t) => t.status === column.id)}
-          onEdit={onEdit}
-          onAddTask={() => onAddTask(column.id)}
-          color={column.color}
-        />
+        <div key={column.id} className="w-[280px] sm:w-[320px] md:w-auto shrink-0 snap-center">
+          <KanbanColumn
+            id={column.id}
+            title={column.title}
+            tasks={tasks.filter((t) => t.status === column.id)}
+            onEdit={onEdit}
+            onAddTask={() => onAddTask(column.id)}
+            color={column.color}
+          />
+        </div>
       ))}
     </div>
   );
@@ -47,7 +48,7 @@ function KanbanColumn({ id, title, tasks, onEdit, onAddTask, color }: any) {
   });
 
   return (
-    <div className="flex flex-col gap-5 h-[85vh] overflow-y-auto">
+    <div className="flex flex-col gap-5 h-[calc(100vh-210px)] md:h-[80vh] overflow-y-auto">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <div className={cn(
