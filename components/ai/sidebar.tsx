@@ -183,7 +183,7 @@ export function Sidebar({
             <button
               onClick={handleNewChat}
               className={`flex items-center transition-all group cursor-pointer ${isCollapsed
-                ? "w-10 h-10 justify-center rounded-full bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm"
+                ? "w-9 h-9 justify-center rounded-full bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm"
                 : "w-full gap-3 px-3 py-1.5 rounded-full text-app-text-primary font-medium text-sm bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm"
                 }`}
             >
@@ -383,7 +383,6 @@ export function Sidebar({
                     <p className="text-xs font-bold text-app-text-secondary truncate tracking-tight">{userName}</p>
                     <p className="text-[10px] text-app-text-muted truncate font-medium">{userEmail}</p>
                   </div>
-                  <ChevronDown size={14} className="text-app-text-muted opacity-50 mr-1" />
                 </div>
               </button>
             </SettingsModal>

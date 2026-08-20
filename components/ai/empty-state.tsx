@@ -39,21 +39,14 @@ export function EmptyState({ setInput, children }: EmptyStateProps) {
 
   return (
     <div className="h-fit mt-32 bg-app-canvas flex flex-col items-center justify-center px-4 text-app-text-primary">
-      {/* Limited free plan badge */}
-      <div className="mb-6 px-3 py-1 rounded-full bg-app-surface-glass border border-app-border-subtle text-[10px] font-semibold text-app-text-soft">
-        Using limited free plan <span className="text-app-text-primary font-bold hover:underline cursor-pointer">Upgrade.</span>
-      </div>
 
       {/* Heading */}
-      <h1 className="font-display text-4xl sm:text-5xl text-app-text-primary mb-3 text-center font-normal tracking-tight">
+      <h1 className="font-display text-4xl sm:text-5xl font-medium tracking-tight text-app-text-primary mb-10 text-center">
         {greeting}{userName ? `, ${userName}` : ""}
       </h1>
-      <p className="text-xs sm:text-sm text-app-text-muted mb-10 text-center max-w-md leading-relaxed font-sans opacity-85">
-        How can I help you today?
-      </p>
 
       {/* Main Area */}
-      <div className="w-full max-w-[860px] space-y-6">
+      <div className="w-full max-w-215 space-y-6">
         {/* Input Container */}
         <div className="w-full">
           {children}
@@ -63,33 +56,33 @@ export function EmptyState({ setInput, children }: EmptyStateProps) {
         <div className="flex flex-wrap justify-center gap-3 select-none">
           <button
             onClick={() => handleQuickAction("Generate a futuristic design concept for a web app dashboard")}
-            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-dashed border-app-border-default/60 hover:border-app-border-strong/80 rounded-full bg-transparent hover:bg-app-surface-glass transition-all cursor-pointer text-app-text-muted hover:text-app-text-secondary font-medium active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-transparent shadow-xs hover:shadow-sm rounded-full bg-app-surface hover:bg-app-surface-hover transition-all duration-200 cursor-pointer text-app-text-secondary hover:text-app-text-primary font-medium active:scale-95"
           >
-            <ImageIcon size={13} className="opacity-70" />
+            <ImageIcon size={13} className="text-brand-primary opacity-80" />
             Create images
           </button>
 
           <button
             onClick={() => handleQuickAction("Analyze this codebase layout and describe its design system")}
-            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-dashed border-app-border-default/60 hover:border-app-border-strong/80 rounded-full bg-transparent hover:bg-app-surface-glass transition-all cursor-pointer text-app-text-muted hover:text-app-text-secondary font-medium active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-transparent shadow-xs hover:shadow-sm rounded-full bg-app-surface hover:bg-app-surface-hover transition-all duration-200 cursor-pointer text-app-text-secondary hover:text-app-text-primary font-medium active:scale-95"
           >
-            <Sparkles size={13} className="opacity-70" />
+            <Sparkles size={13} className="text-brand-primary opacity-80" />
             Analyze images
           </button>
 
           <button
             onClick={() => handleQuickAction("Write a highly optimized TypeScript debounce hook function")}
-            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-dashed border-app-border-default/60 hover:border-app-border-strong/80 rounded-full bg-transparent hover:bg-app-surface-glass transition-all cursor-pointer text-app-text-muted hover:text-app-text-secondary font-medium active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-transparent shadow-xs hover:shadow-sm rounded-full bg-app-surface hover:bg-app-surface-hover transition-all duration-200 cursor-pointer text-app-text-secondary hover:text-app-text-primary font-medium active:scale-95"
           >
-            <Code size={13} className="opacity-70" />
+            <Code size={13} className="text-brand-primary opacity-80" />
             Code
           </button>
 
           <button
             onClick={() => handleQuickAction("Show my current scheduler configurations and automated tasks")}
-            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-dashed border-app-border-default/60 hover:border-app-border-strong/80 rounded-full bg-transparent hover:bg-app-surface-glass transition-all cursor-pointer text-app-text-muted hover:text-app-text-secondary font-medium active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 text-[11px] border border-transparent shadow-xs hover:shadow-sm rounded-full bg-app-surface hover:bg-app-surface-hover transition-all duration-200 cursor-pointer text-app-text-secondary hover:text-app-text-primary font-medium active:scale-95"
           >
-            <MoreHorizontal size={13} className="opacity-70" />
+            <MoreHorizontal size={13} className="text-brand-primary opacity-80" />
             More
           </button>
         </div>
@@ -106,13 +99,15 @@ export function EmptyState({ setInput, children }: EmptyStateProps) {
                 <div
                   key={chat.id}
                   onClick={() => onSelectChat(chat.id)}
-                  className="p-5 rounded-xl bg-app-surface hover:bg-app-surface-hover border border-transparent transition-all cursor-pointer group flex flex-col justify-between h-32 shadow-sm duration-200"
+                  className="p-5 rounded-2xl bg-app-surface hover:bg-app-surface-hover border border-transparent transition-all cursor-pointer group flex flex-col justify-between h-36 shadow-xs hover:shadow-md hover:scale-[1.02] duration-200"
                 >
-                  <div className="space-y-2">
-                    <MessageCircle size={15} className="text-app-text-muted group-hover:text-app-text-primary transition-colors" />
-                    <p className="text-[13px] font-medium text-app-text-secondary line-clamp-2 leading-relaxed opacity-90">{chat.title}</p>
+                  <div className="space-y-2.5">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-app-surface-elevated">
+                      <MessageCircle size={14} className="text-brand-primary" />
+                    </div>
+                    <p className="text-[13px] font-semibold text-app-text-primary line-clamp-2 leading-relaxed tracking-tight">{chat.title}</p>
                   </div>
-                  <span className="text-[10px] text-app-text-faint">{new Date(chat.updatedAt).toLocaleDateString()}</span>
+                  <span className="text-[10px] text-app-text-ghost font-medium">{new Date(chat.updatedAt).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
