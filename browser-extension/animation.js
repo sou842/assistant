@@ -147,26 +147,34 @@
   }
 
   async function onClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
+    try {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const selector = getUniqueSelector(e.target);
-    const tagName = e.target.tagName.toLowerCase();
-    const textText = e.target.innerText ? e.target.innerText.trim().substring(0, 30) : "";
-    const description = `${tagName}${textText ? ` ("${textText}")` : ""}`;
+      const uniqueSelector = getUniqueSelector(e.target);
+      const focusId = `focus_${Date.now()}`;
+      e.target.setAttribute("data-jarvis-focus-id", focusId);
+      const selector = `[data-jarvis-focus-id="${focusId}"], ${uniqueSelector}`;
 
-    // Get current focus chain
-    const data = await chrome.storage.local.get({ focusChain: [] });
-    const focusChain = data.focusChain || [];
-    focusChain.push({ selector, description, timestamp: Date.now() });
+      const tagName = e.target.tagName.toLowerCase();
+      const textText = e.target.innerText ? e.target.innerText.trim().substring(0, 30) : "";
+      const description = `${tagName}${textText ? ` ("${textText}")` : ""}`;
 
-    await chrome.storage.local.set({ 
-      focusChain, 
-      isFocusModeEnabled: false // Turn off selection mode after click
-    });
+      // Get current focus chain
+      const data = await chrome.storage.local.get({ focusChain: [] });
+      const focusChain = data.focusChain || [];
+      focusChain.push({ selector, description, timestamp: Date.now() });
 
-    // Clean up current hover outline
-    e.target.classList.remove("jarvis-focus-hover");
+      await chrome.storage.local.set({ 
+        focusChain, 
+        isFocusModeEnabled: false // Turn off selection mode after click
+      });
+
+      // Clean up current hover outline
+      e.target.classList.remove("jarvis-focus-hover");
+    } catch (err) {
+      console.error("[Jarvis Focus Mode] Click handler failed:", err);
+    }
   }
 
   function enableFocusSelection() {

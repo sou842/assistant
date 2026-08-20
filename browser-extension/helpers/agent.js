@@ -636,7 +636,8 @@ Respond ONLY with a JSON object in this format:
                   '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="menuitem"]',
                   '[role="option"]', '[role="tab"]', '[role="treeitem"]', '[role="combobox"]',
                   '[role="textbox"]', '[contenteditable="true"]',
-                  '[onclick]', '[cursor="pointer"]'
+                  '[onclick]', '[cursor="pointer"]',
+                  '.cursor-pointer', '[class*="cursor-pointer"]'
                 ];
                 const elements = [];
                 let idx = 0;
@@ -648,6 +649,12 @@ Respond ONLY with a JSON object in this format:
                     let isInteractive = false;
                     try {
                       isInteractive = el.matches(interactiveSelectors.join(','));
+                      if (!isInteractive && focusSelector) {
+                        const targetNode = document.querySelector(focusSelector);
+                        if (targetNode && el === targetNode) {
+                          isInteractive = true;
+                        }
+                      }
                     } catch (e) { }
 
                     if (isInteractive) {
@@ -665,7 +672,7 @@ Respond ONLY with a JSON object in this format:
                         if (focusSelector) {
                           try {
                             const targetNode = document.querySelector(focusSelector);
-                            if (targetNode && (el === targetNode || el.contains(targetNode))) {
+                            if (targetNode && el === targetNode) {
                               matchesFocus = true;
                             }
                           } catch (e) {}
@@ -988,7 +995,15 @@ Respond ONLY with a JSON object in this format:
                   if (el.tagName.toLowerCase() === 'a' && el.target === '_blank' && el.href) {
                     newTabUrl = el.href;
                   } else {
-                    el.click();
+                    const events = ["pointerdown", "mousedown", "pointerup", "mouseup", "click"];
+                    for (const evType of events) {
+                      const ev = new MouseEvent(evType, {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                      });
+                      el.dispatchEvent(ev);
+                    }
                   }
                   
                   function getStableSelector(e) {
@@ -1947,7 +1962,7 @@ CRITICAL RECORDING RULES:
   const targetEl = pageData?.elements?.find(e => e.userFocused);
   const focusStepText = targetEl
     ? `\n[FOCUS DIRECTIVE: The user has marked the element [data-agent-id="${targetEl.index}"] (annotated with '⭐ [USER FOCUS TARGET]' below) as the target element.
-- If the user's prompt/request refers to "this element", "that element", "it", or requests an action to perform on a page element, you MUST target this element [data-agent-id="${targetEl.index}"].
+- If the user's prompt/request refers to "this element", "that element", "it", "the selected option", "the selected element", "the focus target", or requests an action to perform on a page element, you MUST target this element [data-agent-id="${targetEl.index}"].
 - The user's active focus step description is: "${currentStepDesc || "Interact with this element"}". Use this description as context for what the user wants to accomplish at this step, but prioritize the user's immediate instruction in their message if they specified a different action (e.g., typing specific text instead of just clicking).
 - If the user's request is completely unrelated to this element, you may proceed with the general task naturally without using this focus target.]\n`
     : '';

@@ -76,17 +76,28 @@ const createLocatorImpl = (tabId, selector) => ({
           return list;
         };
         const els = queryAll(sel);
+        const simulateClick = (element) => {
+          const events = ["pointerdown", "mousedown", "pointerup", "mouseup", "click"];
+          for (const evType of events) {
+            const ev = new MouseEvent(evType, {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+            element.dispatchEvent(ev);
+          }
+        };
         for (let i = 0; i < els.length; i++) {
           const el = els[i];
           const rect = el.getBoundingClientRect();
           const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
           if (visible) {
             el.scrollIntoView({ block: 'center' });
-            el.click();
+            simulateClick(el);
             return;
           }
         }
-        if (els[0]) els[0].click();
+        if (els[0]) simulateClick(els[0]);
       },
       args: [selector]
     });
@@ -551,17 +562,28 @@ async function executeSandboxCommand(command) {
             return list;
           };
           const els = queryAll(sel);
+          const simulateClick = (element) => {
+            const events = ["pointerdown", "mousedown", "pointerup", "mouseup", "click"];
+            for (const evType of events) {
+              const ev = new MouseEvent(evType, {
+                bubbles: true,
+                cancelable: true,
+                view: window
+              });
+              element.dispatchEvent(ev);
+            }
+          };
           for (let i = 0; i < els.length; i++) {
             const el = els[i];
             const rect = el.getBoundingClientRect();
             const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
             if (visible) {
               el.scrollIntoView({ block: 'center' });
-              el.click();
+              simulateClick(el);
               return;
             }
           }
-          if (els[0]) els[0].click();
+          if (els[0]) simulateClick(els[0]);
         },
         args: [selector]
       });
