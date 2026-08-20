@@ -14,6 +14,7 @@ export interface IChat extends Document {
   createdAt: Date;
   updatedAt: Date;
   isPinned?: boolean;
+  isPublic?: boolean;
 }
 
 const MessageSchema = new Schema<IMessage>({
@@ -30,6 +31,7 @@ const ChatSchema = new Schema<IChat>(
     messages: [MessageSchema],
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     isPinned: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

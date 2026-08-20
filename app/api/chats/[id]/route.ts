@@ -27,11 +27,12 @@ export async function PATCH(
   try {
     const { id } = await params;
     await dbConnect();
-    const { title, messages, isPinned } = await req.json();
+    const { title, messages, isPinned, isPublic } = await req.json();
     
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
     if (isPinned !== undefined) updateData.isPinned = isPinned;
+    if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (messages !== undefined) {
       updateData.messages = messages.map((m: any) => ({
         role: m.role,

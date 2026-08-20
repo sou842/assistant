@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Sidebar } from "@/components/ai/sidebar";
 import { useAI } from "./ai-provider";
+import { usePathname } from "next/navigation";
 
 export function AIShell({ children }: { children: React.ReactNode }) {
   const {
@@ -23,6 +24,7 @@ export function AIShell({ children }: { children: React.ReactNode }) {
   } = useAI();
 
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
@@ -31,6 +33,20 @@ export function AIShell({ children }: { children: React.ReactNode }) {
   if (!mounted) {
     return (
       <div className="h-screen w-full bg-app-canvas" />
+    );
+  }
+
+  const isShareRoute = pathname?.includes("/ai/share/");
+
+  if (isShareRoute) {
+    return (
+      <div className="h-screen overflow-hidden bg-app-canvas font-sans text-app-text-secondary selection:bg-primary/30">
+        <div className="relative flex h-full">
+          <main className="relative flex min-w-0 flex-1 flex-col bg-app-canvas">
+            {children}
+          </main>
+        </div>
+      </div>
     );
   }
 

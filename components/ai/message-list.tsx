@@ -54,6 +54,7 @@ interface MessageListProps {
   scrollContainerRef?: RefObject<HTMLDivElement | null>;
   debugPerf?: boolean;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
+  isShared?: boolean;
 }
 
 export function MessageList({
@@ -68,6 +69,7 @@ export function MessageList({
   scrollContainerRef,
   debugPerf = false,
   browserCommandStates,
+  isShared = false,
 }: MessageListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
@@ -158,6 +160,7 @@ export function MessageList({
                   setEditingContent={setEditingContent}
                   setDeletingMessageId={setDeletingMessageId}
                   browserCommandStates={browserCommandStates}
+                  isShared={isShared}
                 />
               );
             })}
@@ -183,6 +186,7 @@ export function MessageList({
               setEditingContent={setEditingContent}
               setDeletingMessageId={setDeletingMessageId}
               browserCommandStates={browserCommandStates}
+              isShared={isShared}
             />
           );
         })
@@ -235,6 +239,7 @@ type MessageRowProps = {
   setEditingContent: Dispatch<SetStateAction<string>>;
   setDeletingMessageId: Dispatch<SetStateAction<string | null>>;
   browserCommandStates?: Record<string, { status: "idle" | "running" | "success" | "error"; error?: string; result?: any }>;
+  isShared?: boolean;
 };
 
 function extractYouTubeVideoIds(text: string): string[] {
@@ -262,6 +267,7 @@ const MessageRow = memo(function MessageRow({
   setEditingContent,
   setDeletingMessageId,
   browserCommandStates,
+  isShared = false,
 }: MessageRowProps) {
   const { displayText, uniqueReferences } = useMemo(() => {
     let currentText = getMessageText(message);
@@ -420,12 +426,12 @@ const MessageRow = memo(function MessageRow({
               </ReasoningContent>
             </Reasoning>
           )}
-          <MessageContent className={message?.role === 'user' ? 'group-[.is-user]:bg-app-surface group-[.is-user]:text-app-text-secondary group-[.is-user]:rounded-[25px_25px_0px_25px] group-[.is-user]:border group-[.is-user]:border-app-border-subtle group-[.is-user]:shadow-2xl' : 'text-app-text-secondary'}>
+          <MessageContent className={message?.role === 'user' ? 'group-[.is-user]:bg-app-surface group-[.is-user]:text-app-text-secondary group-[.is-user]:rounded-[25px_25px_0px_25px] group-[.is-user]:border group-[.is-user]:border-app-border-subtle border-none! group-[.is-user]:shadow-2xl' : 'text-app-text-secondary'}>
             {isEditing ? (
               <div className="flex flex-col w-full min-w-[400px] p-0">
                 <textarea
                   autoFocus
-                  className="w-full bg-transparent border-none text-base text-app-text-secondary outline-none resize-none min-h-[80px] placeholder:text-app-text-faint"
+                  className="w-full bg-transparent border-none text-base text-app-text-secondary outline-none resize-none min-h-20 placeholder:text-app-text-faint"
                   onChange={(e) => setEditingContent(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -539,42 +545,46 @@ const MessageRow = memo(function MessageRow({
               "mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
               message.role === 'user' && "justify-end"
             )}>
-              <MessageActions className="bg-white dark:bg-[#080808] p-1 rounded-full border border-app-border-subtle shadow-xl">
+              <MessageActions className="bg-white dark:bg-[#080808] p-1 rounded-full shadow-xl">
                 <MessageAction tooltip="Copy message" onClick={() => copyToClipboard(text)} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
                   <Copy size={13} />
                 </MessageAction>
-                {message.role === 'assistant' && <MessageAction tooltip="Save to memory" onClick={() => onSaveMemory(text)} className="hover:text-indigo-300 hover:bg-indigo-500/10 rounded-full cursor-pointer">
-                  <Brain size={13} />
-                </MessageAction>}
-                {message.role === 'user' && !editingId && (
+                {!isShared && (
                   <>
-                    <MessageAction tooltip="Try again" onClick={() => regenerate({ body: { model: selectedModel } })} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
-                      <RotateCcw size={13} />
-                    </MessageAction>
-                    <MessageAction
-                      tooltip="Edit message"
-                      className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer"
-                      onClick={() => {
-                        setEditingId(message.id);
-                        setEditingContent(text);
-                      }}
-                    >
-                      <Pencil size={13} />
-                    </MessageAction>
-                    <MessageAction tooltip="Delete message" onClick={() => setDeletingMessageId(message.id)} className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
-                      <Trash2 size={13} />
-                    </MessageAction>
-                  </>
-                )}
-                {message.role === 'assistant' && (
-                  <>
-                    <div className="divider divider-horizontal mx-0 w-px opacity-10 py-1"></div>
-                    <MessageAction tooltip="Positive feedback" className="hover:text-green-400 hover:bg-green-400/10 rounded-full cursor-pointer">
-                      <ThumbsUp size={13} />
-                    </MessageAction>
-                    <MessageAction tooltip="Negative feedback" className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
-                      <ThumbsDown size={13} />
-                    </MessageAction>
+                    {message.role === 'assistant' && <MessageAction tooltip="Save to memory" onClick={() => onSaveMemory(text)} className="hover:text-indigo-300 hover:bg-indigo-500/10 rounded-full cursor-pointer">
+                      <Brain size={13} />
+                    </MessageAction>}
+                    {message.role === 'user' && !editingId && (
+                      <>
+                        <MessageAction tooltip="Try again" onClick={() => regenerate({ body: { model: selectedModel } })} className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer">
+                          <RotateCcw size={13} />
+                        </MessageAction>
+                        <MessageAction
+                          tooltip="Edit message"
+                          className="hover:text-primary hover:bg-primary/10 rounded-full cursor-pointer"
+                          onClick={() => {
+                            setEditingId(message.id);
+                            setEditingContent(text);
+                          }}
+                        >
+                          <Pencil size={13} />
+                        </MessageAction>
+                        <MessageAction tooltip="Delete message" onClick={() => setDeletingMessageId(message.id)} className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
+                          <Trash2 size={13} />
+                        </MessageAction>
+                      </>
+                    )}
+                    {message.role === 'assistant' && (
+                      <>
+                        <div className="divider divider-horizontal mx-0 w-px opacity-10 py-1"></div>
+                        <MessageAction tooltip="Positive feedback" className="hover:text-green-400 hover:bg-green-400/10 rounded-full cursor-pointer">
+                          <ThumbsUp size={13} />
+                        </MessageAction>
+                        <MessageAction tooltip="Negative feedback" className="hover:text-red-400 hover:bg-red-400/10 rounded-full cursor-pointer">
+                          <ThumbsDown size={13} />
+                        </MessageAction>
+                      </>
+                    )}
                   </>
                 )}
               </MessageActions>

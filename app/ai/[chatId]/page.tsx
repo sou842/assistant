@@ -628,6 +628,8 @@ function AIPageContent() {
       });
   }, [openCompanion]);
 
+  const isEmpty = renderMessages.length === 0 && !params?.chatId && !isLoading;
+
   return (
     <div className="flex-1 flex flex-row min-h-0 overflow-hidden relative w-full h-full">
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
@@ -638,9 +640,9 @@ function AIPageContent() {
           openCompanion={handleOpenCompanion}
         />
 
-        <div className="flex h-full items-center overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide" ref={scrollRef}>
+        <div className={`overflow-y-auto px-4 py-10 mb-40 scroll-smooth scrollbar-hide ${isEmpty ? 'flex h-full items-center ' : 'flex-1'}`} ref={scrollRef}>
           <div className="mx-auto w-full max-w-3xl space-y-12 pb-10">
-              {renderMessages.length === 0 && !params?.chatId && !isLoading ? (
+              {isEmpty ? (
                   <EmptyState setInput={setInput}>
                     <ChatInput
                       className="w-full relative z-20"

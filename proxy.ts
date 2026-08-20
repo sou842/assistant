@@ -21,7 +21,8 @@ export default auth((req) => {
   }
 
   const isAiRoute = req.nextUrl.pathname.startsWith('/ai');
-  if (isAiRoute && !isLoggedIn) {
+  const isShareRoute = req.nextUrl.pathname.startsWith('/ai/share');
+  if (isAiRoute && !isShareRoute && !isLoggedIn) {
     return Response.redirect(new URL('/login', req.nextUrl));
   }
 });

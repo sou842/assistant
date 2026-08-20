@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { Earth, Menu, Puzzle, Download, Share2, HelpCircle } from "lucide-react";
+import { Earth, Menu, Puzzle, Download, Share2, HelpCircle, Copy } from "lucide-react";
 import Link from "next/link";
+import { useAI } from "@/app/ai/_components/ai-provider";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 interface ChatHeaderProps {
   onOpenMobileSidebar: () => void;
@@ -13,6 +24,28 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected = false, openCompanion }: ChatHeaderProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const { activeChatId, chats, setChats } = useAI();
+  const activeChat = chats.find(c => c.id === activeChatId);
+
+  const handleTogglePublic = async (checked: boolean) => {
+    try {
+      const res = await fetch(`/api/chats/${activeChatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic: checked }),
+      });
+
+      if (res.ok) {
+        toast.success(checked ? "Chat is now public" : "Chat is now private");
+        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, isPublic: checked } : c));
+      } else {
+        toast.error("Failed to update sharing settings");
+      }
+    } catch (err) {
+      toast.error("An error occurred while sharing");
+    }
+  };
 
   return (
     <>
@@ -33,22 +66,15 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
 
         <div className="flex items-center gap-3">
           {/* Share Button */}
-          <button 
-            onClick={() => alert("Share feature coming soon!")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer shadow-sm"
-          >
-            <Share2 size={13} />
-            <span>Share</span>
-          </button>
-
-          {/* Help Button */}
-          <button 
-            onClick={() => alert("Opening Help docs...")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer mr-1 shadow-sm"
-          >
-            <HelpCircle size={13} />
-            <span>Help</span>
-          </button>
+          {activeChat && (
+            <button 
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer shadow-sm"
+            >
+              <Share2 size={13} />
+              <span>Share</span>
+            </button>
+          )}
 
           <button
             className="rounded-xl border border-app-border-subtle bg-app-surface-glass p-2 text-app-text-muted md:hidden"
@@ -156,6 +182,69 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
           </form>
         </dialog>
       )}
+
+      {/* Share Dialog */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="sm:max-w-md bg-app-surface-elevated border-app-border-default shadow-2xl rounded-2xl p-6">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-xl font-bold tracking-tight text-app-text-primary flex items-center gap-2">
+              Share Chat
+            </DialogTitle>
+            <DialogDescription className="text-app-text-muted text-sm">
+              Generate a public link to share this conversation with anyone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-6 bg-app-surface-glass p-5 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <label
+                  htmlFor="public-mode"
+                  className="text-sm font-medium text-app-text-primary cursor-pointer"
+                >
+                  Public Access
+                </label>
+                <p className="text-xs text-app-text-muted">
+                  {(activeChat as any)?.isPublic ? "Anyone with the link can view" : "Only you can access this chat"}
+                </p>
+              </div>
+              <Switch
+                id="public-mode"
+                checked={(activeChat as any)?.isPublic || false}
+                onCheckedChange={handleTogglePublic}
+                className="data-[state=checked]:bg-app-primary cursor-pointer"
+              />
+            </div>
+
+            {(activeChat as any)?.isPublic && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <p className="text-xs font-semibold text-app-text-soft uppercase tracking-wider">Public Share Link</p>
+                <div className="flex items-center gap-2 bg-app-surface-glass p-2 rounded-xl border border-app-border-default focus-within:ring-2 focus-within:ring-brand-primary/20 focus-within:border-brand-primary transition-all duration-200">
+                  <input
+                    readOnly
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/ai/share/${activeChatId}` : ""}
+                    className="flex-1 bg-transparent border-none text-sm text-app-text-primary px-2 outline-none select-all"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const url = typeof window !== 'undefined' ? `${window.location.origin}/ai/share/${activeChatId}` : "";
+                      navigator.clipboard.writeText(url);
+                      toast.success("Link copied to clipboard");
+                    }}
+                    className="h-8 gap-1.5 px-3 rounded-full text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong shrink-0 active:scale-95 transition-transform"
+                  >
+                    <Copy size={14} />
+                    <span className="text-xs font-medium">Copy</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
