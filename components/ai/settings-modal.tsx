@@ -82,7 +82,7 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                 <input 
                   type="text" 
                   placeholder="Search" 
-                  className="w-full bg-app-surface-elevated text-app-text-primary text-[13px] rounded-lg pl-9 pr-3 py-1.5 outline-none border border-transparent focus:border-app-border-default transition-colors" 
+                  className="w-full bg-app-surface-elevated text-app-text-primary text-[13px] rounded-full pl-9 pr-3 py-1.5 outline-none border border-transparent focus:border-app-border-default transition-colors" 
                 />
               </div>
             </div>
@@ -101,13 +101,13 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id as SettingTab)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
+                          "flex items-center gap-3 px-3 py-2 rounded-full text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
                           isActive
                             ? "bg-[#2a2a2a] text-app-text-primary font-medium"
                             : "text-[#a0a0a0] hover:bg-app-surface-elevated hover:text-app-text-primary"
                         )}
                       >
-                        <Icon className={cn("size-[16px]", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
+                        <Icon className={cn("size-4", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
                         {tab.label}
                       </button>
                     );
@@ -127,13 +127,13 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id as SettingTab)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
+                          "flex items-center gap-3 px-3 py-2 rounded-full text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
                           isActive
                             ? "bg-[#2a2a2a] text-app-text-primary font-medium"
                             : "text-[#a0a0a0] hover:bg-app-surface-elevated hover:text-app-text-primary"
                         )}
                       >
-                        <Icon className={cn("size-[16px]", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
+                        <Icon className={cn("size-4", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
                         {tab.label}
                       </button>
                     );
