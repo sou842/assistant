@@ -157,7 +157,7 @@ export function Sidebar({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search chats..."
-                    className="w-full h-8 bg-app-surface-elevated text-app-text-primary text-xs pl-8 pr-8 py-1.5 rounded-full outline-none border border-app-border-default focus:border-app-text-soft/40 transition-colors"
+                    className="w-full h-8 bg-app-surface-elevated text-app-text-primary text-xs pl-8 pr-8 py-1.5 rounded-full outline-none focus:border-app-text-soft/40 transition-colors"
                     autoFocus
                   />
                   <button 
@@ -255,14 +255,14 @@ export function Sidebar({
                 {isSyncing ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2">
-                      <div className="w-[18px] h-[18px] rounded-md bg-app-surface-glass shrink-0 animate-pulse" />
-                      <div className="h-4 bg-app-surface-glass rounded-md flex-1 animate-pulse" />
+                      <div className="w-4.5 h-4.5 rounded-full bg-app-surface-glass shrink-0 animate-pulse" />
+                      <div className="h-4 bg-app-surface-glass rounded-full flex-1 animate-pulse" />
                     </div>
                   ))
                 ) : (
                   filteredChats
-                    .slice()
-                    .sort((a, b) => {
+                    ?.slice()
+                    ?.sort((a, b) => {
                       if (a.isPinned && !b.isPinned) return -1;
                       if (!a.isPinned && b.isPinned) return 1;
                       return b.updatedAt - a.updatedAt;
@@ -290,7 +290,7 @@ export function Sidebar({
                             value={editingTitle}
                           />
                         ) : (
-                          <span className="flex-1 truncate text-xs font-medium tracking-tight">{chat.title}</span>
+                          <span className="flex-1 truncate text-[13px] font-medium tracking-tight">{chat?.title}</span>
                         )}
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -373,7 +373,7 @@ export function Sidebar({
           ) : (
             <SettingsModal>
               <button className="w-full block outline-none text-left">
-                <div className="p-2.5 flex items-center gap-3 group cursor-pointer bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm transition-all w-full rounded-xl">
+                <div className="p-2.5 flex items-center gap-3 group cursor-pointer hover:bg-app-surface-elevated shadow-sm transition-all w-full rounded-xl">
                   <div className="relative">
                     <div className="w-8 h-8 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
                       {initials}
