@@ -11,18 +11,23 @@ import {
   Pencil,
   Ellipsis,
   BookOpenCheck,
-  Layers,
+  Cable,
   Calendar,
   MessageSquare,
   Briefcase,
   Pin,
   PinOff,
   Cpu,
-  Workflow
+  Workflow,
+  Plus,
+  ChevronDown,
+  Search,
+  Sidebar as SidebarIcon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { SettingsModal } from "./settings-modal";
 import type { StoredChat } from "@/lib/chat-storage";
 
 interface SidebarProps {
@@ -63,8 +68,14 @@ export function Sidebar({
   const { data: session } = useSession();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingTitle, setEditingTitle] = React.useState("");
-
-
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  
+  const filteredChats = React.useMemo(() => {
+    if (!searchQuery) return chats;
+    const lowerQuery = searchQuery.toLowerCase();
+    return chats.filter(c => c.title.toLowerCase().includes(lowerQuery));
+  }, [chats, searchQuery]);
   const userName = session?.user?.name || "User";
   const userEmail = session?.user?.email || "";
   const initials = userName
@@ -107,36 +118,59 @@ export function Sidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-app-border-default bg-app-canvas md:static md:z-10 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-app-surface md:static md:z-10 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           } transition-all duration-300 ease-in-out`}
         style={{ width: isCollapsed ? 56 : sidebarWidth }}
       >
         {/* Header */}
-        <div className={`p-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-app-border-default h-16 shrink-0`}>
+        <div className={`p-4 py-0 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} h-12 shrink-0`}>
           {isCollapsed ? (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-9 h-9 bg-app-primary rounded-full flex items-center justify-center text-app-primary-foreground shrink-0 cursor-pointer"
+              className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
             >
-              <Bot size={20} />
+              <SidebarIcon size={18} />
             </button>
           ) : (
             <>
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 bg-app-primary rounded-full flex items-center justify-center text-app-primary-foreground shrink-0">
-                  <Bot size={18} />
+              {!isSearchOpen ? (
+                <>
+                  <button
+                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <SidebarIcon size={18} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => setIsSearchOpen(true)}
+                    className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all cursor-pointer"
+                  >
+                    <Search size={18} />
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center w-full gap-2 relative animate-in fade-in zoom-in-95 duration-200">
+                  <Search size={14} className="text-app-text-muted absolute left-2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search chats..."
+                    className="w-full h-8 bg-app-surface-elevated text-app-text-primary text-xs pl-8 pr-8 py-1.5 rounded-full outline-none border border-app-border-default focus:border-app-text-soft/40 transition-colors"
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="absolute right-1.5 p-1 text-app-text-muted hover:text-app-text-primary rounded-full hover:bg-app-surface-glass cursor-pointer"
+                  >
+                    <Plus size={14} className="rotate-45" />
+                  </button>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-app-text-primary truncate">Jarvis AI</span>
-                  {/* <span className="text-xs text-app-text-muted font-medium truncate uppercase tracking-wider">Neural Shell</span> */}
-                </div>
-              </div>
-              <button
-                className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-all md:block hidden shrink-0 cursor-pointer"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <PanelLeftClose size={18} />
-              </button>
+              )}
             </>
           )}
         </div>
@@ -149,17 +183,22 @@ export function Sidebar({
             <button
               onClick={handleNewChat}
               className={`flex items-center transition-all group cursor-pointer ${isCollapsed
-                ? "w-10 h-10 justify-center rounded-full bg-app-surface-glass hover:bg-app-surface-glass-strong"
-                : "w-full gap-3 px-3 py-2.5 rounded-xl text-app-text-primary font-medium text-sm hover:bg-app-surface-glass-strong"
+                ? "w-10 h-10 justify-center rounded-full bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm"
+                : "w-full gap-3 px-3 py-1.5 rounded-full text-app-text-primary font-medium text-sm bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm"
                 }`}
             >
-              <MessageSquare size={16} className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0" />
-              {!isCollapsed && <span>New Chat</span>}
+              <Plus size={16} className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left">New Chat</span>
+                  {/* <kbd className="text-[10px] font-mono opacity-50 bg-app-surface-glass px-1.5 py-0.5 rounded shadow-sm select-none">⌥N</kbd> */}
+                </>
+              )}
             </button>
             <SidebarNavItem
               active={pathname === "/ai/integrations"}
               href="/ai/integrations"
-              icon={<Layers size={16} />}
+              icon={<Cable size={16} />}
               isCollapsed={isCollapsed}
               label="Integrations"
             />
@@ -221,7 +260,7 @@ export function Sidebar({
                     </div>
                   ))
                 ) : (
-                  chats
+                  filteredChats
                     .slice()
                     .sort((a, b) => {
                       if (a.isPinned && !b.isPinned) return -1;
@@ -251,7 +290,7 @@ export function Sidebar({
                             value={editingTitle}
                           />
                         ) : (
-                          <span className="flex-1 truncate text-sm font-medium tracking-tight">{chat.title}</span>
+                          <span className="flex-1 truncate text-xs font-medium tracking-tight">{chat.title}</span>
                         )}
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -323,7 +362,7 @@ export function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className={`p-0 border-t border-app-border-default ${isCollapsed ? 'flex flex-col items-center space-y-6' : 'space-y-4'}`}>
+        <div className={`p-3 ${isCollapsed ? 'flex flex-col items-center space-y-6' : 'space-y-4'}`}>
           {isCollapsed ? (
             <div
               onClick={() => setSidebarOpen(true)}
@@ -332,19 +371,22 @@ export function Sidebar({
               {initials}
             </div>
           ) : (
-            <Link href="/ai/setting" className="w-full block">
-              <div className="p-3 flex items-center gap-3 group cursor-pointer hover:bg-app-surface-glass transition-all w-full text-left rounded-xl">
-                <div className="relative">
-                  <div className="w-9 h-9 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
-                    {initials}
+            <SettingsModal>
+              <button className="w-full block outline-none text-left">
+                <div className="p-2.5 flex items-center gap-3 group cursor-pointer bg-app-surface-elevated hover:bg-app-surface-hover shadow-sm transition-all w-full rounded-xl">
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-app-primary text-app-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
+                      {initials}
+                    </div>
                   </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs font-bold text-app-text-secondary truncate tracking-tight">{userName}</p>
+                    <p className="text-[10px] text-app-text-muted truncate font-medium">{userEmail}</p>
+                  </div>
+                  <ChevronDown size={14} className="text-app-text-muted opacity-50 mr-1" />
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-xs font-bold text-app-text-secondary truncate tracking-tight">{userName}</p>
-                  <p className="text-[10px] text-app-text-muted truncate font-medium">{userEmail}</p>
-                </div>
-              </div>
-            </Link>
+              </button>
+            </SettingsModal>
           )}
         </div>
       </aside>
@@ -366,7 +408,7 @@ function SidebarNavItem({
   href?: string;
 }) {
   const content = (
-    <div className={`flex items-center transition-all cursor-pointer group text-sm ${isCollapsed ? "w-6 h-6 justify-center rounded-xl" : "w-full gap-3 px-3 py-2 rounded-xl"
+    <div className={`flex items-center transition-all cursor-pointer group text-sm ${isCollapsed ? "w-6 h-6 justify-center rounded-full" : "w-full gap-3 px-3 py-2 rounded-full"
       } ${active ? "bg-app-surface-glass text-app-text-primary" : "text-app-text-muted hover:bg-app-surface-glass-soft hover:text-app-text-secondary"
       }`}>
       <span className="text-app-text-muted group-hover:text-app-text-primary transition-colors shrink-0">{icon}</span>

@@ -100,16 +100,16 @@ export function SettingsTab({
   if (activeTab !== "settings") return null;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-[#0a0a0a] text-zinc-300">
+    <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-app-canvas text-app-text-secondary">
       {/* Title & User Profile */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-100 uppercase tracking-wider">Settings</h2>
-          <p className="text-[11px] text-zinc-500 mt-1">Configure your Jarvis agent and extension panel options.</p>
+          <h2 className="text-sm font-semibold text-app-text-primary uppercase tracking-wider">Settings</h2>
+          <p className="text-[11px] text-app-text-ghost mt-1">Configure your Jarvis agent and extension panel options.</p>
         </div>
 
         {session?.user && (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="h-10 w-10 rounded-full overflow-hidden bg-brand-primary/10 flex items-center justify-center shrink-0 border border-brand-primary/20 text-brand-primary text-xs font-bold font-mono">
               {session.user.image && !imageError ? (
                 <img
@@ -127,13 +127,13 @@ export function SettingsTab({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-zinc-200 truncate">{session.user.name || "Unknown User"}</div>
-              <div className="text-[11px] text-zinc-500 truncate">{session.user.email || "No email available"}</div>
+              <div className="text-sm font-medium text-app-text-primary truncate">{session.user.name || "Unknown User"}</div>
+              <div className="text-[11px] text-app-text-ghost truncate">{session.user.email || "No email available"}</div>
             </div>
             <button
               onClick={() => setShowReloadConfirm(true)}
               title="Reload Extension Connection"
-              className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-full transition duration-200 cursor-pointer shrink-0"
+              className="p-2 text-app-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-full transition duration-200 cursor-pointer shrink-0"
             >
               <RotateCcw size={14} />
             </button>
@@ -143,51 +143,51 @@ export function SettingsTab({
 
       {/* Notifications & Logs */}
       <div className="space-y-3">
-        <label className="text-xs font-semibold text-zinc-400 block">Notifications & Diagnostics</label>
+        <label className="text-xs font-semibold text-app-text-muted block">Notifications & Diagnostics</label>
 
         <div className="space-y-2">
           {/* Verbose Execution Logs */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="flex gap-2.5 items-start">
-              <Terminal size={16} className="text-zinc-400 mt-0.5" />
+              <Terminal size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Verbose Execution Logs</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">Verbose Execution Logs</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Output comprehensive background CLI and driver command sequences in the console.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("verboseLogs", verboseLogs)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {verboseLogs ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div>
 
           {/* Desktop Alerts */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="flex gap-2.5 items-start">
-              <Bell size={16} className="text-zinc-400 mt-0.5" />
+              <Bell size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Desktop Notifications</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">Desktop Notifications</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Notify on desktop when automation workflows finish execution or require input.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("desktopAlerts", desktopAlerts)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {desktopAlerts ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div>
@@ -195,38 +195,38 @@ export function SettingsTab({
           {!isFirefox && (
             <>
               {/* Voice Input & Permission Status */}
-              <div className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/5">
+              <div className="flex flex-col gap-2 p-3 rounded-xl bg-app-surface border border-app-border-default/10">
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2.5 items-start">
-                    <Sliders size={16} className="text-zinc-400 mt-0.5" />
+                    <Sliders size={16} className="text-app-text-muted mt-0.5" />
                     <div>
-                      <span className="text-xs font-medium text-zinc-200 block">Voice Input / Microphone</span>
-                      <span className="text-[10px] text-zinc-500 leading-normal">
+                      <span className="text-xs font-medium text-app-text-primary block">Voice Input / Microphone</span>
+                      <span className="text-[10px] text-app-text-ghost leading-normal">
                         Enable microphone recording for speech-to-text commands.
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => handleToggle("audioEnabled", settings.audioEnabled !== false)}
-                    className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer shrink-0"
+                    className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer shrink-0"
                   >
                     {settings.audioEnabled !== false ? (
                       <ToggleRight size={24} className="text-brand-primary" />
                     ) : (
-                      <ToggleLeft size={24} className="text-zinc-600" />
+                      <ToggleLeft size={24} className="text-app-text-ghost" />
                     )}
                   </button>
                 </div>
                 
                 {/* Status bar */}
-                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-white/5 text-[9px]">
-                  <span className="text-zinc-500 font-sans">Browser Permission Status:</span>
+                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-app-border-default/10 text-[9px]">
+                  <span className="text-app-text-ghost font-sans">Browser Permission Status:</span>
                   <span className={`font-semibold px-2 py-0.5 rounded-full font-sans ${
                     micPermission === "granted" 
                       ? "bg-green-500/10 text-green-400" 
                       : micPermission === "denied"
                         ? "bg-red-500/10 text-red-400"
-                        : "bg-zinc-500/10 text-zinc-400"
+                        : "bg-zinc-500/10 text-app-text-muted"
                   }`}>
                     {micPermission === "granted" 
                       ? "Granted" 
@@ -243,24 +243,24 @@ export function SettingsTab({
               </div>
 
               {/* Hands-free Voice Mode */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
                 <div className="flex gap-2.5 items-start">
-                  <Volume2 size={16} className="text-zinc-400 mt-0.5" />
+                  <Volume2 size={16} className="text-app-text-muted mt-0.5" />
                   <div>
-                    <span className="text-xs font-medium text-zinc-200 block">Hands-free Voice Mode</span>
-                    <span className="text-[10px] text-zinc-500 leading-normal">
+                    <span className="text-xs font-medium text-app-text-primary block">Hands-free Voice Mode</span>
+                    <span className="text-[10px] text-app-text-ghost leading-normal">
                       Automatically start listening again after Jarvis finishes executing a task.
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => handleToggle("handsFreeMode", settings.handsFreeMode ?? false)}
-                  className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                  className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
                 >
                   {settings.handsFreeMode ? (
                     <ToggleRight size={24} className="text-brand-primary" />
                   ) : (
-                    <ToggleLeft size={24} className="text-zinc-600" />
+                    <ToggleLeft size={24} className="text-app-text-ghost" />
                   )}
                 </button>
               </div>
@@ -268,24 +268,24 @@ export function SettingsTab({
           )}
 
           {/* Sound Alerts */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="flex gap-2.5 items-start">
-              <Volume2 size={16} className="text-zinc-400 mt-0.5" />
+              <Volume2 size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Audible Alerts</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">Audible Alerts</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Play warning sounds on CAPTCHAs, prompt inputs, or execution failure.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("soundAlerts", soundAlerts)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {soundAlerts ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div>
@@ -294,63 +294,63 @@ export function SettingsTab({
 
       {/* Agent Execution Settings */}
       <div className="space-y-3">
-        <label className="text-xs font-semibold text-zinc-400 block">Agent Execution & Security</label>
+        <label className="text-xs font-semibold text-app-text-muted block">Agent Execution & Security</label>
 
         <div className="space-y-2">
           {/* Sandbox Toggle */}
-          {/* <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+          {/* <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="flex gap-2.5 items-start">
-              <Shield size={16} className="text-zinc-400 mt-0.5" />
+              <Shield size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Isolated Sandbox Mode</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">Isolated Sandbox Mode</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Execute user scripts inside a secure Web Worker sandbox environment.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("sandboxEnabled", sandboxEnabled)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {sandboxEnabled ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div> */}
 
           {/* Anti-Bot & Stealth Mode */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-app-surface border border-app-border-default/10">
             <div className="flex gap-2.5 items-start">
-              <EyeOff size={16} className="text-zinc-400 mt-0.5" />
+              <EyeOff size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Anti-Bot & Stealth Mode</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">Anti-Bot & Stealth Mode</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Emulate human browser interaction speeds and random cursor paths to avoid detections.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("stealthMode", stealthMode)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {stealthMode ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div>
 
           {/* Maximum Actions Limit */}
-          <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-3">
+          <div className="p-3 rounded-xl bg-app-surface border border-app-border-default/10 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sliders size={14} className="text-zinc-400" />
-                <span className="text-xs font-medium text-zinc-200">Maximum Actions Limit: {maxActions}</span>
+                <Sliders size={14} className="text-app-text-muted" />
+                <span className="text-xs font-medium text-app-text-primary">Maximum Actions Limit: {maxActions}</span>
               </div>
-              <span className="text-[10px] text-zinc-500">Safeguard cap</span>
+              <span className="text-[10px] text-app-text-ghost">Safeguard cap</span>
             </div>
             <input
               type="range"
@@ -359,7 +359,7 @@ export function SettingsTab({
               step="5"
               value={maxActions}
               onChange={(e) => handleValueChange("maxActions", parseInt(e.target.value))}
-              className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              className="w-full h-1 bg-app-surface-elevated rounded-lg appearance-none cursor-pointer accent-brand-primary"
             />
           </div>
         </div>
@@ -367,28 +367,28 @@ export function SettingsTab({
 
       {/* Local Integration */}
       <div className="space-y-3">
-        <label className="text-xs font-semibold text-zinc-400 block">Local Integration</label>
+        <label className="text-xs font-semibold text-app-text-muted block">Local Integration</label>
 
-        <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-3">
+        <div className="p-3 rounded-xl bg-app-surface border border-app-border-default/10 space-y-3">
           {/* File System Auto-Save Switch */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2.5 items-start">
-              <FolderOpen size={16} className="text-zinc-400 mt-0.5" />
+              <FolderOpen size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">File System Auto-Save</span>
-                <span className="text-[10px] text-zinc-500 leading-normal">
+                <span className="text-xs font-medium text-app-text-primary block">File System Auto-Save</span>
+                <span className="text-[10px] text-app-text-ghost leading-normal">
                   Auto-download execution logs, captured images, and scraped datasets.
                 </span>
               </div>
             </div>
             <button
               onClick={() => handleToggle("autoSaveEnabled", autoSaveEnabled)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
             >
               {autoSaveEnabled ? (
                 <ToggleRight size={24} className="text-brand-primary" />
               ) : (
-                <ToggleLeft size={24} className="text-zinc-600" />
+                <ToggleLeft size={24} className="text-app-text-ghost" />
               )}
             </button>
           </div>
@@ -396,13 +396,13 @@ export function SettingsTab({
           {/* Auto-Save Path Input */}
           {autoSaveEnabled && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-zinc-400 block">Default Export Path</span>
+              <span className="text-[10px] text-app-text-muted block">Default Export Path</span>
               <input
                 type="text"
                 value={autoSavePath}
                 onChange={(e) => handleValueChange("autoSavePath", e.target.value)}
                 placeholder="e.g. /JarvisLogs"
-                className="w-full bg-[#121212] text-xs text-zinc-300 p-2 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-600"
+                className="w-full bg-[#121212] text-xs text-app-text-secondary p-2 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-600"
               />
             </div>
           )}
@@ -411,8 +411,8 @@ export function SettingsTab({
 
       {/* Custom AI Models Manager */}
       <div className="space-y-3">
-        <label className="text-xs font-semibold text-zinc-400 block font-sans">Custom AI Models</label>
-        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+        <label className="text-xs font-semibold text-app-text-muted block font-sans">Custom AI Models</label>
+        <div className="p-3 rounded-xl bg-app-surface border border-app-border-default/10">
           {customModels.length > 0 ? (
             <div className="flex flex-col gap-1.5 mb-3 max-h-75 overflow-y-auto pr-1">
               {/* System Defaults Selector */}
@@ -422,7 +422,7 @@ export function SettingsTab({
                 className={`w-full px-3 py-1.5 text-left text-xs font-medium rounded-xl border flex items-center justify-between transition cursor-pointer font-sans ${
                   activeCustomModelId === ""
                     ? "bg-brand-primary/10 border-brand-primary text-brand-primary"
-                    : "bg-white/5 border-white/5 text-zinc-400 hover:text-zinc-300 hover:bg-white/10"
+                    : "bg-app-surface border-app-border-default/10 text-app-text-muted hover:text-app-text-secondary hover:bg-app-surface-elevated"
                 }`}
               >
                 <span>System Defaults</span>
@@ -437,20 +437,20 @@ export function SettingsTab({
                   return (
                     <div key={m.id} className="space-y-2.5 p-3 bg-black/40 rounded-xl border border-brand-primary/40 animate-in fade-in duration-150">
                       <div className="space-y-1">
-                        <span className="text-[9px] text-zinc-400 block font-sans">Model Label</span>
+                        <span className="text-[9px] text-app-text-muted block font-sans">Model Label</span>
                         <input
                           type="text"
                           value={editModelLabel}
                           onChange={(e) => setEditModelLabel(e.target.value)}
-                          className="w-full bg-[#121212] text-xs text-zinc-300 p-1.5 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none font-sans"
+                          className="w-full bg-[#121212] text-xs text-app-text-secondary p-1.5 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none font-sans"
                         />
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[9px] text-zinc-400 block font-sans">AI Model Name</span>
+                        <span className="text-[9px] text-app-text-muted block font-sans">AI Model Name</span>
                         <select
                           value={editModelName}
                           onChange={(e) => setEditModelName(e.target.value)}
-                          className="w-full bg-[#121212] text-xs text-zinc-300 p-1.5 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none font-sans cursor-pointer"
+                          className="w-full bg-[#121212] text-xs text-app-text-secondary p-1.5 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none font-sans cursor-pointer"
                         >
                           <optgroup label="Google Gemini">
                             <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
@@ -508,23 +508,23 @@ export function SettingsTab({
                       </div>
                       {editModelName === "custom" && (
                         <div className="space-y-1 animate-in slide-in-from-top-1 duration-150">
-                          <span className="text-[9px] text-zinc-400 block font-sans">Specify Custom Model Identifier</span>
+                          <span className="text-[9px] text-app-text-muted block font-sans">Specify Custom Model Identifier</span>
                           <input
                             type="text"
                             defaultValue={m.modelName}
                             placeholder="e.g. claude-3-5-sonnet"
-                            className="w-full bg-[#121212] text-xs text-zinc-300 p-1.5 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
+                            className="w-full bg-[#121212] text-xs text-app-text-secondary p-1.5 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
                             id="edit-custom-model-input"
                           />
                         </div>
                       )}
                       <div className="space-y-1">
-                        <span className="text-[9px] text-zinc-400 block font-sans">API Key / Token</span>
+                        <span className="text-[9px] text-app-text-muted block font-sans">API Key / Token</span>
                         <input
                           type="password"
                           value={editModelToken}
                           onChange={(e) => setEditModelToken(e.target.value)}
-                          className="w-full bg-[#121212] text-xs text-zinc-300 p-1.5 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none font-sans"
+                          className="w-full bg-[#121212] text-xs text-app-text-secondary p-1.5 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none font-sans"
                         />
                       </div>
                       <div className="flex items-center gap-2 pt-0.5">
@@ -533,9 +533,9 @@ export function SettingsTab({
                           id="edit-model-fallback"
                           checked={editModelAllowFallback}
                           onChange={(e) => setEditModelAllowFallback(e.target.checked)}
-                          className="rounded border-white/10 bg-[#121212] text-brand-primary focus:ring-brand-primary/50 cursor-pointer"
+                          className="rounded border-app-border-default/20 bg-[#121212] text-brand-primary focus:ring-brand-primary/50 cursor-pointer"
                         />
-                        <label htmlFor="edit-model-fallback" className="text-[9px] text-zinc-400 font-sans cursor-pointer select-none">
+                        <label htmlFor="edit-model-fallback" className="text-[9px] text-app-text-muted font-sans cursor-pointer select-none">
                           Enable System Fallback (use defaults on failure)
                         </label>
                       </div>
@@ -543,7 +543,7 @@ export function SettingsTab({
                         <button
                           type="button"
                           onClick={() => setEditingModelId(null)}
-                          className="px-2 py-1 rounded-full text-[9px] font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer font-sans"
+                          className="px-2 py-1 rounded-full text-[9px] font-medium text-app-text-muted hover:text-white bg-app-surface hover:bg-app-surface-elevated transition cursor-pointer font-sans"
                         >
                           Cancel
                         </button>
@@ -591,7 +591,7 @@ export function SettingsTab({
                     className={`flex items-center justify-between p-2 px-3 rounded-xl border transition-all duration-150 ${
                       isActive 
                         ? "bg-[#161616] border-brand-primary/30" 
-                        : "bg-white/5 border-white/5 hover:border-white/10 hover:bg-white/[0.07]"
+                        : "bg-app-surface border-app-border-default/10 hover:border-app-border-default/20 hover:bg-white/[0.07]"
                     }`}
                   >
                     {/* Left: Radio & Info */}
@@ -609,10 +609,10 @@ export function SettingsTab({
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className={`text-xs font-medium font-sans truncate ${isActive ? 'text-brand-primary font-semibold' : 'text-zinc-200'}`}>
+                        <span className={`text-xs font-medium font-sans truncate ${isActive ? 'text-brand-primary font-semibold' : 'text-app-text-primary'}`}>
                           {m.label}
                         </span>
-                        <span className="text-[9px] text-zinc-500 font-mono truncate">
+                        <span className="text-[9px] text-app-text-ghost font-mono truncate">
                           {m.modelName} • {m.apiToken.slice(0, 3)}..{m.apiToken.slice(-3)}
                         </span>
                       </div>
@@ -654,7 +654,7 @@ export function SettingsTab({
                           setEditModelToken(m.apiToken);
                           setEditModelAllowFallback(m.allowFallback !== false);
                         }}
-                        className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-full transition cursor-pointer shrink-0"
+                        className="p-1 text-app-text-ghost hover:text-app-text-secondary hover:bg-app-surface rounded-full transition cursor-pointer shrink-0"
                         title="Edit Config"
                       >
                         <Pencil size={11} />
@@ -673,7 +673,7 @@ export function SettingsTab({
                             activeCustomModelId: nextActiveId
                           });
                         }}
-                        className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-full transition cursor-pointer shrink-0"
+                        className="p-1 text-app-text-ghost hover:text-red-400 hover:bg-red-500/10 rounded-full transition cursor-pointer shrink-0"
                         title="Delete Config"
                       >
                         <Trash2 size={11} />
@@ -684,27 +684,27 @@ export function SettingsTab({
               })}
             </div>
           ) : (
-            <p className="text-[10px] text-zinc-500 italic font-sans mb-3">No custom models configured. Using System Defaults.</p>
+            <p className="text-[10px] text-app-text-ghost italic font-sans mb-3">No custom models configured. Using System Defaults.</p>
           )}
 
           {isAddingModel ? (
-            <div className="space-y-3 p-3 bg-black/30 rounded-xl border border-white/5 animate-in fade-in duration-150">
+            <div className="space-y-3 p-3 bg-black/30 rounded-xl border border-app-border-default/10 animate-in fade-in duration-150">
               <div className="space-y-1.5">
-                <span className="text-[10px] text-zinc-400 block font-sans">Model Label (e.g. Work OpenAI)</span>
+                <span className="text-[10px] text-app-text-muted block font-sans">Model Label (e.g. Work OpenAI)</span>
                 <input
                   type="text"
                   value={newModelLabel}
                   onChange={(e) => setNewModelLabel(e.target.value)}
                   placeholder="Enter config name"
-                  className="w-full bg-[#121212] text-xs text-zinc-300 p-2 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
+                  className="w-full bg-[#121212] text-xs text-app-text-secondary p-2 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
                 />
               </div>
               <div className="space-y-1.5">
-                <span className="text-[10px] text-zinc-400 block font-sans">AI Model Name</span>
+                <span className="text-[10px] text-app-text-muted block font-sans">AI Model Name</span>
                 <select
                   value={newModelName}
                   onChange={(e) => setNewModelName(e.target.value)}
-                  className="w-full bg-[#121212] text-xs text-zinc-300 p-2 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none font-sans cursor-pointer"
+                  className="w-full bg-[#121212] text-xs text-app-text-secondary p-2 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none font-sans cursor-pointer"
                 >
                   <optgroup label="Google Gemini">
                     <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
@@ -762,23 +762,23 @@ export function SettingsTab({
               </div>
               {newModelName === "custom" && (
                 <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-150">
-                  <span className="text-[10px] text-zinc-400 block font-sans">Specify Custom Model Identifier</span>
+                  <span className="text-[10px] text-app-text-muted block font-sans">Specify Custom Model Identifier</span>
                   <input
                     type="text"
                     placeholder="e.g. claude-3-5-sonnet"
-                    className="w-full bg-[#121212] text-xs text-zinc-300 p-2 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
+                    className="w-full bg-[#121212] text-xs text-app-text-secondary p-2 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
                     id="custom-model-input"
                   />
                 </div>
               )}
               <div className="space-y-1.5">
-                <span className="text-[10px] text-zinc-400 block font-sans">API Key / Token</span>
+                <span className="text-[10px] text-app-text-muted block font-sans">API Key / Token</span>
                 <input
                   type="password"
                   value={newModelToken}
                   onChange={(e) => setNewModelToken(e.target.value)}
                   placeholder="Enter API key"
-                  className="w-full bg-[#121212] text-xs text-zinc-300 p-2 rounded-lg border border-white/5 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
+                  className="w-full bg-[#121212] text-xs text-app-text-secondary p-2 rounded-lg border border-app-border-default/10 focus:border-brand-primary/50 focus:outline-none placeholder-zinc-700 font-sans"
                 />
               </div>
               <div className="flex items-center gap-2 pt-1">
@@ -787,9 +787,9 @@ export function SettingsTab({
                   id="new-model-fallback"
                   checked={newModelAllowFallback}
                   onChange={(e) => setNewModelAllowFallback(e.target.checked)}
-                  className="rounded border-white/10 bg-[#121212] text-brand-primary focus:ring-brand-primary/50 cursor-pointer"
+                  className="rounded border-app-border-default/20 bg-[#121212] text-brand-primary focus:ring-brand-primary/50 cursor-pointer"
                 />
-                <label htmlFor="new-model-fallback" className="text-[10px] text-zinc-400 font-sans cursor-pointer select-none">
+                <label htmlFor="new-model-fallback" className="text-[10px] text-app-text-muted font-sans cursor-pointer select-none">
                   Enable System Fallback (use defaults on failure)
                 </label>
               </div>
@@ -797,7 +797,7 @@ export function SettingsTab({
                 <button
                   type="button"
                   onClick={() => setIsAddingModel(false)}
-                  className="px-2.5 py-1.5 rounded-full text-[10px] font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer font-sans"
+                  className="px-2.5 py-1.5 rounded-full text-[10px] font-medium text-app-text-muted hover:text-white bg-app-surface hover:bg-app-surface-elevated transition cursor-pointer font-sans"
                 >
                   Cancel
                 </button>
@@ -840,7 +840,7 @@ export function SettingsTab({
             <button
               type="button"
               onClick={() => setIsAddingModel(true)}
-              className="w-full py-1.5 border border-dashed border-white/10 hover:border-brand-primary/40 rounded-xl text-[10px] font-medium text-zinc-400 hover:text-brand-primary flex items-center justify-center gap-1 transition-colors cursor-pointer font-sans"
+              className="w-full py-1.5 border border-dashed border-app-border-default/20 hover:border-brand-primary/40 rounded-xl text-[10px] font-medium text-app-text-muted hover:text-brand-primary flex items-center justify-center gap-1 transition-colors cursor-pointer font-sans"
             >
               <Plus size={10} />
               Add Custom Model Config
@@ -851,31 +851,31 @@ export function SettingsTab({
 
       {/* Keyboard Shortcuts */}
       <div className="space-y-3">
-        <label className="text-xs font-semibold text-zinc-400 block">Keyboard Shortcuts</label>
-        <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-2.5">
+        <label className="text-xs font-semibold text-app-text-muted block">Keyboard Shortcuts</label>
+        <div className="p-3 rounded-xl bg-app-surface border border-app-border-default/10 space-y-2.5">
           <div className="flex flex-col items-start justify-between">
             <div className="flex gap-2.5 items-start">
-              <Keyboard size={16} className="text-zinc-400 mt-0.5" />
+              <Keyboard size={16} className="text-app-text-muted mt-0.5" />
               <div>
-                <span className="text-xs font-medium text-zinc-200 block">Toggle Jarvis Sidepanel</span>
-                <span className="text-[10px] text-zinc-500">
-                  Press shortcut keys <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-zinc-300 bg-white/5 rounded shadow-sm">⌘ + J</kbd> / <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-zinc-300 bg-white/5 rounded shadow-sm">Ctrl + J</kbd> to quickly open or close the extension panel.
+                <span className="text-xs font-medium text-app-text-primary block">Toggle Jarvis Sidepanel</span>
+                <span className="text-[10px] text-app-text-ghost">
+                  Press shortcut keys <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-app-text-secondary bg-app-surface rounded shadow-sm">⌘ + J</kbd> / <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-app-text-secondary bg-app-surface rounded shadow-sm">Ctrl + J</kbd> to quickly open or close the extension panel.
                 </span>
               </div>
             </div>
             {/* <div className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-app-text-secondary bg-app-surface rounded border border-app-border-default/20 shadow-sm">
                 ⌘
               </kbd>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-app-text-secondary bg-app-surface rounded border border-app-border-default/20 shadow-sm">
                 J
               </kbd>
-              <span className="text-[10px] text-zinc-600 px-0.5">/</span>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+              <span className="text-[10px] text-app-text-ghost px-0.5">/</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-app-text-secondary bg-app-surface rounded border border-app-border-default/20 shadow-sm">
                 Ctrl
               </kbd>
-              <span className="text-zinc-600 text-[10px]">+</span>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-300 bg-white/5 rounded border border-white/10 shadow-sm">
+              <span className="text-app-text-ghost text-[10px]">+</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-app-text-secondary bg-app-surface rounded border border-app-border-default/20 shadow-sm">
                 J
               </kbd>
             </div> */}
@@ -889,21 +889,21 @@ export function SettingsTab({
           onClick={() => setShowReloadConfirm(false)}
         >
           <div 
-            className="bg-[#121212] border border-white/10 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default"
+            className="bg-[#121212] border border-app-border-default/20 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 text-red-400">
               <h3 className="font-semibold text-sm text-white font-sans">Reload Connection</h3>
             </div>
             
-            <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+            <p className="text-xs text-app-text-muted leading-relaxed font-sans">
               Are you sure you want to reload the extension connection? This will restart the background service worker.
             </p>
             
             <div className="flex gap-2.5 justify-end pt-2">
               <button
                 onClick={() => setShowReloadConfirm(false)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer font-sans"
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-app-text-muted hover:text-white bg-app-surface hover:bg-app-surface-elevated transition cursor-pointer font-sans"
               >
                 Cancel
               </button>

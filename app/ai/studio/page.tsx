@@ -85,14 +85,12 @@ export default function StudioPage() {
       toast.error("An error occurred");
     }
   };
-
   return (
-    <div className="flex flex-col h-full bg-app-surface">
+    <div className="min-h-screen bg-app-canvas flex flex-col">
       {/* HEADER */}
       <PageHeader
-        icon={<Briefcase />}
+        icon={<Briefcase className="text-brand-primary" />}
         title="Studio"
-        subtitle="Create and manage professional documents, resumes, and slides"
       >
         <div className="flex items-center justify-end gap-3 w-full">
           <div className="relative flex-1 max-w-sm">
@@ -101,28 +99,28 @@ export default function StudioPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search documents..."
-              className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-glass pl-9 pr-4 text-xs text-app-text-primary outline-none transition-all placeholder:text-app-text-faint focus:border-app-border-strong"
+              className="h-9 w-full rounded-full border border-transparent bg-app-surface pl-9 pr-4 text-xs text-app-text-primary outline-none transition-all placeholder:text-app-text-ghost focus:border-app-border-default/40 focus:ring-0 focus:outline-none"
             />
           </div>
         </div>
       </PageHeader>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-8xl">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <div className="size-8 rounded-full border-2 border-app-border-default border-t-app-text-primary animate-spin" />
+              <div className="size-8 rounded-full border-2 border-app-border-default/30 border-t-brand-primary animate-spin" />
             </div>
           ) : error ? (
-            <div className="py-20 text-center text-app-danger-strong">Failed to load documents.</div>
+            <div className="py-20 text-center text-app-danger-strong text-sm">Failed to load documents.</div>
           ) : items.length === 0 ? (
-            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-app-border-default bg-app-canvas px-6 text-center">
-              <div className="mb-5 flex size-16 items-center justify-center rounded-3xl border border-app-border-default bg-app-surface-glass-soft">
-                <FileBadge className="size-7 text-app-text-ghost" />
+            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-transparent bg-app-surface px-6 text-center shadow-xs">
+              <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-app-surface-elevated">
+                <FileBadge className="size-7 text-app-text-secondary" />
               </div>
-              <h2 className="text-xl font-semibold text-app-text-primary">No Documents Found</h2>
-              <p className="mt-3 max-w-md text-sm leading-7 text-app-text-faint">
+              <h2 className="text-lg font-semibold text-app-text-primary tracking-tight">No Documents Found</h2>
+              <p className="mt-2 max-w-md text-xs leading-relaxed text-app-text-muted">
                 Create a new document to build a professional resume, presentation slide, or report.
               </p>
             </div>
@@ -132,28 +130,28 @@ export default function StudioPage() {
                 <div
                   key={item._id}
                   onClick={() => handleEdit(item)}
-                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-app-border-subtle bg-app-surface-glass-soft p-5 transition-all hover:bg-app-surface-glass hover:shadow-lg"
+                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-transparent bg-app-surface p-5 transition-all duration-300 hover:bg-app-surface-hover hover:shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="rounded-full bg-app-surface-glass p-2.5">
-                      <FileBadge size={24} className="text-blue-400" />
+                    <div className="rounded-full bg-app-surface-elevated p-2">
+                      <FileBadge size={20} className="text-brand-primary" />
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+                    <div className="flex items-center gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingId(item._id);
                           setEditTitle(item.title);
                         }}
-                        className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-surface-glass-strong hover:text-app-text-primary"
+                        className="cursor-pointer rounded-full p-1.5 text-app-text-muted hover:bg-app-surface-elevated hover:text-app-text-primary outline-none transition-colors"
                       >
-                        <Pencil size={16} />
+                        <Pencil size={15} />
                       </button>
                       <button
                         onClick={(e) => handleDelete(e, item._id)}
-                        className="cursor-pointer rounded-full p-1.5 text-app-text-ghost hover:bg-app-danger-soft hover:text-app-danger-strong"
+                        className="cursor-pointer rounded-full p-1.5 text-app-text-muted hover:bg-app-danger-soft hover:text-app-danger-strong outline-none transition-colors"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -169,28 +167,28 @@ export default function StudioPage() {
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
-                        className="w-full bg-app-surface-glass border border-app-border-strong rounded px-2 py-1 text-sm font-semibold text-app-text-primary outline-none"
+                        className="w-full bg-app-surface-elevated border border-app-border-default/20 rounded-full px-4 py-1.5 text-xs text-app-text-primary outline-none focus:border-app-border-default"
                         onClick={(e) => e.stopPropagation()}
                       />
                     </form>
                   ) : (
-                    <h3 className="mb-1 truncate font-semibold text-app-text-primary">{item.title}</h3>
+                    <h3 className="mb-1 truncate font-semibold text-app-text-primary text-[14px] tracking-tight">{item.title}</h3>
                   )}
-                  <div className="mb-4 flex items-center gap-2 text-xs text-app-text-faint">
+                  <div className="mb-4 flex items-center gap-2 text-[11px] text-app-text-ghost">
                     <span>Document</span>
                     <span>•</span>
                     <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
                   </div>
 
                   {item.tags && item.tags.length > 0 && (
-                    <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-subtle pt-4">
+                    <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-default/10 pt-4">
                       {item.tags.slice(0, 3).map((tag: string, i: number) => (
-                        <span key={i} className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
+                        <span key={i} className="rounded-full bg-app-surface-elevated/40 px-2 py-0.5 text-[10px] text-app-text-soft">
                           {tag}
                         </span>
                       ))}
                       {item.tags.length > 3 && (
-                        <span className="rounded-full border border-app-border-subtle bg-app-surface-glass px-2 py-0.5 text-[10px] text-app-text-soft">
+                        <span className="rounded-full bg-app-surface-elevated/40 px-2 py-0.5 text-[10px] text-app-text-soft">
                           +{item.tags.length - 3}
                         </span>
                       )}
@@ -221,7 +219,7 @@ export default function StudioPage() {
               toast.error("Failed to create document");
             }
           }}
-          className="group flex size-14 cursor-pointer items-center justify-center rounded-full bg-app-primary text-app-primary-foreground shadow-2xl transition-all hover:scale-110 hover:bg-app-primary-hover active:scale-95"
+          className="group flex size-14 cursor-pointer items-center justify-center rounded-full bg-brand-primary text-white shadow-lg transition-all hover:scale-105 active:scale-95"
         >
           <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
         </button>

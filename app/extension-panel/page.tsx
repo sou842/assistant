@@ -483,7 +483,7 @@ export default function ExtensionPanel() {
 
   if (status === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-full bg-transparent text-zinc-400">
+      <div className="flex flex-col items-center justify-center h-screen w-full bg-transparent text-app-text-muted">
         <Loader2 className="animate-spin size-8 text-brand-primary mb-3" />
         <span className="text-xs font-medium tracking-wide">Checking session...</span>
       </div>
@@ -492,11 +492,11 @@ export default function ExtensionPanel() {
 
   if (status === "unauthenticated") {
     return (
-      <div className="flex flex-col h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden">
+      <div className="flex flex-col h-screen w-full bg-app-canvas text-app-text-primary font-sans overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between p-3 border-b border-white/10 bg-black/40 backdrop-blur-md relative z-20">
+        <header className="flex items-center justify-between p-3 border-b border-app-border-default/20 bg-app-surface/60 backdrop-blur-md relative z-20">
           <div className="flex items-center gap-2">
-            <h1 className="font-semibold tracking-tight text-sm text-gray-200">Jarvis Agent</h1>
+            <h1 className="font-semibold tracking-tight text-sm text-app-text-primary">Jarvis Agent</h1>
             {isLocal && (
               <span className="bg-brand-primary/20 text-brand-primary text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-brand-primary/30">Local</span>
             )}
@@ -508,15 +508,15 @@ export default function ExtensionPanel() {
           <div className="w-16 h-16 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center mb-6">
             <Lock className="size-6 text-brand-primary" />
           </div>
-          <h2 className="text-base font-semibold text-zinc-200 mb-2">Authentication Required</h2>
-          <p className="text-xs text-zinc-500 max-w-60 leading-relaxed mb-6">
+          <h2 className="text-base font-semibold text-app-text-primary mb-2">Authentication Required</h2>
+          <p className="text-xs text-app-text-muted max-w-60 leading-relaxed mb-6">
             Please log in to your account to securely chat with Jarvis and run automation workflows.
           </p>
           <button
             onClick={() => {
               window.parent.postMessage({ type: "FROM_NEXTJS", action: "OPEN_LOGIN_PAGE" }, "*");
             }}
-            className="w-full max-w-45 bg-brand-primary text-black font-semibold text-xs py-2 px-4 rounded-full transition hover:opacity-90 active:scale-[0.98] cursor-pointer"
+            className="w-full max-w-45 bg-brand-primary text-white font-semibold text-xs py-2 px-4 rounded-full transition hover:opacity-90 active:scale-[0.98] cursor-pointer"
           >
             Log In
           </button>
@@ -526,23 +526,23 @@ export default function ExtensionPanel() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-app-canvas text-app-text-primary font-sans overflow-hidden">
 
       {/* Header */}
-      <header className="flex items-center justify-between p-3 border-b border-white/10 bg-black/40 backdrop-blur-md relative z-20">
+      <header className="flex items-center justify-between p-3 border-b border-app-border-default/20 bg-app-surface/60 backdrop-blur-md relative z-20">
         <button
           onClick={() => {
             window.parent.postMessage({ type: "FROM_NEXTJS", action: "NEW_CHAT" }, "*");
             setShowHistory(false);
             setActiveTab("chat");
           }}
-          className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-full transition cursor-pointer"
+          className="flex items-center gap-1 text-xs bg-app-surface-elevated hover:bg-app-surface-hover text-app-text-primary px-2.5 py-1 rounded-full border border-app-border-default/20 transition cursor-pointer"
         >
           <Plus size={14} /> New Chat
         </button>
 
         <div className="flex items-center gap-2">
-          <h1 className="font-semibold tracking-tight text-sm text-gray-200">Jarvis Agent</h1>
+          <h1 className="font-semibold tracking-tight text-sm text-app-text-primary">Jarvis Agent</h1>
           {isLocal && (
             <span className="bg-brand-primary/20 text-brand-primary text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-brand-primary/30">Local</span>
           )}
@@ -550,7 +550,7 @@ export default function ExtensionPanel() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`p-1.5 rounded-full transition cursor-pointer ${showHistory ? 'bg-blue-600/30 text-brand-primary' : 'hover:bg-white/10 text-gray-400'}`}
+            className={`p-1.5 rounded-full transition cursor-pointer ${showHistory ? 'bg-brand-primary/10 text-brand-primary' : 'hover:bg-app-surface-elevated text-app-text-muted'}`}
             title="Chat History"
           >
             <History size={14} />

@@ -52,7 +52,7 @@ export default function SharedVaultItemClient({ id }: { id: string }) {
 
   return (
     <div className="flex h-screen flex-col bg-app-surface text-app-text-primary">
-      <header className="sticky top-0 z-30 h-16 w-full shrink-0 border-b border-app-border-default bg-app-canvas/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 h-16 w-full shrink-0 border-0 border-app-border-default bg-app-canvas/70 backdrop-blur-xl">
         <div className="mx-auto max-w-8xl px-5 h-full">
           <div className="flex items-center gap-4 h-full">
             <div className="size-9 shrink-0 rounded-xl border border-app-border-default bg-app-surface-glass flex items-center justify-center">

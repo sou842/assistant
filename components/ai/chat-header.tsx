@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Earth, Menu, Puzzle, Download } from "lucide-react";
+import { Earth, Menu, Puzzle, Download, Share2, HelpCircle } from "lucide-react";
 import Link from "next/link";
 
 interface ChatHeaderProps {
@@ -16,19 +16,40 @@ export function ChatHeader({ onOpenMobileSidebar, isSyncing, extensionConnected 
 
   return (
     <>
-      <header className="h-16 border-b border-app-border-default flex items-center justify-end px-6 z-20 backdrop-blur-2xl bg-app-canvas/70 sticky top-0">
+      <header className="h-16 flex items-center justify-between px-6 z-20 bg-app-canvas sticky top-0">
 
-        {/* <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-app-text-muted md:flex hidden">
-            <span className="opacity-50">Session Active</span>
+        {/* Left info badge */}
+        <div className="flex items-center gap-3 select-none mr-auto">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 cursor-pointer group">
+              <span className="text-[15px] font-bold text-app-text-primary tracking-tight">Jarvis AI</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-app-text-muted group-hover:text-app-text-primary transition-colors">
+                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-[10px] text-app-text-muted leading-none mt-1 font-medium">Free Plan</span>
           </div>
-          <div className="divider divider-horizontal mx-1 h-4 self-center opacity-10 md:flex hidden"></div>
-          <Link className="btn btn-ghost btn-sm text-[10px] font-bold uppercase tracking-widest text-app-text-muted hover:text-app-text-primary transition-all" href="/">
-            Disconnect
-          </Link>
-        </div> */}
+        </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Share Button */}
+          <button 
+            onClick={() => alert("Share feature coming soon!")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer shadow-sm"
+          >
+            <Share2 size={13} />
+            <span>Share</span>
+          </button>
+
+          {/* Help Button */}
+          <button 
+            onClick={() => alert("Opening Help docs...")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-app-border-default/60 bg-transparent hover:bg-app-surface-glass rounded-full text-app-text-secondary transition-all cursor-pointer mr-1 shadow-sm"
+          >
+            <HelpCircle size={13} />
+            <span>Help</span>
+          </button>
+
           <button
             className="rounded-xl border border-app-border-subtle bg-app-surface-glass p-2 text-app-text-muted md:hidden"
             onClick={onOpenMobileSidebar}

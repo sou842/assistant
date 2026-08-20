@@ -153,41 +153,43 @@ export function MemoryTab() {
 
   return (
     <>
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center justify-between mb-6 pb-4">
-          <h2 className="text-xl font-semibold">Jarvis Memory</h2>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-base font-semibold text-app-text-primary tracking-tight">Jarvis Memory</h2>
+            <p className="text-[13px] text-app-text-muted mt-1">
+              Manage information and context limits that Jarvis keeps in mind across conversations.
+            </p>
+          </div>
           <button
             onClick={() => {
               resetForm();
               setOpenDrawer(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface-elevated border border-app-border-default rounded-full text-sm font-medium hover:bg-app-surface-glass transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-1.5 bg-app-surface-elevated border border-transparent hover:border-app-border-default/50 rounded-full text-[13px] font-medium text-app-text-primary transition-all cursor-pointer shadow-sm animate-in fade-in"
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             Add Memory
           </button>
         </div>
 
-        <div className="space-y-4">
-          <p className="text-[13px] text-app-text-muted mb-6">
-            Manage information and context limits that Jarvis keeps in mind across conversations.
-          </p>
+        <div className="space-y-6">
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-ghost" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-muted" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search memory titles, tags..."
-                className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-elevated pl-9 pr-3 text-sm text-app-text-primary outline-none placeholder:text-app-text-faint focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                className="h-9 w-full rounded-full border border-transparent bg-app-surface-elevated pl-9 pr-3 text-[13px] text-app-text-primary outline-none placeholder:text-app-text-muted focus:border-app-border-default transition-all"
               />
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as MemoryCategory | "all")}
-              className="h-9 rounded-full border border-app-border-default bg-app-surface-elevated px-3 text-sm text-app-text-primary outline-none focus:border-brand-primary cursor-pointer"
+              className="h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] text-app-text-primary outline-none focus:border-app-border-default cursor-pointer"
             >
               <option value="all">All Categories</option>
               {memoryCategories.map((c) => (
@@ -236,58 +238,58 @@ export function MemoryTab() {
 
         <div
           className={cn(
-            "relative w-full max-w-lg bg-app-surface border border-app-border-default rounded-2xl shadow-2xl transition-transform duration-300 ease-out",
+            "relative w-full max-w-lg bg-app-surface border border-app-border-default/30 rounded-2xl shadow-2xl transition-transform duration-300 ease-out",
             openDrawer ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
           )}
         >
           <form onSubmit={submitMemory} className="flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between p-5 border-b border-app-border-default">
-              <h2 className="font-semibold text-lg">
+            <div className="flex items-center justify-between p-5 md:px-8 md:pt-6 border-b border-transparent">
+              <h2 className="font-semibold text-base text-app-text-primary tracking-tight">
                 {editingId ? "Edit Memory" : "Add Memory"}
               </h2>
               <button
                 type="button"
                 onClick={resetForm}
-                className="p-1.5 rounded-md text-app-text-muted hover:bg-app-surface-elevated transition cursor-pointer"
+                className="p-1.5 rounded-md text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-elevated transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 md:px-8 space-y-5">
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                <label className="text-[13px] text-app-text-primary block mb-2">
                   Title
                 </label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                   placeholder="Short memory key"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                <label className="text-[13px] text-app-text-primary block mb-2">
                   Content
                 </label>
                 <textarea
                   value={form.content}
                   onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
                   placeholder="Tell Jarvis what to keep in mind..."
-                  className="w-full min-h-[120px] resize-none rounded-lg border border-app-border-default bg-app-background p-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full min-h-[120px] resize-none rounded-lg border border-transparent bg-app-surface-elevated p-3 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                  <label className="text-[13px] text-app-text-primary block mb-2">
                     Category
                   </label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as MemoryCategory }))}
-                    className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary cursor-pointer"
+                    className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default cursor-pointer"
                   >
                     {memoryCategories.map((category) => (
                       <option key={category.id} value={category.id}>{category.label}</option>
@@ -296,17 +298,17 @@ export function MemoryTab() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                  <label className="text-[13px] text-app-text-primary block mb-2">
                     Status
                   </label>
                   <button
                     type="button"
                     onClick={() => setForm((prev) => ({ ...prev, enabled: !prev.enabled }))}
                     className={cn(
-                      "w-full h-10 rounded-lg border text-sm font-medium transition cursor-pointer flex items-center justify-center",
+                      "w-full h-9 rounded-full text-[13px] font-medium transition cursor-pointer flex items-center justify-center border border-transparent",
                       form.enabled
-                        ? "bg-brand-primary/10 border-brand-primary/30 text-brand-primary"
-                        : "bg-app-surface-elevated border-app-border-default text-app-text-muted"
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "bg-app-surface-elevated text-app-text-muted"
                     )}
                   >
                     {form.enabled ? "Active" : "Disabled"}
@@ -315,30 +317,30 @@ export function MemoryTab() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                <label className="text-[13px] text-app-text-primary block mb-2">
                   Tags
                 </label>
                 <input
                   value={form.tags}
                   onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
                   placeholder="e.g. work, coding (comma separated)"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
             </div>
 
-            <div className="p-5 border-t border-app-border-default flex justify-end gap-3 bg-app-surface-elevated/30 rounded-b-2xl">
+            <div className="p-5 md:px-8 border-t border-app-border-default/20 flex justify-end gap-3 rounded-b-2xl">
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 text-sm font-medium text-app-text-secondary hover:text-app-text-primary transition cursor-pointer"
+                className="px-4 py-1.5 text-[13px] font-medium text-app-text-muted hover:text-app-text-primary transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!form.content.trim()}
-                className="px-5 py-2 rounded-lg bg-brand-primary text-white text-sm font-medium hover:bg-brand-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+                className="px-5 py-1.5 rounded-full bg-app-text-primary text-app-surface text-[13px] font-medium hover:bg-app-text-secondary transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
               >
                 {editingId ? "Update" : "Save"}
               </button>

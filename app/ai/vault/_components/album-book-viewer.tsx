@@ -304,7 +304,7 @@ export function AlbumBookViewer({ item, readOnly = false, isShared = false, onCh
   return (
     <div className="flex h-full overflow-hidden bg-background">
       {/* Sidebar for pages */}
-      <div className="w-64 border-r flex flex-col shrink-0">
+      <div className="w-64 flex flex-col shrink-0">
         <div className="flex-1 overflow-y-auto p-2">
           {pages?.length === 0 ? (
             <div className="text-center text-xs text-app-text-muted mt-10">No pages yet</div>

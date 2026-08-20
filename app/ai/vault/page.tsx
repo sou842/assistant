@@ -494,7 +494,7 @@ export default function VaultPage() {
   return (
     <div className="flex h-full flex-col">
       {/* HEADER */}
-      <PageHeader icon={<Database />} title="Vault" subtitle="Manage your stored data and documents">
+      <PageHeader icon={<Database />} title="Vault">
         <div className="flex w-full items-center justify-end gap-3">
           {selectedIds.length > 0 && (
             <button

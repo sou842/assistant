@@ -93,40 +93,40 @@ export function IndividualWorkflow({
       <div className="flex items-center gap-2 mb-2">
         <button
           onClick={onBack}
-          className="p-1.5 -ml-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+          className="p-1.5 -ml-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-elevated rounded-md transition-colors cursor-pointer outline-none"
           aria-label="Back to workflows list"
         >
           <ArrowLeft size={16} />
         </button>
         
         {/* Logo/Icon beside Title */}
-        <div className="w-6 h-6 rounded-md bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-6 h-6 rounded-md bg-app-surface-elevated border border-app-border-default/20 flex items-center justify-center overflow-hidden shrink-0">
           {logoUrl ? (
             <img src={logoUrl} alt="" className="w-3.5 h-3.5 object-contain" />
           ) : (
-            <WorkflowIcon size={11} className="text-blue-400" />
+            <WorkflowIcon size={11} className="text-brand-primary" />
           )}
         </div>
 
-        <h2 className="text-sm font-semibold text-gray-200 truncate pr-2 flex-1">
+        <h2 className="text-xs font-semibold text-app-text-primary truncate pr-2 flex-1">
           {w.title}
         </h2>
       </div>
 
       {w.description && (
-        <p className="text-xs text-gray-400 -mt-2 leading-relaxed">{w.description}</p>
+        <p className="text-[11px] text-app-text-muted -mt-2 leading-relaxed">{w.description}</p>
       )}
 
       {/* Form Content */}
-      <div className="bg-[#111] rounded-xl border border-white/10 overflow-hidden shadow-md">
+      <div className="bg-app-surface rounded-xl border border-app-border-default/20 overflow-hidden shadow-xs">
         <div className="p-4 space-y-4">
-          <div className="flex bg-[#0a0a0a] rounded-full p-1 gap-1 border border-white/5">
+          <div className="flex bg-app-canvas rounded-full p-1 gap-1 border border-app-border-default/10">
             <button
               onClick={() => setWorkflowTab("variables")}
               className={`flex-1 text-[10px] py-1.5 font-medium rounded-full transition flex items-center justify-center gap-2 cursor-pointer ${
                 workflowTab === "variables"
-                  ? "bg-white/10 text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-app-surface-elevated text-app-text-primary shadow-xs"
+                  : "text-app-text-muted hover:text-app-text-primary"
               }`}
             >
               Variables
@@ -134,8 +134,8 @@ export function IndividualWorkflow({
                 <span
                   className={`text-[9px] rounded-full px-1.5 leading-4 ${
                     workflowTab === "variables"
-                      ? "bg-blue-500/20 text-blue-300"
-                      : "bg-white/10 text-gray-500"
+                      ? "bg-brand-primary/10 text-brand-primary"
+                      : "bg-app-surface text-app-text-ghost"
                   }`}
                 >
                   {inputCount}
@@ -146,8 +146,8 @@ export function IndividualWorkflow({
               onClick={() => setWorkflowTab("script")}
               className={`flex-1 text-[10px] py-1.5 font-medium rounded-full transition cursor-pointer ${
                 workflowTab === "script"
-                  ? "bg-white/10 text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-app-surface-elevated text-app-text-primary shadow-xs"
+                  : "text-app-text-muted hover:text-app-text-primary"
               }`}
             >
               Script
@@ -170,10 +170,10 @@ export function IndividualWorkflow({
 
                   return (
                     <div key={idx} className="flex flex-col gap-1.5">
-                      <label className="text-xs text-gray-300 font-medium flex items-center gap-1">
+                      <label className="text-[11px] text-app-text-secondary font-medium flex items-center gap-1">
                         {inputSchema.label || inputSchema.name}
                         {inputSchema.required && (
-                          <span className="text-red-400" aria-hidden="true">
+                          <span className="text-app-danger-strong font-bold" aria-hidden="true">
                             *
                           </span>
                         )}
@@ -181,10 +181,10 @@ export function IndividualWorkflow({
 
                       {inputSchema.type === "largetext" ? (
                         <textarea
-                          className={`w-full bg-[#0a0a0a] border rounded-lg p-2.5 text-xs text-gray-200 resize-none outline-none transition focus:ring-1 ${
+                          className={`w-full bg-app-canvas border rounded-lg p-2.5 text-xs text-app-text-primary resize-none outline-none transition focus:ring-0 ${
                             isMissing
-                              ? "border-red-500/50 focus:ring-red-500/50"
-                              : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50"
+                              ? "border-app-danger-strong/50 focus:border-app-danger-strong"
+                              : "border-app-border-default/20 focus:border-brand-primary"
                           }`}
                           rows={3}
                           value={val}
@@ -195,10 +195,10 @@ export function IndividualWorkflow({
                         />
                       ) : inputSchema.type === "select" ? (
                         <select
-                          className={`w-full bg-[#0a0a0a] border rounded-full p-2.5 text-xs text-gray-200 outline-none transition focus:ring-1 ${
+                          className={`w-full bg-app-canvas border rounded-full p-2.5 text-xs text-app-text-primary outline-none transition focus:ring-0 ${
                             isMissing
-                              ? "border-red-500/50 focus:ring-red-500/50"
-                              : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50"
+                              ? "border-app-danger-strong/50 focus:border-app-danger-strong"
+                              : "border-app-border-default/20 focus:border-brand-primary"
                           }`}
                           value={val}
                           onBlur={() =>
@@ -214,10 +214,10 @@ export function IndividualWorkflow({
                           ))}
                         </select>
                       ) : inputSchema.type === "boolean" ? (
-                        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer w-fit mt-1">
+                        <label className="flex items-center gap-2 text-xs text-app-text-secondary cursor-pointer w-fit mt-1">
                           <input
                             type="checkbox"
-                            className="accent-blue-600 rounded-full bg-[#0a0a0a] border-white/10 w-4 h-4 cursor-pointer"
+                            className="accent-brand-primary rounded bg-app-canvas border-app-border-default/20 w-4 h-4 cursor-pointer"
                             checked={val === "true" || val === true}
                             onChange={(e) =>
                               updateField(inputSchema.name, e.target.checked)
@@ -228,10 +228,10 @@ export function IndividualWorkflow({
                       ) : inputSchema.type === "file" ? (
                         <div className="space-y-1">
                           {val ? (
-                            <div className="flex items-center justify-between gap-2 bg-[#0a0a0a] border border-white/10 rounded-md px-3 py-2">
+                            <div className="flex items-center justify-between gap-2 bg-app-canvas border border-app-border-default/20 rounded-md px-3 py-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <Paperclip size={14} className="text-gray-500 shrink-0" />
-                                <span className="text-xs text-gray-300 truncate">
+                                <Paperclip size={14} className="text-app-text-ghost shrink-0" />
+                                <span className="text-xs text-app-text-secondary truncate font-medium">
                                   {workflowInputs[w._id]?.[`${inputSchema.name}__name`] ||
                                     "File attached"}
                                 </span>
@@ -244,7 +244,7 @@ export function IndividualWorkflow({
                                   setWorkflowInputs({ ...workflowInputs, [w._id]: next });
                                 }}
                                 aria-label="Remove file"
-                                className="p-1 text-gray-500 hover:text-red-400 transition"
+                                className="p-1 text-app-text-muted hover:text-app-danger-strong transition cursor-pointer"
                               >
                                 <X size={14} />
                               </button>
@@ -252,8 +252,8 @@ export function IndividualWorkflow({
                           ) : (
                             <input
                               type="file"
-                              className={`block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700 cursor-pointer ${
-                                isMissing ? "ring-1 ring-red-500/50 rounded-md" : ""
+                              className={`block w-full text-xs text-app-text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-app-surface-elevated file:text-app-text-primary hover:file:bg-app-surface-hover cursor-pointer ${
+                                isMissing ? "ring-1 ring-app-danger-strong/30 rounded-md" : ""
                               }`}
                               onBlur={() =>
                                 setTouchedFields((p) => ({ ...p, [fieldKey]: true }))
@@ -282,10 +282,10 @@ export function IndividualWorkflow({
                       ) : (
                         <input
                           type="text"
-                          className={`w-full bg-[#0a0a0a] border rounded-full px-3 py-2.5 text-xs text-gray-200 outline-none transition focus:ring-1 ${
+                          className={`w-full bg-app-canvas border rounded-full px-4 py-2.5 text-xs text-app-text-primary outline-none transition focus:ring-0 ${
                             isMissing
-                              ? "border-red-500/50 focus:ring-red-500/50"
-                              : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/50"
+                              ? "border-app-danger-strong/50 focus:border-app-danger-strong"
+                              : "border-app-border-default/20 focus:border-brand-primary"
                           }`}
                           value={val}
                           onBlur={() =>
@@ -296,7 +296,7 @@ export function IndividualWorkflow({
                       )}
 
                       {isMissing && (
-                        <span className="text-[10px] text-red-400 font-medium">
+                        <span className="text-[10px] text-app-danger-strong font-medium">
                           This field is required
                         </span>
                       )}
@@ -306,11 +306,11 @@ export function IndividualWorkflow({
               </div>
             ) : (
               <div>
-                <div className="text-[10px] text-gray-500 font-mono mb-1 tracking-widest uppercase">
+                <div className="text-[10px] text-app-text-ghost font-mono mb-1.5 tracking-wider uppercase">
                   Inputs (JSON)
                 </div>
                 <textarea
-                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-md p-3 text-xs font-mono text-gray-300 resize-none h-24 outline-none transition focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+                  className="w-full bg-app-canvas border border-app-border-default/20 rounded-xl p-3 text-xs font-mono text-app-text-primary resize-none h-24 outline-none transition focus:border-brand-primary"
                   placeholder={'{\n  "url": "https://..."\n}'}
                   value={
                     typeof workflowInputs[w._id] === "string"
@@ -325,27 +325,27 @@ export function IndividualWorkflow({
             ))}
 
           {workflowTab === "script" && (
-            <div className="relative bg-[#0a0a0a] border border-white/5 rounded-md p-3">
+            <div className="relative bg-app-canvas border border-app-border-default/10 rounded-xl p-3">
               <button
                 onClick={(e) => handleCopyScript(e, w._id, w.script)}
                 aria-label="Copy script"
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition flex items-center gap-1.5 text-[10px] cursor-pointer"
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-app-surface hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary transition flex items-center gap-1.5 text-[10px] cursor-pointer outline-none"
               >
                 {copiedScript === w._id ? (
-                  <Check size={12} className="text-green-400" />
+                  <Check size={12} className="text-emerald-500" />
                 ) : (
                   <Copy size={12} />
                 )}
               </button>
-              <pre className="text-[10px] text-gray-400 overflow-x-auto font-mono leading-relaxed max-h-60 overflow-y-auto pr-8">
+              <pre className="text-[10px] text-app-text-secondary overflow-x-auto font-mono leading-relaxed max-h-60 overflow-y-auto pr-8">
                 {w.script}
               </pre>
             </div>
           )}
 
           {missingRequired.length > 0 && workflowTab === "script" && (
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-500 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-md">
-              <AlertCircle size={14} />
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-app-text-primary bg-app-danger-soft/10 border border-app-danger-soft/20 p-2.5 rounded-md">
+              <AlertCircle size={14} className="text-app-danger-strong" />
               <span>
                 {missingRequired.length} required variable
                 {missingRequired.length > 1 ? "s" : ""} need
@@ -358,10 +358,10 @@ export function IndividualWorkflow({
             <button
               onClick={handleRun}
               disabled={isRunning}
-              className={`w-full py-2.5 rounded-full cursor-pointer text-sm font-semibold shadow-lg transition flex items-center justify-center gap-2 ${
+              className={`w-full py-2.5 rounded-full cursor-pointer text-sm font-semibold shadow-sm transition flex items-center justify-center gap-2 ${
                 isRunning
-                  ? "bg-blue-600/50 text-white/70 cursor-not-allowed shadow-none"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20 active:scale-[0.98]"
+                  ? "bg-brand-primary/50 text-white/70 cursor-not-allowed shadow-none"
+                  : "bg-brand-primary hover:bg-brand-primary/95 text-white active:scale-[0.98]"
               }`}
             >
               {isRunning ? (
@@ -382,18 +382,18 @@ export function IndividualWorkflow({
             <div
               className={`flex items-center gap-2 text-xs font-medium rounded-md px-3 py-2 border ${
                 status === "success"
-                  ? "text-green-400 bg-green-500/5 border-green-500/20"
-                  : "text-red-400 bg-red-500/5 border-red-500/20"
+                  ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20"
+                  : "text-app-danger-strong bg-app-danger-soft/5 border-app-danger-soft/20"
               }`}
             >
               {status === "success" ? (
                 <>
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={14} className="text-emerald-500" />
                   <span>Workflow ran successfully</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle size={14} />
+                  <AlertCircle size={14} className="text-app-danger-strong" />
                   <span>Workflow failed to run</span>
                 </>
               )}

@@ -359,35 +359,34 @@ export default function TasksPage() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="relative flex h-screen overflow-hidden bg-app-surface-elevated">
+      <div className="relative flex h-screen overflow-hidden bg-app-canvas">
         <div className="flex-1 flex flex-col min-w-0 relative">
-          <header className="z-30 h-16 w-full shrink-0 border-b border-app-border-subtle bg-app-canvas/70 backdrop-blur-xl">
+          <header className="z-30 h-16 w-full shrink-0 backdrop-blur-xl">
             <div className="mx-auto max-w-8xl px-5 py-4 h-full">
               <div className="flex items-center justify-between gap-4 h-full">
                 <div className="flex items-center gap-3">
                   <button
-                    className="md:hidden flex size-10 items-center justify-center rounded-xl border border-app-border-default bg-app-surface-glass text-app-text-primary"
+                    className="md:hidden flex size-10 items-center justify-center rounded-xl bg-app-surface-elevated text-app-text-primary"
                     onClick={() => setMobileSidebarOpen(true)}
                   >
                     <Menu size={16} />
                   </button>
 
-                  <div className="flex size-9 items-center justify-center rounded-xl border border-app-border-default bg-app-surface-glass">
-                    <BookOpenCheck className="size-4 text-indigo-200" />
+                  <div className="flex size-9 items-center justify-center rounded-full bg-app-surface-elevated">
+                    <BookOpenCheck className="size-4 text-brand-primary" />
                   </div>
 
                   <div>
-                    <h1 className="text-base font-medium tracking-tight text-app-text-primary">Tasks</h1>
-                    <p className="text-xs text-app-text-faint">Manage your upcoming tasks</p>
+                    <h1 className="text-base font-semibold tracking-tight text-app-text-primary">Tasks</h1>
                   </div>
                 </div>
 
-                <div className="hidden items-center rounded-full border border-app-border-default bg-app-surface-glass p-1 sm:flex">
+                <div className="hidden items-center rounded-full bg-app-surface-elevated p-1 sm:flex">
                   <button
                     onClick={() => setView("kanban")}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
-                      view === "kanban" ? "bg-app-primary text-app-primary-foreground" : "text-app-text-faint hover:text-app-text-primary"
+                      "px-4 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
+                      view === "kanban" ? "bg-app-surface text-app-text-primary shadow-sm" : "text-app-text-muted hover:text-app-text-primary"
                     )}
                   >
                     Kanban
@@ -395,8 +394,8 @@ export default function TasksPage() {
                   <button
                     onClick={() => setView("table")}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
-                      view === "table" ? "bg-app-primary text-app-primary-foreground" : "text-app-text-faint hover:text-app-text-primary"
+                      "px-4 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer",
+                      view === "table" ? "bg-app-surface text-app-text-primary shadow-sm" : "text-app-text-muted hover:text-app-text-primary"
                     )}
                   >
                     Table
@@ -407,9 +406,9 @@ export default function TasksPage() {
                   {!showChatBar && <ChatToggleDroppable>
                     <Button
                       size="icon"
-                      variant="outline"
+                      variant="ghost"
                       onClick={() => setShowChatBar(!showChatBar)}
-                      className="w-9 h-9 rounded-full transition-all"
+                      className="w-9 h-9 rounded-full transition-all hover:bg-app-surface-glass text-app-text-muted hover:text-app-text-primary"
                     >
                       {showChatBar ? <X size={14} /> : <Bot size={14} />}
                     </Button>
@@ -417,9 +416,9 @@ export default function TasksPage() {
 
                   <Button
                     onClick={() => openAddPanel()}
-                    className="ml-2 flex h-9 items-center gap-2 rounded-full bg-app-primary px-4 text-sm text-app-primary-foreground transition hover:bg-app-primary-hover"
+                    className="ml-2 flex h-9 items-center gap-2 rounded-full bg-app-text-primary text-app-surface hover:bg-app-text-secondary transition shadow-sm font-medium text-xs px-4"
                   >
-                    <Plus size={16} />
+                    <Plus size={14} />
                     <span>New Task</span>
                   </Button>
                 </div>

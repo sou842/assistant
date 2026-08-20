@@ -112,28 +112,28 @@ export function HistoryTab() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full flex flex-col max-h-[calc(100vh-140px)]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-2 gap-4 shrink-0">
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full flex flex-col max-h-[calc(100vh-140px)] max-w-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 shrink-0">
         <div>
-          <h2 className="text-xl font-semibold text-app-text-primary">Chat History</h2>
-          <p className="text-sm text-app-text-muted mt-1">Manage and review your past conversations.</p>
+          <h2 className="text-base font-semibold text-app-text-primary tracking-tight">Chat History</h2>
+          <p className="text-[13px] text-app-text-muted mt-1">Manage and review your past conversations.</p>
         </div>
         
         {selectedIds.size > 0 && (
           <button
             onClick={handleBulkDelete}
             disabled={isDeletingBulk}
-            className="flex items-center gap-2 px-4 py-2 bg-app-danger-soft text-app-danger-strong hover:bg-app-danger hover:text-white rounded-full cursor-pointer text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-1.5 bg-app-danger-soft text-app-danger-strong hover:bg-app-danger hover:text-white rounded-full cursor-pointer text-[13px] font-medium transition-colors disabled:opacity-50"
           >
-            {isDeletingBulk ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            {isDeletingBulk ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
             Delete Selected ({selectedIds.size})
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-4 mb-4 shrink-0">
+      <div className="flex items-center gap-4 mb-6 shrink-0">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-ghost" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-muted" />
           <input
             type="text"
             placeholder="Search chats..."
@@ -142,13 +142,13 @@ export function HistoryTab() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-app-surface border border-app-border-default rounded-full pl-10 pr-4 py-2 text-sm text-app-text-primary placeholder:text-app-text-ghost focus:outline-none focus:border-brand-primary/50 transition-colors"
+            className="w-full h-9 bg-app-surface-elevated border border-transparent rounded-full pl-10 pr-4 py-2 text-[13px] text-app-text-primary placeholder:text-app-text-muted focus:outline-none focus:border-app-border-default transition-colors"
           />
         </div>
         
         <button
           onClick={selectAll}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-app-text-secondary hover:text-app-text-primary transition-colors whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-app-text-muted hover:text-app-text-primary transition-colors whitespace-nowrap cursor-pointer"
         >
           {selectedIds?.size === paginatedChats?.length && paginatedChats?.length > 0 ? (
             <CheckSquare className="size-4 text-brand-primary" />
@@ -176,8 +176,8 @@ export function HistoryTab() {
             </div>
           ))
         ) : paginatedChats.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center border border-dashed border-app-border-default rounded-xl">
-            <p className="text-app-text-muted text-sm">No chats found.</p>
+          <div className="flex flex-col items-center justify-center h-48 text-center border border-dashed border-app-border-default/20 rounded-xl">
+            <p className="text-app-text-muted text-[13px]">No chats found.</p>
           </div>
         ) : (
           paginatedChats.map((chat) => {
@@ -187,24 +187,24 @@ export function HistoryTab() {
                 key={chat.id}
                 onClick={() => toggleSelection(chat.id)}
                 className={cn(
-                  "group flex items-start gap-4 p-3 rounded border transition-all cursor-pointer hover:bg-app-surface-glass",
+                  "group flex items-start gap-4 p-3 rounded-lg border transition-all cursor-pointer hover:bg-app-surface-glass",
                   isSelected 
-                    ? "border-brand-primary bg-brand-primary/5" 
-                    : "border-app-border-default bg-app-surface/50"
+                    ? "border-brand-primary/50 bg-brand-primary/5" 
+                    : "border-transparent bg-app-surface-elevated/40"
                 )}
               >
                 <div className="shrink-0">
                   {isSelected ? (
-                    <CheckSquare className="size-5 text-brand-primary" />
+                    <CheckSquare className="size-4.5 text-brand-primary" />
                   ) : (
-                    <Square className="size-5 text-app-text-ghost group-hover:text-app-text-muted transition-colors" />
+                    <Square className="size-4.5 text-app-text-muted group-hover:text-app-text-secondary transition-colors" />
                   )}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <MessageCircle className="size-4 text-brand-primary shrink-0" />
-                    <p className="text-sm font-medium text-app-text-primary truncate">
+                    <MessageCircle className="size-4 text-brand-primary shrink-0 opacity-80" />
+                    <p className="text-[13px] font-medium text-app-text-primary truncate">
                       {chat.title || "Untitled Chat"}
                     </p>
                   </div>
@@ -215,10 +215,10 @@ export function HistoryTab() {
                 
                 <button
                   onClick={(e) => handleSingleDelete(chat.id, e)}
-                  className="p-2 text-app-text-ghost hover:text-app-danger hover:bg-app-danger-soft rounded-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="p-1.5 text-app-text-muted hover:text-app-danger hover:bg-app-danger-soft rounded-md transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                   title="Delete chat"
                 >
-                  <Trash2 className="size-4" />
+                  <Trash2 className="size-3.5" />
                 </button>
               </div>
             );
@@ -227,24 +227,24 @@ export function HistoryTab() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-4 shrink-0">
-          <p className="text-sm text-app-text-muted">
+        <div className="flex items-center justify-between mt-4 pt-4 shrink-0 border-t border-app-border-default/20">
+          <p className="text-[13px] text-app-text-muted">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-full hover:bg-app-surface border border-app-border-default text-app-text-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-app-surface-elevated border border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-4 animate-in fade-in" />
             </button>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded-full hover:bg-app-surface border border-app-border-default text-app-text-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-app-surface-elevated border border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              <ChevronRight className="size-4" />
+              <ChevronRight className="size-4 animate-in fade-in" />
             </button>
           </div>
         </div>

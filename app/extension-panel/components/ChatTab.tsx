@@ -55,24 +55,24 @@ function ChatMessageItem({
   }, [msg.text, special, isLong, isExpanded]);
 
   return (
-    <Message key={i} from={msg.role as any} className={isUser ? 'max-w-[85%]' : 'w-full'}>
+    <Message key={i} from={msg.role as any} className={isUser ? 'max-w-[85%] ml-auto' : 'w-full'}>
       <div className={`flex gap-6 ${isUser ? 'flex-row-reverse' : ''}`}>
         <div className={`flex-1 min-w-0 flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
           {isEditing ? (
-            <div className="flex flex-col gap-2 w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-md">
+            <div className="flex flex-col gap-2 w-full max-w-md bg-app-surface border border-app-border-default/20 rounded-xl p-3 shadow-sm">
               <textarea
-                className="w-full bg-transparent text-sm text-gray-200 outline-none resize-none pb-2 focus:border-blue-500/30 font-sans"
+                className="w-full bg-transparent text-sm text-app-text-primary outline-none resize-none pb-2 focus:border-brand-primary/30 font-sans"
                 value={editingText}
                 onChange={(e) => setEditingText(e.target.value)}
                 rows={2}
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-full text-gray-400 transition cursor-pointer">Cancel</button>
-                <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
+                <button onClick={() => setEditingIndex(null)} className="text-[10px] bg-app-surface-elevated hover:bg-app-surface-hover px-2 py-1 rounded-full text-app-text-muted transition cursor-pointer">Cancel</button>
+                <button onClick={() => handleSaveEdit(i)} className="text-[10px] bg-brand-primary hover:bg-brand-primary/95 px-2 py-1 rounded-full text-white font-medium transition cursor-pointer">Save</button>
               </div>
             </div>
           ) : (
-            <MessageContent className={isUser ? 'group-[.is-user]:bg-blue-600 group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-[#1a1a1a] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-sm'}>
+            <MessageContent className={isUser ? 'group-[.is-user]:bg-brand-primary group-[.is-user]:text-white group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:px-4 group-[.is-user]:py-2.5 group-[.is-user]:text-[13px] group-[.is-user]:leading-relaxed group-[.is-user]:shadow-sm' : 'bg-app-surface border border-app-border-default/10 text-app-text-primary rounded-2xl rounded-bl-sm px-4 py-2.5 text-[13px] leading-relaxed shadow-xs'}>
               {isUser ? (
                 <div className="flex flex-col gap-1.5 items-end">
                   {msg.tags && msg.tags.length > 0 && (
@@ -94,7 +94,7 @@ function ChatMessageItem({
                     <div className="flex items-start gap-2 w-full max-w-full overflow-x-auto">
                       <IconComponent size={15} className={cn("shrink-0 mt-0.5", special.className)} />
                       <div className="w-full max-w-full">
-                        <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400 text-gray-200 prose-p:text-gray-200 prose-headings:text-white prose-strong:text-white prose-ol:text-gray-200 prose-ul:text-gray-200 prose-li:text-gray-200">
+                        <MessageResponse className="w-full max-w-full prose dark:prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-app-surface-elevated prose-pre:border prose-pre:border-app-border-default/20 prose-a:text-brand-primary text-app-text-primary prose-p:text-app-text-secondary prose-headings:text-app-text-primary prose-strong:text-app-text-primary prose-ol:text-app-text-secondary prose-ul:text-app-text-secondary prose-li:text-app-text-secondary">
                           {contentToRender}
                         </MessageResponse>
                       </div>
@@ -104,7 +104,7 @@ function ChatMessageItem({
 
                 return (
                   <div className="w-full max-w-full overflow-x-auto">
-                    <MessageResponse className="w-full max-w-full prose prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-a:text-blue-400 text-gray-200 prose-p:text-gray-200 prose-headings:text-white prose-strong:text-white prose-ol:text-gray-200 prose-ul:text-gray-200 prose-li:text-gray-200">
+                    <MessageResponse className="w-full max-w-full prose dark:prose-invert overflow-x-auto prose-sm prose-p:leading-snug prose-pre:bg-app-surface-elevated prose-pre:border prose-pre:border-app-border-default/20 prose-a:text-brand-primary text-app-text-primary prose-p:text-app-text-secondary prose-headings:text-app-text-primary prose-strong:text-app-text-primary prose-ol:text-app-text-secondary prose-ul:text-app-text-secondary prose-li:text-app-text-secondary">
                       {contentToRender}
                     </MessageResponse>
                   </div>
@@ -118,27 +118,26 @@ function ChatMessageItem({
               "mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0",
               isUser && "justify-end"
             )}>
-              <MessageActions className="bg-black/80 border border-white/10 px-1 py-0 rounded-full backdrop-blur-sm shadow-xl flex gap-1 items-center">
+              <MessageActions className="bg-app-surface-elevated/90 border border-app-border-default/20 px-1 py-0 rounded-full backdrop-blur-sm shadow-sm flex gap-1 items-center">
                 {isLong && !isUser && (
-                  <MessageAction tooltip={isExpanded ? "Collapse" : "Expand"} onClick={handleExpandToggle} className="p-1 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer flex items-center gap-1 px-2" variant="ghost" size="icon-sm">
+                  <MessageAction tooltip={isExpanded ? "Collapse" : "Expand"} onClick={handleExpandToggle} className="p-1 hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary rounded transition cursor-pointer flex items-center gap-1 px-2 animate-none" variant="ghost" size="icon-sm">
                     {isExpanding ? <Loader2 size={8} className="animate-spin" /> : (!isExpanded ? <Maximize2 size={8} /> : <ChevronsDownUp size={8} />)}
-                    {/* <span className="text-[10px] font-medium">{isExpanded ? "Show Less" : "Show More"}</span> */}
                   </MessageAction>
                 )}
-                <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                <MessageAction tooltip="Copy" onClick={() => handleCopy(msg.text)} className="p-0.5 hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                   <Copy size={6} />
                 </MessageAction>
                 {isUser && (
                   <>
-                    <MessageAction tooltip="Retry" onClick={() => handleRetryMessage(i)} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                    <MessageAction tooltip="Retry" onClick={() => handleRetryMessage(i)} className="p-0.5 hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                       <RotateCcw size={6} />
                     </MessageAction>
-                    <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-0.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                    <MessageAction tooltip="Edit" onClick={() => { setEditingIndex(i); setEditingText(msg.text); }} className="p-0.5 hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                       <Edit2 size={6} />
                     </MessageAction>
                   </>
                 )}
-                <MessageAction tooltip="Delete" onClick={() => handleDeleteMessage(i)} className="p-0.5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded transition cursor-pointer" variant="ghost" size="icon-sm">
+                <MessageAction tooltip="Delete" onClick={() => handleDeleteMessage(i)} className="p-0.5 hover:bg-app-danger-soft text-app-text-muted hover:text-app-danger-strong rounded transition cursor-pointer" variant="ghost" size="icon-sm">
                   <Trash size={6} />
                 </MessageAction>
               </MessageActions>
@@ -170,10 +169,10 @@ export function ChatTab({
     <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${activeTab === "chat" ? "block" : "hidden"}`}>
       {chatHistory?.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-            <Chrome className="text-blue-400" size={24} strokeWidth={1.5} />
+          <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center">
+            <Chrome className="text-brand-primary" size={24} strokeWidth={1.5} />
           </div>
-          <p className="text-sm text-gray-400">Hello! I am your Jarvis Agent. Type any command below to control this browser tab.</p>
+          <p className="text-xs text-app-text-muted max-w-[280px] leading-relaxed">Hello! I am your Jarvis Agent. Type any command below to control this browser tab.</p>
         </div>
       ) : (
         (() => {
@@ -209,10 +208,10 @@ export function ChatTab({
 
             return (
               <div className="flex gap-3 items-start group/step -ml-4">
-                <span className="p-1 rounded-full bg-[#0a0a0a]">
-                  <Icon size={13} className={cn("mt-[2px] rounded shrink-0 transition-colors text-gray-500 group-hover/step:text-gray-300")} />
+                <span className="p-1 rounded-full bg-app-canvas border border-app-border-default/10 shadow-xs">
+                  <Icon size={13} className={cn("mt-[2px] rounded shrink-0 transition-colors text-app-text-ghost group-hover/step:text-app-text-primary")} />
                 </span>
-                <span className={cn("whitespace-pre-wrap leading-relaxed")}>{cleanText}</span>
+                <span className={cn("whitespace-pre-wrap leading-relaxed text-xs text-app-text-secondary")}>{cleanText}</span>
               </div>
             );
           };
@@ -246,11 +245,11 @@ export function ChatTab({
               if (msg.text.includes("Stopped by user")) {
                 return (
                   <div key={i} className="flex items-center my-6 w-full select-none">
-                    <div className="grow border-t border-gray-500/20"></div>
-                    <span className="mx-4 text-[10px] font-normal tracking-wider text-gray-500/70 rounded-full">
+                    <div className="grow border-t border-app-border-default/20"></div>
+                    <span className="mx-4 text-[10px] font-medium tracking-wider text-app-text-ghost rounded-full">
                       Stopped by user
                     </span>
-                    <div className="grow border-t border-gray-500/20"></div>
+                    <div className="grow border-t border-app-border-default/20"></div>
                   </div>
                 );
               }
@@ -273,15 +272,15 @@ export function ChatTab({
               return (
                 <div key={`group-${groupIdx}`} className="flex flex-col self-start items-start w-full my-1 pb-2">
                   <details
-                    className="group text-[13px] text-gray-400 w-full"
+                    className="group text-[13px] text-app-text-muted w-full"
                     open={isAgentRunning && groupIdx === groupedHistory.length - 1 ? true : undefined}
                   >
-                    <summary className="flex items-center justify-start gap-2 cursor-pointer font-medium select-none text-gray-400 hover:text-gray-200 list-none [&::-webkit-details-marker]:hidden mb-3">
-                      <Brain size={14} className="text-gray-500 shrink-0" />
-                      <span>Chain of Thought</span>
-                      <span className="text-[10px] text-gray-600 group-open:rotate-180 transition-transform"><ChevronDown className="size-4" /></span>
+                    <summary className="flex items-center justify-start gap-2 cursor-pointer font-medium select-none text-app-text-muted hover:text-app-text-primary list-none [&::-webkit-details-marker]:hidden mb-3">
+                      <Brain size={14} className="text-app-text-ghost shrink-0" />
+                      <span className="text-xs">Chain of Thought</span>
+                      <span className="text-[10px] text-app-text-ghost group-open:rotate-180 transition-transform"><ChevronDown className="size-4" /></span>
                     </summary>
-                    <div className="space-y-3 pl-1.25 border-l border-white/5 ml-1.5">
+                    <div className="space-y-3 pl-1.25 border-l border-app-border-default/15 ml-1.5">
                       {group?.items?.map((item: any) => (
                         <div key={item?.originalIndex}>
                           {renderAgentStep(item?.msg?.text)}
@@ -302,8 +301,8 @@ export function ChatTab({
             <div className="flex-1 min-w-0 flex flex-col items-start">
               <MessageContent>
                 <div className="flex items-center gap-2.5">
-                  <Loader2 size={13} className="animate-spin text-blue-400" />
-                  <span className="text-[13px] text-gray-400 font-medium">Thinking...</span>
+                  <Loader2 size={13} className="animate-spin text-brand-primary" />
+                  <span className="text-[13px] text-app-text-muted font-medium">Thinking...</span>
                 </div>
               </MessageContent>
             </div>
@@ -313,25 +312,25 @@ export function ChatTab({
 
       {deleteIndex !== null && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-default"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-default"
           onClick={() => setDeleteIndex(null)}
         >
           <div 
-            className="bg-[#121212] border border-white/10 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default"
+            className="bg-app-surface border border-app-border-default/20 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-xl space-y-4 animate-in zoom-in-95 duration-200 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 text-red-400">
-              <h3 className="font-semibold text-sm text-white">Delete Messages</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-sm text-app-text-primary">Delete Messages</h3>
             </div>
             
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-app-text-muted leading-relaxed">
               Are you sure you want to delete this message? This action cannot be undone.
             </p>
             
             <div className="flex gap-2.5 justify-end pt-2">
               <button
                 onClick={() => setDeleteIndex(null)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-app-text-muted hover:text-app-text-primary bg-app-surface-elevated hover:bg-app-surface-hover border border-app-border-default/20 transition cursor-pointer"
               >
                 Cancel
               </button>

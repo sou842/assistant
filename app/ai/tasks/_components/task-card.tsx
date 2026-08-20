@@ -68,7 +68,7 @@ export function TaskCard({ task, onEdit, isOverlay, isSortable = true }: TaskCar
       <div
         ref={setNodeRef}
         style={style}
-        className="h-[120px] rounded-xl bg-app-surface-glass-soft border border-dashed border-app-border-default"
+        className="h-[120px] rounded-2xl bg-app-surface-elevated/25 border border-transparent"
       />
     );
   }
@@ -81,23 +81,23 @@ export function TaskCard({ task, onEdit, isOverlay, isSortable = true }: TaskCar
       {...listeners}
       onClick={() => onEdit?.(task)}
       className={cn(
-        "group relative p-5 rounded-2xl bg-app-surface border border-app-border-default hover:border-app-border-strong hover:bg-app-surface-hover transition-all cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md",
-        isOverlay && "cursor-grabbing shadow-2xl scale-105 border-app-border-strong bg-app-surface-elevated"
+        "group relative p-5 rounded-2xl bg-app-surface border border-transparent hover:bg-app-surface-hover transition-all cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md",
+        isOverlay && "cursor-grabbing shadow-2xl scale-105 bg-app-surface-elevated border border-transparent"
       )}
     >
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="text-sm font-medium text-app-text-primary capitalize group-hover:text-app-text-secondary leading-tight">
+          <h4 className="text-[13px] font-medium text-app-text-primary capitalize group-hover:text-app-text-secondary leading-tight">
             {task.title}
           </h4>
           <Badge
             variant="outline"
             className={cn(
-              "text-xs h-5 px-1.5 capitalize border-app-border-default rounded-full",
-              task.priority === "urgent" && "bg-red-500/10 text-red-400 border-red-500/20",
-              task.priority === "high" && "bg-orange-500/10 text-orange-400 border-orange-500/20",
-              task.priority === "medium" && "bg-blue-500/10 text-blue-400 border-blue-500/20",
-              task.priority === "low" && "bg-slate-500/10 text-slate-400 border-slate-500/20"
+              "text-[10px] h-5 px-2 py-0.5 capitalize border-transparent rounded-full font-medium shrink-0",
+              task.priority === "urgent" && "bg-red-500/10 text-red-400",
+              task.priority === "high" && "bg-orange-500/10 text-orange-400",
+              task.priority === "medium" && "bg-blue-500/10 text-blue-400",
+              task.priority === "low" && "bg-slate-500/10 text-slate-400"
             )}
           >
             {task.priority}
@@ -105,7 +105,7 @@ export function TaskCard({ task, onEdit, isOverlay, isSortable = true }: TaskCar
         </div>
 
         {task?.description && (
-          <p className="text-xs text-app-text-soft line-clamp-2 leading-relaxed">
+          <p className="text-xs text-app-text-muted line-clamp-2 leading-relaxed">
             {getTaskPreviewText(task.description)}
           </p>
         )}

@@ -122,42 +122,44 @@ export function ContactTab() {
 
   return (
     <>
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center justify-between mb-6 pb-4">
-          <h2 className="text-xl font-semibold">Contacts</h2>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-base font-semibold text-app-text-primary tracking-tight">Contacts</h2>
+            <p className="text-[13px] text-app-text-muted mt-1">
+              Manage the contacts Jarvis can use to send messages or emails.
+            </p>
+          </div>
           <button
             onClick={() => {
               resetForm();
               setOpenDrawer(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface-elevated border border-app-border-default rounded-full text-sm font-medium hover:bg-app-surface-glass transition cursor-pointer"
+            className="flex items-center gap-2 px-4 py-1.5 bg-app-surface-elevated border border-transparent hover:border-app-border-default/50 rounded-full text-[13px] font-medium text-app-text-primary transition-all cursor-pointer shadow-sm"
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             Add Contact
           </button>
         </div>
 
-        <div className="space-y-4">
-          <p className="text-[13px] text-app-text-muted mb-6">
-            Manage the contacts Jarvis can use to send messages or emails.
-          </p>
+        <div className="space-y-6">
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-ghost" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-app-text-muted" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search names, emails, phones..."
-                className="h-9 w-full rounded-full border border-app-border-default bg-app-surface-elevated pl-9 pr-3 text-sm text-app-text-primary outline-none placeholder:text-app-text-faint focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                className="h-9 w-full rounded-full border border-transparent bg-app-surface-elevated pl-9 pr-3 text-[13px] text-app-text-primary outline-none placeholder:text-app-text-muted focus:border-app-border-default transition-all"
               />
             </div>
             {categories.length > 0 && (
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-9 rounded-full border border-app-border-default bg-app-surface-elevated px-3 text-sm text-app-text-primary outline-none focus:border-brand-primary cursor-pointer capitalize"
+                className="h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] text-app-text-primary outline-none focus:border-app-border-default cursor-pointer capitalize"
               >
                 <option value="all">All Categories</option>
                 {categories.map((c) => (
@@ -206,93 +208,92 @@ export function ContactTab() {
 
         <div
           className={cn(
-            "relative w-full max-w-lg bg-app-surface border border-app-border-default rounded-2xl shadow-2xl transition-transform duration-300 ease-out",
+            "relative w-full max-w-lg bg-app-surface border border-app-border-default/30 rounded-2xl shadow-2xl transition-transform duration-300 ease-out",
             openDrawer ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
           )}
         >
           <form onSubmit={submitContact} className="flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between p-5 border-b border-app-border-default">
-              <h2 className="font-semibold text-lg">
+            <div className="flex items-center justify-between p-5 md:px-8 md:pt-6 border-b border-transparent">
+              <h2 className="font-semibold text-base text-app-text-primary tracking-tight">
                 {editingId ? "Edit Contact" : "Add Contact"}
               </h2>
               <button
                 type="button"
                 onClick={resetForm}
-                className="p-1.5 rounded-md text-app-text-muted hover:bg-app-surface-elevated transition cursor-pointer"
+                className="p-1.5 rounded-md text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-elevated transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 md:px-8 space-y-5">
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
-                  Name
+                <label className="text-[13px] text-app-text-primary block mb-2">
+                  Full name
                 </label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. John Doe"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
-                  Phone <span className="text-app-text-ghost">(Required if no email)</span>
+                <label className="text-[13px] text-app-text-primary block mb-2">
+                  Phone <span className="text-app-text-muted">(Required if no email)</span>
                 </label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="e.g. +1234567890"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
-                  Email <span className="text-app-text-ghost">(Required if no phone)</span>
+                <label className="text-[13px] text-app-text-primary block mb-2">
+                  Email <span className="text-app-text-muted">(Required if no phone)</span>
                 </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="e.g. john@example.com"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
               
-              {/* Optional note explaining XOR condition to user */}
-              <p className="text-[11px] text-amber-500/80 bg-amber-500/5 p-2 rounded border border-amber-500/20">
+              <p className="text-[11px] text-app-text-muted">
                 Note: A contact can only have either a phone number OR an email. Do not provide both.
               </p>
 
               <div>
-                <label className="text-xs font-medium text-app-text-muted block mb-1.5">
+                <label className="text-[13px] text-app-text-primary block mb-2">
                   Category
                 </label>
                 <input
                   value={form.category}
                   onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
                   placeholder="e.g. personal, work"
-                  className="w-full h-10 rounded-lg border border-app-border-default bg-app-background px-3 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all"
+                  className="w-full h-9 rounded-full border border-transparent bg-app-surface-elevated px-4 text-[13px] outline-none focus:border-app-border-default transition-all"
                 />
               </div>
             </div>
 
-            <div className="p-5 border-t border-app-border-default flex justify-end gap-3 bg-app-surface-elevated/30 rounded-b-2xl">
+            <div className="p-5 md:px-8 border-t border-app-border-default/20 flex justify-end gap-3 rounded-b-2xl">
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 text-sm font-medium text-app-text-secondary hover:text-app-text-primary transition cursor-pointer"
+                className="px-4 py-1.5 text-[13px] font-medium text-app-text-muted hover:text-app-text-primary transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!form.name.trim() || (!form.phone.trim() && !form.email.trim()) || (!!form.phone.trim() && !!form.email.trim())}
-                className="px-5 py-2 rounded-lg bg-brand-primary text-white text-sm font-medium hover:bg-brand-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+                className="px-5 py-1.5 rounded-full bg-app-text-primary text-app-surface text-[13px] font-medium hover:bg-app-text-secondary transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
               >
                 {editingId ? "Update" : "Save"}
               </button>

@@ -184,6 +184,7 @@ export function ChatInput({
   const { data: contactsData, mutate: mutateContacts } = useSWR('/api/contacts', (url: string) => fetch(url).then(res => res.json()));
   const contacts = contactsData?.contacts || [];
   const [topSectionMode, setTopSectionMode] = useState<"none" | "contacts" | "models">("none");
+  const [isFocused, setIsFocused] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [isAddingContact, setIsAddingContact] = useState(false);
@@ -314,7 +315,9 @@ export function ChatInput({
       <div className="mx-auto w-full max-w-3xl relative pointer-events-auto">
         
         {/* Unified Card Container */}
-        <div className="flex flex-col bg-app-surface-elevated border border-app-border-default rounded shadow-2xl transition-all duration-300 overflow-hidden">
+        <div className={`flex flex-col bg-app-surface-elevated/90 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-2xl transition-all duration-300 overflow-hidden border border-transparent ${
+          isFocused ? "shadow-[0_0_24px_rgba(255,255,255,0.04)] bg-app-surface-elevated" : ""
+        }`}>
           
           {/* Dynamic Top Section */}
           <DynamicTopSection
@@ -435,8 +438,10 @@ export function ChatInput({
 
             <PromptInputTextarea
               className="w-full bg-transparent border-none focus:ring-0 outline-none  pt-5 pb-3 px-6 max-h-[300px] h-auto min-h-[80px] text-sm font-normal tracking-tight placeholder:text-app-text-muted scrollbar-hide text-app-text-primary text-left"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               onChange={(event) => handleInputChange(event.currentTarget.value)}
-              placeholder="What would you like to know?"
+              placeholder="How can Jarvis help you today?"
               value={input}
             />
           </PromptInputBody>
@@ -464,8 +469,8 @@ export function ChatInput({
               </Button>
             </PromptInputTools>
             <PromptInputSubmit
-              className={`transition-all duration-200 rounded-lg size-8 flex items-center justify-center ${input?.trim() || isLoading || selectedContact
-                ? "bg-brand-primary text-app-text-primary shadow-lg shadow-brand-primary/20"
+              className={`transition-all duration-200 rounded-full size-8 flex items-center justify-center cursor-pointer ${input?.trim() || isLoading || selectedContact
+                ? "bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover shadow-md"
                 : "bg-app-surface-glass text-app-text-faint"
                 }`}
               status={isLoading ? "streaming" : undefined}

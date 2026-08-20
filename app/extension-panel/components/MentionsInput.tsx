@@ -245,9 +245,9 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
     if (mentionType === 'w') {
       colorClasses = "bg-brand-primary/20 border-brand-primary/50 text-brand-primary";
     } else if (mentionType === 't') {
-      colorClasses = "bg-emerald-500/20 border-emerald-500/50 text-emerald-400";
+      colorClasses = "bg-emerald-500/20 border-emerald-500/50 text-emerald-600 dark:text-emerald-400";
     } else {
-      colorClasses = "bg-gray-300/20 border-gray-300/50 text-gray-300";
+      colorClasses = "bg-app-surface border-app-border-default/20 text-app-text-secondary";
     }
 
     pill.className = `inline-flex items-center gap-1 border pl-1.5 pr-2 py-1 rounded-full text-[10px] font-medium mx-1 align-middle select-none ${colorClasses}`;
@@ -319,16 +319,16 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
       <div
         className={cn(
           "transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
-          mentionType ? "max-h-[350px] border-b border-white/5 mb-2" : "max-h-0"
+          mentionType ? "max-h-[350px] border-b border-app-border-default/10 mb-2" : "max-h-0"
         )}
       >
         {mentionType && (
           <div className="flex flex-col h-full">
             <div className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {mentionType === 'w' ? <Workflow className="size-3.5 text-brand-primary" /> : mentionType === 't' ? <AppWindow className="size-3.5 text-gray-300" /> : <Globe className="size-3.5 text-gray-300" />}
+                {mentionType === 'w' ? <Workflow className="size-3.5 text-brand-primary" /> : mentionType === 't' ? <AppWindow className="size-3.5 text-app-text-secondary" /> : <Globe className="size-3.5 text-app-text-secondary" />}
                 <span className="text-xs font-semibold uppercase tracking-wider">
-                  <span className="text-gray-400">
+                  <span className="text-app-text-muted">
                     {mentionType === 'w' ? "Workflows" : mentionType === 't' ? "Open Tabs" : "Recent Pages"}
                   </span>
                 </span>
@@ -336,7 +336,7 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
               <button
                 type="button"
                 onClick={() => setMentionType(null)}
-                className="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                className="text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer outline-none"
               >
                 <X className="size-4" />
               </button>
@@ -344,7 +344,7 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
 
             <div className="overflow-y-auto p-1 max-h-[250px] flex flex-col gap-1">
               {filteredItems.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-zinc-500 text-center">
+                <div className="px-3 py-4 text-sm text-app-text-muted text-center">
                   No matches found
                 </div>
               ) : (
@@ -354,21 +354,21 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
                     key={item._id || item.id || idx}
                     onClick={() => handleSelectMention(item.name || item.title || '', item._id || item.id, item.url)}
                     className={cn(
-                      "w-full text-left pl-1 pr-2 py-1 rounded-full flex items-center justify-between transition-colors cursor-pointer",
-                      selectedIndex === idx ? "bg-brand-primary/20" : "hover:bg-white/5"
+                      "w-full text-left pl-1 pr-2 py-1 rounded-full flex items-center justify-between transition-colors cursor-pointer outline-none",
+                      selectedIndex === idx ? "bg-brand-primary/20" : "hover:bg-app-surface-elevated"
                     )}
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                        {mentionType === 'w' ? <Workflow size={14} className="text-brand-primary" /> : mentionType === 't' ? <AppWindow size={14} className="text-gray-300" /> : <Globe size={14} className="text-gray-400" />}
+                      <div className="w-7 h-7 rounded-full bg-app-surface-elevated flex items-center justify-center shrink-0">
+                        {mentionType === 'w' ? <Workflow size={14} className="text-brand-primary" /> : mentionType === 't' ? <AppWindow size={14} className="text-app-text-muted" /> : <Globe size={14} className="text-app-text-ghost" />}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="truncate text-xs font-medium text-zinc-200">{item.name || item.title}</span>
-                        {item.url && <span className="truncate text-[10px] text-zinc-500">{item.url}</span>}
+                        <span className="truncate text-xs font-medium text-app-text-primary">{item.name || item.title}</span>
+                        {item.url && <span className="truncate text-[10px] text-app-text-muted">{item.url}</span>}
                       </div>
                     </div>
                     {selectedIndex === idx && (
-                      <Check className="size-4 text-zinc-300 shrink-0 ml-4" />
+                      <Check className="size-4 text-app-text-secondary shrink-0 ml-4" />
                     )}
                   </button>
                 ))
@@ -385,13 +385,13 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
         contentEditable={!disabled}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="w-full max-h-40 min-h-[44px] bg-transparent text-sm text-zinc-100 px-3 pt-2 outline-none overflow-y-auto"
+        className="w-full max-h-40 min-h-[44px] bg-transparent text-sm text-app-text-primary px-3 pt-2 outline-none overflow-y-auto"
         style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
       />
 
       {/* Placeholder simulation since contentEditable doesn't have a native placeholder attribute */}
       {value === "" && !mentionType && (
-        <div className="absolute left-3 top-2 pointer-events-none text-zinc-500 text-sm">
+        <div className="absolute left-3 top-2 pointer-events-none text-app-text-muted text-sm">
           {placeholder}
         </div>
       )}

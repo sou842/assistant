@@ -193,17 +193,17 @@ export default function SchedulePage() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen relative overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="min-h-screen bg-app-canvas">
+        <div className="flex-1 flex flex-col min-w-0">
           <PageHeader
-            icon={<Calendar />}
+            icon={<Calendar className="text-brand-primary" />}
             title="Schedule"
-            subtitle="Manage recurring and one-time automations"
+            // subtitle="Manage recurring and one-time automations"
             actions={
               <div className="flex items-center gap-2">
                 <Link href="/ai/schedule/calendar">
-                  <Button variant="outline" className="rounded-full border-app-border-default dark:border-app-border-default text-app-text-soft hover:bg-app-surface-glass dark:hover:bg-app-surface-glass hover:text-app-text-primary">
-                    <CalendarDays className="size-4" />
+                  <Button variant="outline" className="rounded-full border-app-border-default/40 text-app-text-secondary hover:bg-app-surface-elevated hover:text-app-text-primary transition-colors">
+                    <CalendarDays className="size-4 mr-1.5" />
                     Calendar View
                   </Button>
                 </Link>
@@ -211,26 +211,28 @@ export default function SchedulePage() {
             }
           />
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide relative z-10">
-            <div className="mx-auto w-full max-w-7xl space-y-6 px-5 py-8">
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <div className="mx-auto w-full max-w-7xl space-y-8 px-6 py-10">
               
               {/* Create with AI Section */}
-              <div className="rounded-2xl border border-app-border-default bg-app-surface-glass p-4 sm:p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <Bot className="mt-0.5 size-5 text-app-text-soft" />
-                  <h2 className="text-sm font-medium text-app-text-primary">Create with AI</h2>
+              <div className="rounded-2xl border border-transparent bg-app-surface shadow-xs p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex size-7 items-center justify-center rounded-full bg-app-surface-elevated">
+                    <Bot className="size-4 text-app-text-secondary" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-app-text-primary tracking-tight">Create with AI</h2>
                 </div>
                 <div className="flex gap-2">
                   <Input
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Search or create a schedule task..."
-                    className="rounded-full border-app-border-default bg-app-surface-glass pl-4"
+                    className="rounded-full border-transparent bg-app-surface-elevated px-5 text-sm text-app-text-primary placeholder:text-app-text-ghost focus:border-app-border-default focus:outline-none focus:ring-0"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") createFromAI();
                     }}
                   />
-                  <Button onClick={createFromAI} disabled={isCreating} className="rounded-full bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover">
+                  <Button onClick={createFromAI} disabled={isCreating} className="rounded-full bg-brand-primary text-white hover:bg-brand-primary/95 transition-colors font-medium px-5">
                     {isCreating ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Plus className="size-4 mr-2" />}
                     {isCreating ? "Creating..." : "Create"}
                   </Button>
@@ -240,26 +242,23 @@ export default function SchedulePage() {
               {/* Quick Templates Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-app-text-primary">
-                    <h2 className="text-sm font-medium">Quick Templates</h2>
-                  </div>
-                  <Link href="/ai/schedule/templates" className="text-sm text-app-text-soft hover:text-brand-primary flex items-center gap-1 transition-colors">
+                  <h2 className="text-xs font-semibold text-app-text-muted uppercase tracking-wider">Quick Templates</h2>
+                  <Link href="/ai/schedule/templates" className="text-xs font-medium text-brand-primary hover:underline flex items-center gap-1 transition-colors">
                     View all <ArrowRight className="size-3" />
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {scheduleTemplates.slice(0, 3).map((tpl) => (
                     <Link href={`/ai/schedule/templates?templateId=${tpl.id}`} key={tpl.id} className="block h-full">
-                      <div className="group relative overflow-hidden rounded-xl border border-app-border-default bg-app-surface-glass-soft p-4 hover:border-brand-primary/40 hover:bg-app-surface-glass transition-all h-full flex flex-col">
-                        <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/5 via-brand-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="group relative overflow-hidden rounded-2xl border border-transparent bg-app-surface shadow-xs hover:shadow-sm hover:bg-app-surface-hover p-5 transition-all duration-300 h-full flex flex-col">
                         <div className="relative z-10 flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2.5">
                             <h3 className="text-sm font-semibold text-app-text-primary group-hover:text-brand-primary transition-colors">{tpl.title}</h3>
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-app-surface-glass border border-app-border-subtle group-hover:bg-brand-primary/10 group-hover:border-brand-primary/20 transition-colors">
-                              <ArrowRight className="size-3 text-app-text-ghost group-hover:text-brand-primary transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-app-surface-elevated border border-transparent group-hover:bg-brand-primary/10 transition-colors">
+                              <ArrowRight className="size-3 text-app-text-muted group-hover:text-brand-primary transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
                             </div>
                           </div>
-                          <p className="text-xs text-app-text-soft flex-1 leading-relaxed">{tpl.description}</p>
+                          <p className="text-xs text-app-text-muted flex-1 leading-relaxed">{tpl.description}</p>
                         </div>
                       </div>
                     </Link>
@@ -267,22 +266,16 @@ export default function SchedulePage() {
                 </div>
               </div>
 
-              {/* Tasks Table */}
-              <div className="overflow-x-auto rounded-2xl border border-app-border-default bg-app-surface-glass-soft">
-                <div className="grid grid-cols-12 gap-2 border-b border-app-border-default px-4 py-3 text-xs text-app-text-faint min-w-[1000px] lg:min-w-auto">
-                  <div className="col-span-4">Task</div>
-                  <div className="col-span-2">Type</div>
-                  <div className="col-span-2">Next Run</div>
-                  <div className="col-span-1">Status</div>
-                  <div className="col-span-3 text-right">Actions</div>
-                </div>
-
+              {/* Tasks List */}
+              <div className="space-y-4">
+                <h2 className="text-xs font-semibold text-app-text-muted uppercase tracking-wider">Automations</h2>
+                
                 {isLoading ? (
-                  <div className="p-6 text-sm text-app-text-ghost flex items-center gap-2">
+                  <div className="p-6 text-sm text-app-text-muted flex items-center gap-2">
                     <Loader2 className="size-4 animate-spin" /> Loading schedule tasks...
                   </div>
                 ) : filteredTasks?.length === 0 ? (
-                  <div className="p-6 text-sm text-app-text-ghost min-w-[1000px] lg:min-w-auto">
+                  <div className="p-8 text-sm text-app-text-muted text-center rounded-2xl bg-app-surface border border-transparent shadow-xs">
                     {prompt?.trim() ? "No schedule tasks match your search." : "No schedule tasks yet."}
                   </div>
                 ) : (
@@ -293,62 +286,66 @@ export default function SchedulePage() {
                       tabIndex={0}
                       onClick={() => handleRowClick(task._id)}
                       onKeyDown={(e) => handleRowKeyDown(e, task._id)}
-                      className="min-w-[1000px] lg:min-w-auto grid grid-cols-12 items-center gap-2 border-b border-app-border-subtle px-4 py-3 hover:bg-app-surface-glass-strong cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset"
+                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-app-surface border border-transparent shadow-xs hover:shadow-sm hover:bg-app-surface-hover px-5 py-4 rounded-2xl cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                     >
-                      <div className="col-span-4 min-w-0">
-                        <p className="truncate text-sm text-app-text-primary">{task.title}</p>
-                        <div className="flex flex-wrap items-center gap-1 mt-1">
-                          {task.steps?.map((step: Step, idx: number) => (
-                            <React.Fragment key={step.id}>
-                              <Badge variant="outline" className="text-[10px] h-5 rounded bg-app-surface-glass border-app-border-subtle text-app-text-soft">
-                                {step.type}
-                              </Badge>
-                              {idx < task.steps!.length - 1 && <span className="text-app-text-ghost text-[10px]">&rarr;</span>}
-                            </React.Fragment>
-                          ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <p className="text-[14px] font-semibold text-app-text-primary tracking-tight">{task.title}</p>
+                          <Badge
+                            className={cn(
+                              "capitalize rounded-full text-[10px] font-medium border-0 px-2 py-0.5 shadow-none",
+                              task.status === "active" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                              task.status === "paused" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                              task.status === "failed" && "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                              task.status === "completed" && "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            )}
+                          >
+                            {task.status}
+                          </Badge>
+                          {task.status === "failed" && task.lastError && (
+                            <div onClick={(e) => e.stopPropagation()} role="presentation">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertCircle className="size-4 text-rose-400 cursor-help shrink-0 outline-none" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs bg-app-surface border border-app-border-default/20 text-app-text-primary p-3 rounded-xl shadow-lg">
+                                  <p className="text-xs font-semibold text-rose-500 mb-1">Last Error:</p>
+                                  <p className="text-[11px] font-mono leading-relaxed text-app-text-secondary">{task.lastError}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="text-[11px] text-app-text-muted bg-app-surface-elevated/40 px-2.5 py-0.5 rounded-full">
+                            {task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}
+                          </span>
+                          {task.nextRunAt && (
+                            <span className="text-[11px] text-app-text-muted bg-app-surface-elevated/40 px-2.5 py-0.5 rounded-full">
+                              Next: {format(new Date(task.nextRunAt), "MMM d, HH:mm")}
+                            </span>
+                          )}
+                          {task.steps && task.steps.length > 0 && (
+                            <div className="flex items-center gap-1.5 ml-1 flex-wrap">
+                              <span className="text-app-text-ghost text-xs">•</span>
+                              {task.steps.map((step: Step, idx: number) => (
+                                <React.Fragment key={step.id}>
+                                  <span className="text-[10px] text-app-text-muted bg-app-surface-elevated/20 px-2 py-0.5 rounded-md border border-app-border-default/10">
+                                    {step.type}
+                                  </span>
+                                  {idx < task.steps!.length - 1 && <span className="text-app-text-ghost text-[10px]">&rarr;</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="col-span-2 text-xs text-app-text-soft">
-                        {task.scheduleType === "one_time" ? "One-time" : `Every ${task.intervalMinutes || "?"} min`}
-                      </div>
-                      
-                      <div className="col-span-2 text-xs text-app-text-soft">
-                        {task.nextRunAt ? format(new Date(task.nextRunAt), "MMM d, HH:mm") : "-"}
-                      </div>
-                      
-                      <div className="col-span-1 flex items-center gap-1.5">
-                        <Badge
-                          className={cn(
-                            "capitalize rounded-full",
-                            task.status === "active" && "bg-emerald-500/15 text-emerald-300",
-                            task.status === "paused" && "bg-amber-500/15 text-amber-300",
-                            task.status === "failed" && "bg-red-500/15 text-red-300",
-                            task.status === "completed" && "bg-blue-500/15 text-blue-300"
-                          )}
-                        >
-                          {task.status}
-                        </Badge>
-                        {task.status === "failed" && task.lastError && (
-                          <div onClick={(e) => e.stopPropagation()} role="presentation">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <AlertCircle className="size-4 text-red-400 cursor-help shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded-full" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs bg-red-950 border border-red-800 text-red-100 p-2 rounded shadow-lg">
-                                <p className="text-xs font-semibold">Last Error:</p>
-                                <p className="text-[11px] font-mono leading-tight">{task.lastError}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        )}
-                      </div>
 
-                      <div className="col-span-3 flex items-center justify-end gap-2">
+                      <div className="flex items-center gap-2 self-end md:self-center" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 rounded-full border-app-border-strong dark:border-app-border-strong hover:bg-app-surface-glass dark:hover:bg-app-surface-glass min-w-[70px]" 
+                          className="h-8 rounded-full border-app-border-default/30 hover:bg-app-surface-elevated hover:text-app-text-primary text-app-text-secondary transition-colors font-medium px-4"
                           onClick={(e) => handleRunNow(task._id, e)}
                           disabled={runningTasks.has(task._id)}
                           aria-label={`Run ${task.title} now`}
@@ -360,7 +357,7 @@ export default function SchedulePage() {
                             </>
                           ) : (
                             <>
-                              <Zap className="size-3.5 mr-1.5" /> 
+                              <Zap className="size-3.5 mr-1.5 text-brand-primary" /> 
                               Run
                             </>
                           )}
@@ -368,7 +365,7 @@ export default function SchedulePage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 w-8 p-0 rounded-full border-app-border-strong dark:border-app-border-strong hover:bg-app-surface-glass dark:hover:bg-app-surface-glass flex items-center justify-center" 
+                          className="h-8 w-8 p-0 rounded-full border-app-border-default/30 hover:bg-app-surface-elevated hover:text-app-text-primary text-app-text-secondary flex items-center justify-center transition-colors" 
                           onClick={(e) => togglePause(task, e)}
                           disabled={togglingTasks.has(task._id)}
                           aria-label={task.status === "paused" ? "Resume task" : "Pause task"}
@@ -384,7 +381,7 @@ export default function SchedulePage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 rounded-full border-red-400/30 dark:border-red-400/30 text-red-300 hover:bg-red-400/10 dark:hover:bg-red-400/10 hover:text-red-200" 
+                          className="h-8 w-8 p-0 rounded-full border-transparent bg-app-danger-soft/10 text-app-danger-strong hover:bg-app-danger-soft hover:text-app-danger-strong flex items-center justify-center transition-colors" 
                           onClick={(e) => handleDelete(task._id, e)}
                           aria-label="Delete task"
                         >
