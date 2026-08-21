@@ -36,36 +36,181 @@ export function SandboxEditor({ initialData = "", onChange, readOnly = false }: 
   useEffect(() => {
     let parsedFiles: Record<string, string> = {
       "app.tsx": `import React, { useState } from "react";
-import { Sparkles, Activity } from "lucide-react";
 
 export default function App() {
   const [count, setCount] = useState(0);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-zinc-50 p-6">
-      <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center gap-6">
-        <div className="size-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-          <Sparkles className="size-8" />
-        </div>
-        
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            Multi-File Sandbox
-          </h1>
-          <p className="text-sm text-zinc-400">
-            Build clean modular projects in real-time. Edit files in the tree, add components, and watch them render.
-          </p>
-        </div>
+  const stats = [
+    { title: "Total Users", value: "12,480", change: "+12.5%" },
+    { title: "Revenue", value: "$48,290", change: "+8.2%" },
+    { title: "Orders", value: "1,284", change: "+14.8%" },
+    { title: "Conversion", value: "6.24%", change: "+2.4%" },
+  ];
 
-        <div className="flex flex-col items-center gap-2">
-          <button 
-            onClick={() => setCount(c => c + 1)}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-medium text-sm transition-all active:scale-95 cursor-pointer shadow-lg shadow-blue-500/20"
-          >
-            Clicked {count} times
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Header */}
+      <header className="border-b border-zinc-800 bg-zinc-950">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-5">
+          <div>
+            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <p className="text-sm text-zinc-500">
+              Welcome back, Sourav
+            </p>
+          </div>
+
+          <button className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm hover:bg-zinc-800">
+            Export Report
           </button>
         </div>
-      </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl space-y-8 px-8 py-8">
+        {/* Stats */}
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.title}
+              className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+            >
+              <p className="text-sm text-zinc-500">{stat.title}</p>
+
+              <div className="mt-3 flex items-end justify-between">
+                <h2 className="text-2xl font-semibold">{stat.value}</h2>
+
+                <span className="text-sm text-green-400">
+                  {stat.change}
+                </span>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Main Grid */}
+        <section className="grid gap-6 lg:grid-cols-3">
+          {/* Revenue Chart */}
+          <div className="lg:col-span-2 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Revenue Overview</h2>
+                <p className="text-sm text-zinc-500">
+                  Monthly revenue performance
+                </p>
+              </div>
+
+              <select className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
+                <option>Last 6 months</option>
+                <option>Last year</option>
+              </select>
+            </div>
+
+            {/* Fake Chart */}
+            <div className="flex h-64 items-end gap-3 border-b border-zinc-800 px-2">
+              {[35, 50, 42, 65, 55, 72, 60, 82, 68, 90, 76, 95].map(
+                (height, index) => (
+                  <div
+                    key={index}
+                    className="flex-1 rounded-t-md bg-zinc-700 transition hover:bg-zinc-500"
+                    style={{ height: height }}
+                  />
+                )
+              )}
+            </div>
+
+            <div className="mt-3 flex justify-between text-xs text-zinc-600">
+              <span>Jan</span>
+              <span>Feb</span>
+              <span>Mar</span>
+              <span>Apr</span>
+              <span>May</span>
+              <span>Jun</span>
+            </div>
+          </div>
+
+          {/* Counter */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+            <h2 className="font-semibold">Quick Counter</h2>
+
+            <p className="mt-1 text-sm text-zinc-500">
+              Simple interactive example
+            </p>
+
+            <div className="flex h-64 flex-col items-center justify-center">
+              <span className="text-6xl font-bold">{count}</span>
+
+              <button
+                onClick={() => setCount(count + 1)}
+                className="mt-6 rounded-lg bg-white px-6 py-3 font-medium text-black transition hover:bg-zinc-200 active:scale-95"
+              >
+                Increase
+              </button>
+
+              <button
+                onClick={() => setCount(0)}
+                className="mt-3 text-sm text-zinc-500 hover:text-white"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Recent Orders */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-900">
+          <div className="border-b border-zinc-800 p-6">
+            <h2 className="font-semibold">Recent Orders</h2>
+            <p className="text-sm text-zinc-500">
+              Latest transactions from your store
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-zinc-800 text-zinc-500">
+                <tr>
+                  <th className="px-6 py-4">Order</th>
+                  <th className="px-6 py-4">Customer</th>
+                  <th className="px-6 py-4">Amount</th>
+                  <th className="px-6 py-4">Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {[
+                  ["#10231", "John Smith", "$240.00", "Completed"],
+                  ["#10230", "Sarah Wilson", "$180.00", "Pending"],
+                  ["#10229", "Michael Brown", "$320.00", "Completed"],
+                  ["#10228", "Emma Davis", "$95.00", "Cancelled"],
+                ].map((order) => (
+                  <tr
+                    key={order[0]}
+                    className="border-b border-zinc-800 last:border-0 hover:bg-zinc-800/40"
+                  >
+                    <td className="px-6 py-4 font-medium">{order[0]}</td>
+                    <td className="px-6 py-4 text-zinc-400">
+                      {order[1]}
+                    </td>
+                    <td className="px-6 py-4">{order[2]}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={
+                          order[3] === "Completed"
+                            ? "text-green-400"
+                            : order[3] === "Pending"
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                        }
+                      >
+                        {order[3]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }`,
