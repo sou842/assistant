@@ -1,18 +1,21 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Loader2, RotateCcw, AlertTriangle } from "lucide-react";
+import { Loader2, RotateCcw, AlertTriangle, Monitor, Tablet, Smartphone } from "lucide-react";
 import * as Babel from "@babel/standalone";
 
 interface PreviewRendererProps {
   files: Record<string, string>;
   entryPoint?: string;
+  layoutMode?: "code" | "split" | "preview";
+  setLayoutMode?: (mode: "code" | "split" | "preview") => void;
 }
 
-export function PreviewRenderer({ files, entryPoint = "app.tsx" }: PreviewRendererProps) {
+export function PreviewRenderer({ files, entryPoint = "app.tsx", layoutMode = "split", setLayoutMode = () => {} }: PreviewRendererProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   const buildAndRender = () => {
     setLoading(true);

@@ -35,6 +35,7 @@ export default function StudioEditorPage() {
   const [content, setContent] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<"code" | "split" | "preview">("split");
 
   // History State
   const [history, setHistory] = useState<{ title: string; content: string }[]>([]);
@@ -297,7 +298,7 @@ ${itemContext}`,
           subtitle="Professional Document"
           actions={
             <div className="flex items-center gap-2">
-              <Button
+              {/* <Button
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
                 size="sm"
@@ -318,6 +319,25 @@ ${itemContext}`,
                 <Redo2 size={16} />
               </Button>
               
+              <div className="w-px h-4 bg-app-border-default mx-1" /> */}
+
+              {/* Layout mode switcher */}
+              <div className="flex items-center gap-0.5 bg-app-surface-glass-strong border border-app-border-default/40 rounded-full p-0.5 shadow-sm">
+                {(["code", "split", "preview"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setLayoutMode(mode)}
+                    className={`px-3 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer capitalize ${
+                      layoutMode === mode
+                        ? "bg-app-primary/20 text-white shadow-md font-bold"
+                        : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
               <div className="w-px h-4 bg-app-border-default mx-1" />
 
               {!isEditing ? (
@@ -339,14 +359,6 @@ ${itemContext}`,
                   Save
                 </Button>
               )}
-              <Button
-                onClick={handleDownloadPDF}
-                size="sm"
-                className="rounded-full h-9 px-4 text-xs font-medium bg-app-surface-elevated text-app-text-primary border border-app-border-default hover:bg-app-surface-glass shadow-sm"
-              >
-                <Download size={14} className="mr-2" />
-                Download PDF
-              </Button>
             </div>
           }
         />
@@ -365,6 +377,8 @@ ${itemContext}`,
                   initialData={content}
                   onChange={(json) => setContent(json)}
                   readOnly={!isEditing}
+                  layoutMode={layoutMode}
+                  setLayoutMode={setLayoutMode}
                 />
 
                 <AgentWorkAura isWorking={isChatLoading} />
