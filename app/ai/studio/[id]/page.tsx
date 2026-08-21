@@ -34,7 +34,7 @@ export default function StudioEditorPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [layoutMode, setLayoutMode] = useState<"code" | "split" | "preview">("split");
 
   // History State
@@ -344,7 +344,7 @@ ${itemContext}`,
                 <Button
                   onClick={() => setIsEditing(true)}
                   size="sm"
-                  className="rounded-full h-9 px-4 text-xs font-medium bg-app-surface-glass-strong text-app-text-primary hover:bg-app-surface-glass"
+                  className="rounded-full h-8 px-4 text-xs font-medium bg-app-surface-glass-strong text-app-text-primary hover:bg-app-surface-glass"
                 >
                   Edit
                 </Button>
@@ -353,10 +353,10 @@ ${itemContext}`,
                   onClick={handleSave}
                   disabled={isSaving}
                   size="sm"
-                  className="rounded-full h-9 px-4 text-xs font-medium bg-brand-primary text-white hover:bg-brand-primary/90"
+                  className="rounded-full h-8 px-4 text-xs font-medium bg-brand-primary text-white hover:bg-brand-primary/90"
                 >
-                  {isSaving ? <Loader2 size={14} className="animate-spin mr-2" /> : <Save size={14} className="mr-2" />}
-                  Save
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {/* Save */}
                 </Button>
               )}
             </div>
