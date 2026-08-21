@@ -342,7 +342,7 @@ export const MentionsInput = forwardRef<MentionsInputRef, MentionsInputProps>(({
               </button>
             </div>
 
-            <div className="overflow-y-auto p-1 max-h-[250px] flex flex-col gap-1">
+            <div className="overflow-y-auto p-1 max-h-62.5 flex flex-col gap-1">
               {filteredItems.length === 0 ? (
                 <div className="px-3 py-4 text-sm text-app-text-muted text-center">
                   No matches found

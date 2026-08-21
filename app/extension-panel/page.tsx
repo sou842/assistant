@@ -565,57 +565,6 @@ export default function ExtensionPanel() {
         savedChats={savedChats}
       />
 
-      {/* Tabs & Status Bar */}
-      {/* <div className="flex items-center justify-start p-2 gap-2 border-b border-white/10 shrink-0 bg-black/20"> */}
-      {/* <div className="flex items-center gap-4 px-2">
-          <button
-            onClick={() => setActiveTab("chat")}
-            className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            title="Chat"
-          >
-            <FileText size={18} strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={() => setActiveTab("workflows")}
-            className={`transition-colors cursor-pointer ${activeTab === "workflows" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            title="Workflows"
-          >
-            <SquareTerminal size={18} strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={() => setActiveTab("inbox")}
-            className={`transition-colors cursor-pointer ${activeTab === "inbox" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            title="Inbox"
-          >
-            <Inbox size={18} strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={() => setActiveTab("browser")}
-            className={`transition-colors cursor-pointer ${activeTab === "browser" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            title="Browser"
-          >
-            <Chrome size={18} strokeWidth={1.5} />
-          </button>
-        </div> */}
-
-      {/* <div className="flex items-center gap-3 pr-1">
-          <div className="flex items-center gap-1.5 text-xs font-medium">
-            <span className="relative flex h-2 w-2">
-              {isAgentRunning && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${isAgentRunning ? 'bg-blue-500' : 'bg-green-500'}`}></span>
-            </span>
-            <span className={isAgentRunning ? "text-blue-400" : "text-green-500/90"}>
-              {isAgentRunning ? "Running" : "Ready"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-400 bg-white/5 px-2 py-1 rounded-md border border-white/10" title={`Current Model: ${model}`}>
-            <Brain size={12} className="text-gray-500" />
-            <span className="truncate max-w-[60px] font-medium">{model.split('-')[0]}</span>
-          </div>
-        </div> */}
-      {/* </div> */}
-
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden flex flex-col relative">
 
@@ -670,46 +619,46 @@ export default function ExtensionPanel() {
         <div className="flex items-center gap-3 px-3">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "chat" ? 'text-brand-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
             title="Chat"
           >
-            <FileText size={16} strokeWidth={1} />
+            <FileText size={16} strokeWidth={1.25} />
           </button>
           <button
             onClick={() => setActiveTab("workflows")}
-            className={`transition-colors cursor-pointer ${activeTab === "workflows" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "workflows" ? 'text-brand-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
             title="Workflows"
           >
-            <SquareTerminal size={16} strokeWidth={1} />
+            <SquareTerminal size={16} strokeWidth={1.25} />
           </button>
           <button
             onClick={() => setActiveTab("inbox")}
-            className={`transition-colors cursor-pointer ${activeTab === "inbox" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "inbox" ? 'text-brand-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
             title="Inbox"
           >
-            <Inbox size={16} strokeWidth={1} />
+            <Inbox size={16} strokeWidth={1.25} />
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={`transition-colors cursor-pointer ${activeTab === "settings" ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`transition-colors cursor-pointer ${activeTab === "settings" ? 'text-brand-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
             title="Settings"
           >
-            <Settings size={16} strokeWidth={1} />
+            <Settings size={16} strokeWidth={1.25} />
           </button>
         </div>
-        <div className="bg-[#161616] border border-white/10 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
+        <div className="bg-app-surface-elevated border border-app-border-default/20 rounded-2xl p-2 focus-within:border-brand-primary/40 focus-within:ring-1 focus-within:ring-brand-primary/40 transition shadow-lg flex flex-col gap-2">
           {/* Focus Steering Chain */}
           {(focusChain.length > 0 || isFocusModeEnabled) && (
-            <div className="px-3 py-2 bg-[#121212]/50 rounded-xl border-b border-white/5 flex flex-col gap-2">
+            <div className="px-3 py-2 bg-app-surface/50 rounded-xl border-b border-app-border-default/10 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-zinc-400 font-normal tracking-wider font-mono flex items-center gap-1.5">
-                  <MousePointerClick size={14} className="text-zinc-400" />
+                <span className="text-[10px] text-app-text-muted font-normal tracking-wider font-mono flex items-center gap-1.5">
+                  <MousePointerClick size={14} className="text-app-text-muted" />
                   Focus Points
                 </span>
                 <button
                   type="button"
                   onClick={clearFocusChain}
-                  className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                  className="text-[10px] text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer"
                 >
                   Clear
                 </button>
@@ -718,7 +667,7 @@ export default function ExtensionPanel() {
               {focusChain.length > 0 && (
                 <div className="relative pl-2.5 flex flex-col gap-4 max-h-40 overflow-y-auto pr-1 py-1">
                   {/* Vertical Connector Line */}
-                  <div className="absolute left-4.25 top-2 bottom-2 w-px bg-zinc-800 pointer-events-none" />
+                  <div className="absolute left-4.25 top-2 bottom-2 w-px bg-app-border-default pointer-events-none" />
 
                   {focusChain?.map((step, idx) => {
                     const isCompleted = idx < focusChainIndex;
@@ -735,8 +684,8 @@ export default function ExtensionPanel() {
                           className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all cursor-pointer border text-[8px] font-bold ${isCompleted
                               ? 'bg-brand-primary border-brand-primary text-white shadow-sm shadow-blue-500/30'
                               : isActive
-                                ? 'bg-[#121212] border-blue-100 text-brand-primary'
-                                : 'bg-[#161616] border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-400'
+                                ? 'bg-app-surface-elevated border-brand-primary/40 text-brand-primary'
+                                : 'bg-app-surface border-app-border-default/50 text-app-text-muted hover:border-app-border-default hover:text-app-text-primary'
                             }`}
                           title={`Jump to Step ${idx + 1}`}
                         >
@@ -759,8 +708,8 @@ export default function ExtensionPanel() {
                             <p className={`text-[11px] font-medium font-sans truncate transition-colors mt-0.5 ${isActive
                                 ? 'text-app-primary font-normal'
                                 : isCompleted
-                                  ? 'text-zinc-500'
-                                  : 'text-zinc-400 hover:text-zinc-300'
+                                  ? 'text-app-text-muted'
+                                  : 'text-app-text-secondary hover:text-app-text-primary'
                               }`}>
                               Step {idx + 1}: {step.description}
                             </p>
@@ -769,7 +718,7 @@ export default function ExtensionPanel() {
                           <button
                             type="button"
                             onClick={() => removeFocusStep(idx)}
-                            className="opacity-0 group-hover/step:opacity-100 p-1 rounded-full hover:bg-red-400/10 text-zinc-500 hover:text-red-400 transition-opacity cursor-pointer shrink-0"
+                            className="opacity-0 group-hover/step:opacity-100 p-1 rounded-full hover:bg-red-500/10 text-app-text-muted hover:text-red-500 transition-opacity cursor-pointer shrink-0"
                             title="Remove Step"
                           >
                             <X size={12} />
@@ -783,21 +732,21 @@ export default function ExtensionPanel() {
             </div>
           )}
           {pendingNotes?.length > 0 && (
-            <div className="flex flex-col gap-2.5 px-3 py-1 bg-[#121212]/30 rounded-t-2xl border-b border-white/5">
+            <div className="flex flex-col gap-2.5 px-3 py-1 bg-app-surface/30 rounded-t-2xl border-b border-app-border-default/10">
               <div className="space-y-3 pl-2.5 ml-2 my-1">
                 {pendingNotes?.map((note, index) => (
                   <div
                     key={index}
                     className="flex gap-2 items-center group/note -ml-4"
                   >
-                    <StickyNote size={12} className="text-zinc-500 group-hover/note:text-blue-400 transition-colors shrink-0" />
-                    <span className="text-xs text-zinc-300 transition-colors font-sans flex-1 truncate">{note || ''}</span>
+                    <StickyNote size={12} className="text-app-text-muted group-hover/note:text-brand-primary transition-colors shrink-0" />
+                    <span className="text-xs text-app-text-primary transition-colors font-sans flex-1 truncate">{note || ''}</span>
                     <button
                       type="button"
                       onClick={() => {
                         window.parent.postMessage({ type: "FROM_NEXTJS", action: "REMOVE_RUNTIME_NOTE", index }, "*");
                       }}
-                      className="p-1 rounded-full hover:bg-white/5 text-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer shrink-0 mr-1"
+                      className="p-1 rounded-full hover:bg-app-surface text-app-text-muted hover:text-app-text-primary transition-colors cursor-pointer shrink-0 mr-1"
                       title="Remove Note"
                     >
                       <X size={12} />
@@ -834,32 +783,32 @@ export default function ExtensionPanel() {
                   <button
                     type="button"
                     disabled={isAgentRunning}
-                    className="bg-white/5 hover:bg-white/10 p-1 text-zinc-400 hover:text-zinc-200 rounded-full transition-colors flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="bg-app-surface hover:bg-app-surface-hover p-1 text-app-text-muted hover:text-app-text-primary rounded-full transition-colors flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-app-border-default/10"
                     title="Insert reference"
                   >
                     <Plus size={16} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#161616] border border-white/10 text-zinc-300 min-w-[180px] rounded-lg">
+                <DropdownMenuContent align="start" className="bg-app-surface-elevated border border-app-border-default/20 text-app-text-primary min-w-[180px] rounded-lg">
                   <DropdownMenuItem
                     onClick={() => handleTriggerMention('w')}
-                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    className="hover:bg-app-surface-hover cursor-pointer focus:bg-app-surface-hover focus:text-app-text-primary flex items-center gap-2 rounded-full text-[11px] py-1.5"
                   >
-                    <Workflow size={12} className="text-zinc-400" />
+                    <Workflow size={12} className="text-app-text-secondary" />
                     <span>Workflow</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleTriggerMention('t')}
-                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    className="hover:bg-app-surface-hover cursor-pointer focus:bg-app-surface-hover focus:text-app-text-primary flex items-center gap-2 rounded-full text-[11px] py-1.5"
                   >
-                    <AppWindow size={12} className="text-zinc-400" />
+                    <AppWindow size={12} className="text-app-text-secondary" />
                     <span>Tabs</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleTriggerMention('p')}
-                    className="hover:bg-white/5 cursor-pointer focus:bg-white/5 focus:text-zinc-100 flex items-center gap-2 rounded-full text-[11px] py-1.5"
+                    className="hover:bg-app-surface-hover cursor-pointer focus:bg-app-surface-hover focus:text-app-text-primary flex items-center gap-2 rounded-full text-[11px] py-1.5"
                   >
-                    <Globe size={12} className="text-zinc-400" />
+                    <Globe size={12} className="text-app-text-secondary" />
                     <span>Pages</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -869,34 +818,17 @@ export default function ExtensionPanel() {
                 onClick={toggleFocusMode}
                 className={`p-1 rounded-full transition-colors flex items-center justify-center cursor-pointer ${isFocusModeEnabled
                   ? 'bg-brand-primary text-white animate-pulse'
-                  : 'hover:bg-white/10 text-zinc-400 hover:text-zinc-200'
+                  : 'hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary'
                   }`}
                 title="Toggle Element Focus Selection Mode"
               >
                 <MousePointerClick size={16} />
               </button>
-              {/* <div className="relative">
-                  <select
-                    className="bg-[#242424] hover:bg-[#2e2e2e] text-xs text-zinc-300 font-medium px-2 py-1 rounded-full border border-white/5 outline-none cursor-pointer transition appearance-none pr-1"
-                    value={model}
-                    disabled={isAgentRunning}
-                    onChange={e => setModel(e.target.value)}
-                  >
-                    <option value="gpt-4o-mini">GPT-4o Mini</option>
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                    <option value="mistral-small-latest">Mistral Small</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
-                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div> */}
 
               {tokenUsage && (
-                <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-full border border-white/5 shadow-sm shrink-0">
-                  <span className="text-zinc-500">Token:</span>
-                  <span className="text-zinc-200 font-semibold">{tokenUsage.total.toLocaleString()}</span>
+                <div className="text-[10px] text-app-text-muted font-mono flex items-center gap-1 bg-app-surface px-2.5 py-1 rounded-full border border-app-border-default/20 shadow-sm shrink-0">
+                  <span className="text-app-text-muted opacity-80">Token:</span>
+                  <span className="text-app-text-primary font-semibold">{tokenUsage.total.toLocaleString()}</span>
                 </div>
               )}
             </div>
@@ -908,7 +840,7 @@ export default function ExtensionPanel() {
                   onClick={toggleSpeechRecognition}
                   className={`p-1 rounded-full transition-colors flex items-center justify-center cursor-pointer ${isListening
                     ? "bg-brand-primary/20 text-brand-primary animate-pulse border border-brand-primary/30"
-                    : "hover:bg-white/10 text-zinc-400 hover:text-zinc-200"
+                    : "hover:bg-app-surface-hover text-app-text-muted hover:text-app-text-primary"
                     }`}
                   title={isListening ? "Stop listening" : "Voice typing / Voice command"}
                 >
@@ -928,7 +860,7 @@ export default function ExtensionPanel() {
                   <button
                     onClick={isAgentRunning ? sendRuntimeNote : sendMessage}
                     disabled={!input.trim()}
-                    className={`p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md cursor-pointer ${!input.trim() ? "hidden" : ""}`}
+                    className={`p-2 bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground rounded-full disabled:opacity-30 disabled:bg-app-surface-elevated disabled:text-app-text-muted transition flex items-center justify-center shadow-md cursor-pointer ${!input.trim() ? "hidden" : ""}`}
                     title={isAgentRunning ? "Send Note to Agent" : "Send message"}
                   >
                     <Send size={14} fill="currentColor" />
@@ -938,7 +870,7 @@ export default function ExtensionPanel() {
                 <button
                   onClick={isAgentRunning ? sendRuntimeNote : sendMessage}
                   disabled={!input.trim()}
-                  className="p-2 bg-white hover:bg-zinc-200 text-black rounded-full disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-600 transition flex items-center justify-center shadow-md cursor-pointer"
+                  className="p-2 bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground rounded-full disabled:opacity-30 disabled:bg-app-surface-elevated disabled:text-app-text-muted transition flex items-center justify-center shadow-md cursor-pointer"
                   title={isAgentRunning ? "Send Note to Agent" : "Send message"}
                 >
                   <Send size={14} fill="currentColor" />
