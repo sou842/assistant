@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { PageHeader } from "../../_components/page-header";
-import { DocumentEditor } from "../_components/document-editor";
+import { SandboxEditor } from "../_components/sandbox-editor";
 import { Button } from "@/components/ui/button";
 
 import { useAI } from "../../_components/ai-provider";
@@ -68,7 +68,7 @@ export default function StudioEditorPage() {
   };
 
   // Chat state
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [input, setInput] = useState("");
   const [selectedContext, setSelectedContext] = useState<{ text: string, html: string } | null>(null);
 
@@ -97,13 +97,12 @@ export default function StudioEditorPage() {
       .map(({ title, content, category, tags }) => ({ title, content, category, tags }));
 
     const itemContext = data?.item ? `
-CURRENT ITEM CONTEXT:
+CURRENT WORKSPACE CONTEXT:
 ID: ${id}
-Type: ${data.item.type}
 Title: ${title}
 Tags: ${data.item.tags?.join(", ") || "None"}
-Content: ${JSON.stringify(content, null, 2)}
-${selectedContext ? `\nUSER'S CURRENT ACTIVE SELECTION:\nText: "${selectedContext.text}"\nHTML Context: \`${selectedContext.html}\`\n(If the user says "this", "the selection", or "here", they mean this specific highlighted HTML section. ALWAYS target your updates towards this selected HTML section if asked to modify it.)` : ""}
+Workspace Files (JSON Format):
+${content}
 ` : "";
 
     await sendMessage(payload, {
@@ -111,46 +110,21 @@ ${selectedContext ? `\nUSER'S CURRENT ACTIVE SELECTION:\nText: "${selectedContex
       body: {
         ...options?.body,
         memories: enabledMemories,
-        systemPrompt: `You are Jarvis, an AI assistant integrated into a Studio Document viewer. 
-The user is currently viewing and working on the document provided in the CURRENT ITEM CONTEXT below.
+        systemPrompt: `You are Jarvis, an AI developer assistant integrated into a VS Code-style Multi-File React Sandbox workspace.
+The user is working on the workspace files provided in the CURRENT WORKSPACE CONTEXT below.
 
-CRITICAL INSTRUCTION: If the user asks to "generate", "create", "write", "update", "format", or "edit" ANY document, resume, slide, or content, they are ALWAYS referring to THIS specific item they are currently viewing.
-DO NOT use 'createStudioDocument'. You MUST use 'updateStudioDocument' with the provided ID to overwrite/update the current document, unless they explicitly say "create a NEW file".
+CRITICAL WORKSPACE FORMAT:
+- The project files are stored as a JSON map of filename to content in the document's 'content' attribute.
+- When you use 'updateStudioDocument' to make changes, you MUST pass the NEW, FULL, stringified JSON file tree containing all files to the 'content' field.
+- DO NOT output simple raw HTML unless requested. Output the JSON file map containing files like "app.tsx", "styles.css", or other subcomponents (e.g. "components/Button.tsx").
+- Always preserve the primary entrypoint file "app.tsx", which must export a default React component. It is compiled and mounted automatically.
+- You can import React components from other virtual files using ESM imports (e.g. 'import Button from "./components/Button";').
 
-TAILWIND CSS STYLING & DESIGN SKILLS (MULTIPLE DESIGN SYSTEMS):
-- You have full access to Tailwind CSS. ALWAYS style your generated HTML using modern Tailwind CSS classes in the "class" attribute.
-- DO NOT write long inline "style" attributes unless absolutely necessary.
-- ALWAYS wrap your entire document in a styled outer container. DO NOT just output loose headers and paragraphs on a plain page.
-- Choose the design system that best fits the context (or ask the user what aesthetic they prefer if ambiguous):
-  * OPTION 1 (Paper Design System): Best for print-inspired, minimalist, clean, tactile documents/resumes/reports.
-    - Visual Style: Minimal, clean, paper-textured, print-inspired aesthetic with tactile qualities.
-    - Color Palette: Primary=#111111, Secondary=#8B5CF6, Success=#16A34A, Warning=#D97706, Danger=#DC2626, Surface=#FFFFFF, Text=#111827.
-    - Typography: Headers (H1/H2/H3) = Montserrat (strong weights), Body Text = Roboto, Mono/Labels = PT Mono.
-    - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
-    - Page wrapper: \`bg-white shadow-xl max-w-4xl mx-auto rounded-xl p-8 md:p-12 border border-slate-200/50 mt-4 mb-4\`.
-  * OPTION 2 (Premium Design System): Best for modern, polished, Apple-inspired dashboards, landing pages, tech portfolios, and SaaS designs.
-    - Visual Style: Modern, premium, polished visual language.
-    - Color Palette: Primary=#3B82F6, Secondary=#8B5CF6, Success=#16A34A, Warning=#D97706, Danger=#DC2626, Surface=#FFFFFF, Text=#111827.
-    - Typography: Headers (H1/H2/H3) = Inter, Body Text = Inter, Mono/Labels = JetBrains Mono.
-    - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
-    - Page wrapper: \`bg-slate-50 border border-slate-100 max-w-4xl mx-auto rounded-2xl p-8 md:p-16 shadow-2xl mt-4 mb-4\`.
-  * Accessibility: WCAG 2.2 AA compliant contrast, high readability, no low-contrast text.
-  
-INTERACTIVE WEB APPS (HTML, CSS, JS):
-- You can create fully functional, interactive web pages and mini-apps (like calculators, tools, games, dynamic forms).
-- If the user requests interactive functionality, ALWAYS include Vanilla JavaScript within <script> tags at the end of the document.
-- Your generated JavaScript will be executed! Use document.querySelector or getElementById to hook into your rendered HTML elements.
-- Ensure the app logic is fully working and robust.
-
-PLANNING & DESIGN PROTOCOL:
-Before calling the 'updateStudioDocument' tool, you MUST explicitly write down your design plan in your thoughts or conversational response:
-1. Choose Design System: Select either Paper Design System or Premium Design System based on context, or ask the user.
-2. Define Colors: Select and verify the exact HEX color tokens to use.
-3. Define Typography: Outline heading and body font weight/size hierarchies.
-4. Define Spacing Rules: Set up structural padding/margin rhythm matching the 4px-32px scale.
-5. Define Component Styles: Detail borders, shadows, rounded corners, and badge accents.
-6. Define Page Layout: Architect the responsive sheet wrapper layout.
-Once this design plan is documented in your text, proceed to execute the tool call.
+DESIGN & CODE STYLING:
+- You have full access to Tailwind CSS. Use Tailwind classes inside your JSX elements.
+- Avoid styling with inline 'style' tags. Use Tailwind utility classes.
+- Use libraries like 'lucide-react' for premium icon support.
+- Make the designs interactive, fully functional, modern, responsive, and aesthetically stunning (glassmorphic, dark theme, smooth micro-animations).
 
 ${itemContext}`,
       },
@@ -164,12 +138,12 @@ ${itemContext}`,
       .map(({ title, content, category, tags }) => ({ title, content, category, tags }));
 
     const itemContext = data?.item ? `
-CURRENT ITEM CONTEXT:
+CURRENT WORKSPACE CONTEXT:
 ID: ${id}
-Type: ${data.item.type}
 Title: ${title}
 Tags: ${data.item.tags?.join(", ") || "None"}
-Content: ${JSON.stringify(content, null, 2)}
+Workspace Files (JSON Format):
+${content}
 ` : "";
 
     regenerate({
@@ -177,46 +151,21 @@ Content: ${JSON.stringify(content, null, 2)}
       body: {
         ...options?.body,
         memories: enabledMemories,
-        systemPrompt: `You are Jarvis, an AI assistant integrated into a Studio Document viewer. 
-The user is currently viewing and working on the document provided in the CURRENT ITEM CONTEXT below.
+        systemPrompt: `You are Jarvis, an AI developer assistant integrated into a VS Code-style Multi-File React Sandbox workspace.
+The user is working on the workspace files provided in the CURRENT WORKSPACE CONTEXT below.
 
-CRITICAL INSTRUCTION: If the user asks to "generate", "create", "write", "update", "format", or "edit" ANY document, resume, slide, or content, they are ALWAYS referring to THIS specific item they are currently viewing.
-DO NOT use 'createStudioDocument'. You MUST use 'updateStudioDocument' with the provided ID to overwrite/update the current document, unless they explicitly say "create a NEW file".
+CRITICAL WORKSPACE FORMAT:
+- The project files are stored as a JSON map of filename to content in the document's 'content' attribute.
+- When you use 'updateStudioDocument' to make changes, you MUST pass the NEW, FULL, stringified JSON file tree containing all files to the 'content' field.
+- DO NOT output simple raw HTML unless requested. Output the JSON file map containing files like "app.tsx", "styles.css", or other subcomponents (e.g. "components/Button.tsx").
+- Always preserve the primary entrypoint file "app.tsx", which must export a default React component. It is compiled and mounted automatically.
+- You can import React components from other virtual files using ESM imports (e.g. 'import Button from "./components/Button";').
 
-TAILWIND CSS STYLING & DESIGN SKILLS (MULTIPLE DESIGN SYSTEMS):
-- You have full access to Tailwind CSS. ALWAYS style your generated HTML using modern Tailwind CSS classes in the "class" attribute.
-- DO NOT write long inline "style" attributes unless absolutely necessary.
-- ALWAYS wrap your entire document in a styled outer container. DO NOT just output loose headers and paragraphs on a plain page.
-- Choose the design system that best fits the context (or ask the user what aesthetic they prefer if ambiguous):
-  * OPTION 1 (Paper Design System): Best for print-inspired, minimalist, clean, tactile documents/resumes/reports.
-    - Visual Style: Minimal, clean, paper-textured, print-inspired aesthetic with tactile qualities.
-    - Color Palette: Primary=#111111, Secondary=#8B5CF6, Success=#16A34A, Warning=#D97706, Danger=#DC2626, Surface=#FFFFFF, Text=#111827.
-    - Typography: Headers (H1/H2/H3) = Montserrat (strong weights), Body Text = Roboto, Mono/Labels = PT Mono.
-    - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
-    - Page wrapper: \`bg-white shadow-xl max-w-4xl mx-auto rounded-xl p-8 md:p-12 border border-slate-200/50 mt-4 mb-4\`.
-  * OPTION 2 (Premium Design System): Best for modern, polished, Apple-inspired dashboards, landing pages, tech portfolios, and SaaS designs.
-    - Visual Style: Modern, premium, polished visual language.
-    - Color Palette: Primary=#3B82F6, Secondary=#8B5CF6, Success=#16A34A, Warning=#D97706, Danger=#DC2626, Surface=#FFFFFF, Text=#111827.
-    - Typography: Headers (H1/H2/H3) = Inter, Body Text = Inter, Mono/Labels = JetBrains Mono.
-    - Spacing Scale: 4px/8px/12px/16px/24px/32px spacing intervals (Tailwind p-1, p-2, p-3, p-4, p-6, p-8).
-    - Page wrapper: \`bg-slate-50 border border-slate-100 max-w-4xl mx-auto rounded-2xl p-8 md:p-16 shadow-2xl mt-4 mb-4\`.
-  * Accessibility: WCAG 2.2 AA compliant contrast, high readability, no low-contrast text.
-
-INTERACTIVE WEB APPS (HTML, CSS, JS):
-- You can create fully functional, interactive web pages and mini-apps (like calculators, tools, games, dynamic forms).
-- If the user requests interactive functionality, ALWAYS include Vanilla JavaScript within <script> tags at the end of the document.
-- Your generated JavaScript will be executed! Use document.querySelector or getElementById to hook into your rendered HTML elements.
-- Ensure the app logic is fully working and robust.
-
-PLANNING & DESIGN PROTOCOL:
-Before calling the 'updateStudioDocument' tool, you MUST explicitly write down your design plan in your thoughts or conversational response:
-1. Choose Design System: Select either Paper Design System or Premium Design System based on context, or ask the user.
-2. Define Colors: Select and verify the exact HEX color tokens to use.
-3. Define Typography: Outline heading and body font weight/size hierarchies.
-4. Define Spacing Rules: Set up structural padding/margin rhythm matching the 4px-32px scale.
-5. Define Component Styles: Detail borders, shadows, rounded corners, and badge accents.
-6. Define Page Layout: Architect the responsive sheet wrapper layout.
-Once this design plan is documented in your text, proceed to execute the tool call.
+DESIGN & CODE STYLING:
+- You have full access to Tailwind CSS. Use Tailwind classes inside your JSX elements.
+- Avoid styling with inline 'style' tags. Use Tailwind utility classes.
+- Use libraries like 'lucide-react' for premium icon support.
+- Make the designs interactive, fully functional, modern, responsive, and aesthetically stunning (glassmorphic, dark theme, smooth micro-animations).
 
 ${itemContext}`,
       },
@@ -411,11 +360,10 @@ ${itemContext}`,
               </div>
             ) : (
               <>
-                <DocumentEditor
+                <SandboxEditor
                   key={`${id}-${data?.item?.updatedAt}-${historyIndex}`}
                   initialData={content}
-                  onChange={(html) => setContent(html)}
-                  onSelectionChange={setSelectedContext}
+                  onChange={(json) => setContent(json)}
                   readOnly={!isEditing}
                 />
 
