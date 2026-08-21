@@ -142,7 +142,7 @@ export default function StudioPage() {
           ) : error ? (
             <div className="py-20 text-center text-app-danger-strong text-sm">Failed to load documents.</div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center bg-app-surface-glass border border-app-border-subtle rounded-2xl max-w-2xl mx-auto space-y-4">
+            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl max-w-2xl mx-auto space-y-4">
               <div className="size-12 rounded-full bg-app-surface-elevated border border-app-border-default flex items-center justify-center text-app-text-muted">
                 <FileBadge className="size-6 text-app-text-secondary" />
               </div>
