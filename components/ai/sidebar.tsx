@@ -22,7 +22,8 @@ import {
   Plus,
   ChevronDown,
   Search,
-  Sidebar as SidebarIcon
+  Sidebar as SidebarIcon,
+  BrainCog
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -232,7 +233,7 @@ export function Sidebar({
             />
             <SidebarNavItem
               href="/ai/workflows"
-              icon={<Cpu size={16} />}
+              icon={<BrainCog size={16} />}
               label="Workflows"
               active={pathname.startsWith("/ai/workflows")}
               isCollapsed={isCollapsed}
