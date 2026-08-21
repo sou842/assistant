@@ -193,7 +193,10 @@ export function PreviewRenderer({ files, entryPoint = "app.tsx" }: PreviewRender
   };
 
   useEffect(() => {
-    buildAndRender();
+    const timer = setTimeout(() => {
+      buildAndRender();
+    }, 500);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files, entryPoint]);
 

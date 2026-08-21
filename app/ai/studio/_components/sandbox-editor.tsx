@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import {
   Folder,
+  FolderOpen,
+  FolderPlus,
   File,
   Plus,
   Trash2,
@@ -23,17 +25,110 @@ interface SandboxEditorProps {
   readOnly?: boolean;
 }
 
+interface TreeNode {
+  name: string;
+  path: string;
+  isFolder: boolean;
+  children: TreeNode[];
+}
+
+function buildTree(files: Record<string, string>): TreeNode[] {
+  const root: TreeNode[] = [];
+
+  const getOrCreateFolder = (parentChildren: TreeNode[], folderName: string, parentPath: string): TreeNode => {
+    const fullPath = parentPath ? `${parentPath}/${folderName}` : folderName;
+    let found = parentChildren.find(c => c.name === folderName && c.isFolder);
+    if (!found) {
+      found = {
+        name: folderName,
+        path: fullPath,
+        isFolder: true,
+        children: []
+      };
+      parentChildren.push(found);
+    }
+    return found;
+  };
+
+  for (const filePath of Object.keys(files)) {
+    const isFolderEntry = filePath.endsWith('/');
+    const cleanPath = isFolderEntry ? filePath.slice(0, -1) : filePath;
+    const parts = cleanPath.split('/');
+
+    let currentLevel = root;
+    let parentPath = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (!part) continue;
+
+      const isLast = i === parts.length - 1;
+      const partPath = parentPath ? `${parentPath}/${part}` : part;
+
+      if (isLast && !isFolderEntry) {
+        currentLevel.push({
+          name: part,
+          path: filePath,
+          isFolder: false,
+          children: []
+        });
+      } else {
+        const folder = getOrCreateFolder(currentLevel, part, parentPath);
+        currentLevel = folder.children;
+        parentPath = partPath;
+      }
+    }
+  }
+
+  const sortTree = (nodes: TreeNode[]) => {
+    nodes.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const node of nodes) {
+      if (node.isFolder) {
+        sortTree(node.children);
+      }
+    }
+  };
+
+  sortTree(root);
+  return root;
+}
+
 export function SandboxEditor({ initialData = "", onChange, readOnly = false }: SandboxEditorProps) {
   const [files, setFiles] = useState<Record<string, string>>({});
   const [activeFile, setActiveFile] = useState<string>("app.tsx");
   const [openTabs, setOpenTabs] = useState<string[]>(["app.tsx"]);
 
-  // File creating states
-  const [isCreatingFile, setIsCreatingFile] = useState(false);
-  const [newFileName, setNewFileName] = useState("");
+  // Tree states
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
+    "app": true,
+  });
+  const [createType, setCreateType] = useState<"file" | "folder" | null>(null);
+  const [createParentPath, setCreateParentPath] = useState<string>("");
+  const [createInputVal, setCreateInputVal] = useState("");
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [renameInputVal, setRenameInputVal] = useState("");
+
+  const toggleFolder = (path: string) => {
+    setExpandedFolders((prev) => ({
+      ...prev,
+      [path]: !prev[path],
+    }));
+  };
+
+  const treeData = React.useMemo(() => buildTree(files), [files]);
+
+  const lastSentDataRef = React.useRef<string>("");
 
   // Parse initial files or convert legacy HTML
   useEffect(() => {
+    if (initialData && initialData === lastSentDataRef.current) {
+      return;
+    }
+
     let parsedFiles: Record<string, string> = {
       "app.tsx": `import React, { useState } from "react";
 
@@ -243,13 +338,20 @@ export default function App() {
 
     setFiles(parsedFiles);
 
-    // Pick first file as active file
+    // Pick first file as active file, preserving previous active if it still exists
     const fileKeys = Object.keys(parsedFiles);
     if (fileKeys.length > 0) {
-      const defaultActive = fileKeys.find((k) => k === "app.tsx") || fileKeys[0];
-      setActiveFile(defaultActive);
-      setOpenTabs([defaultActive]);
+      setActiveFile((prev) => {
+        if (prev && fileKeys.includes(prev)) return prev;
+        return fileKeys.find((k) => k === "app.tsx") || fileKeys[0];
+      });
+      setOpenTabs((prevTabs) => {
+        const filtered = prevTabs.filter((t) => fileKeys.includes(t));
+        return filtered.length > 0 ? filtered : [fileKeys.find((k) => k === "app.tsx") || fileKeys[0]];
+      });
     }
+
+    lastSentDataRef.current = initialData;
   }, [initialData]);
 
   // Sync edits to parent
@@ -257,66 +359,192 @@ export default function App() {
     if (!content || readOnly) return;
     const updated = { ...files, [activeFile]: content };
     setFiles(updated);
-    onChange(JSON.stringify(updated));
+    const serialized = JSON.stringify(updated);
+    lastSentDataRef.current = serialized;
+    onChange(serialized);
   };
 
-  const handleCreateFile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFileName.trim()) return;
-
-    // Check duplicate
-    if (files[newFileName.trim()]) {
-      toast.error("File already exists");
+  const handleCreateSubmit = (parentPath: string, type: "file" | "folder", name: string) => {
+    if (!name.trim()) {
+      setCreateType(null);
       return;
     }
-
-    const name = newFileName.trim();
-    let ext = name.split(".").pop() || "";
-    let starter = "";
-    if (ext === "tsx" || ext === "jsx") {
-      starter = `import React from "react";\n\nexport default function Component() {\n  return (\n    <div className="p-4 border border-zinc-800 rounded-xl">\n      New Component\n    </div>\n  );\n}`;
-    } else if (ext === "css") {
-      starter = `/* Style sheet */`;
+    const cleanName = name.trim();
+    let targetPath = parentPath ? `${parentPath}/${cleanName}` : cleanName;
+    
+    if (type === "folder") {
+      targetPath += "/";
+      if (files[targetPath] !== undefined) {
+        toast.error("Folder already exists");
+        return;
+      }
+      const updated = { ...files, [targetPath]: "" };
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+      setExpandedFolders(prev => ({
+        ...prev,
+        [parentPath]: true,
+        [targetPath.slice(0, -1)]: true
+      }));
+    } else {
+      if (files[targetPath] !== undefined) {
+        toast.error("File already exists");
+        return;
+      }
+      let ext = cleanName.split(".").pop() || "";
+      let starter = "";
+      if (ext === "tsx" || ext === "jsx") {
+        starter = `import React from "react";\n\nexport default function Component() {\n  return (\n    <div className="p-4 border border-zinc-800 rounded-xl">\n      New Component\n    </div>\n  );\n}`;
+      } else if (ext === "css") {
+        starter = `/* Style sheet */`;
+      }
+      const updated = { ...files, [targetPath]: starter };
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+      setActiveFile(targetPath);
+      if (!openTabs.includes(targetPath)) {
+        setOpenTabs([...openTabs, targetPath]);
+      }
+      if (parentPath) {
+        setExpandedFolders(prev => ({ ...prev, [parentPath]: true }));
+      }
     }
-
-    const updated = { ...files, [name]: starter };
-    setFiles(updated);
-    onChange(JSON.stringify(updated));
-    setActiveFile(name);
-    if (!openTabs.includes(name)) {
-      setOpenTabs([...openTabs, name]);
-    }
-    setNewFileName("");
-    setIsCreatingFile(false);
-    toast.success(`File ${name} created`);
+    setCreateType(null);
+    setCreateInputVal("");
   };
 
-  const handleDeleteFile = (e: React.MouseEvent, name: string) => {
-    e.stopPropagation();
-    if (name === "app.tsx") {
+  const handleRenameSubmit = (oldPath: string, isFolder: boolean, newName: string) => {
+    if (!newName.trim()) {
+      setRenamingPath(null);
+      return;
+    }
+    const cleanNewName = newName.trim();
+    const pathParts = oldPath.split('/');
+    pathParts[pathParts.length - 1] = cleanNewName;
+    const newPath = pathParts.join('/');
+
+    if (isFolder) {
+      const oldPrefix = oldPath + "/";
+      const newPrefix = newPath + "/";
+      
+      if (Object.keys(files).some(k => k.startsWith(newPrefix))) {
+        toast.error("Folder already exists");
+        return;
+      }
+
+      const updated = { ...files };
+      for (const key of Object.keys(files)) {
+        if (key.startsWith(oldPrefix)) {
+          const suffix = key.slice(oldPrefix.length);
+          updated[newPrefix + suffix] = updated[key];
+          delete updated[key];
+        }
+      }
+      
+      if (updated[oldPath + "/"] !== undefined) {
+        updated[newPath + "/"] = updated[oldPath + "/"];
+        delete updated[oldPath + "/"];
+      }
+
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+
+      setOpenTabs(prev => prev.map(t => t.startsWith(oldPrefix) ? newPrefix + t.slice(oldPrefix.length) : t));
+      setActiveFile(prev => prev.startsWith(oldPrefix) ? newPrefix + prev.slice(oldPrefix.length) : prev);
+      
+      setExpandedFolders(prev => {
+        const next = { ...prev };
+        if (next[oldPath]) {
+          next[newPath] = next[oldPath];
+          delete next[oldPath];
+        }
+        for (const k of Object.keys(next)) {
+          if (k.startsWith(oldPrefix.slice(0, -1))) {
+            const nextKey = newPrefix.slice(0, -1) + k.slice(oldPrefix.slice(0, -1).length);
+            next[nextKey] = next[k];
+            delete next[k];
+          }
+        }
+        return next;
+      });
+
+    } else {
+      if (files[newPath] !== undefined) {
+        toast.error("File already exists");
+        return;
+      }
+      const updated = { ...files };
+      updated[newPath] = updated[oldPath];
+      delete updated[oldPath];
+
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+
+      setOpenTabs(prev => prev.map(t => t === oldPath ? newPath : t));
+      if (activeFile === oldPath) {
+        setActiveFile(newPath);
+      }
+    }
+    setRenamingPath(null);
+    setRenameInputVal("");
+  };
+
+  const handleDeleteItem = (path: string, isFolder: boolean) => {
+    if (path === "app.tsx") {
       toast.error("Cannot delete primary entrypoint 'app.tsx'");
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    if (!confirm(`Are you sure you want to delete this ${isFolder ? "folder" : "file"} and all its contents?`)) {
+      return;
+    }
 
     const updated = { ...files };
-    delete updated[name];
-    setFiles(updated);
-    onChange(JSON.stringify(updated));
-
-    // Handle active tab closing
-    const newTabs = openTabs.filter((t) => t !== name);
-    setOpenTabs(newTabs);
-
-    if (activeFile === name) {
-      const fallback = newTabs.length > 0 ? newTabs[0] : Object.keys(updated)[0] || "";
-      setActiveFile(fallback);
-      if (fallback && !newTabs.includes(fallback)) {
-        setOpenTabs([...newTabs, fallback]);
+    if (isFolder) {
+      const prefix = path + "/";
+      for (const key of Object.keys(files)) {
+        if (key.startsWith(prefix) || key === prefix) {
+          delete updated[key];
+        }
       }
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+
+      setOpenTabs(prev => {
+        const filtered = prev.filter(t => !t.startsWith(prefix));
+        if (activeFile.startsWith(prefix)) {
+          const fallback = filtered.length > 0 ? filtered[0] : "app.tsx";
+          setActiveFile(fallback);
+        }
+        return filtered;
+      });
+    } else {
+      delete updated[path];
+      setFiles(updated);
+      const serialized = JSON.stringify(updated);
+      lastSentDataRef.current = serialized;
+      onChange(serialized);
+
+      setOpenTabs(prev => {
+        const filtered = prev.filter(t => t !== path);
+        if (activeFile === path) {
+          const fallback = filtered.length > 0 ? filtered[0] : "app.tsx";
+          setActiveFile(fallback);
+        }
+        return filtered;
+      });
     }
-    toast.success(`Deleted ${name}`);
+    toast.success(`Deleted ${path.split('/').pop()}`);
   };
 
   const handleTabClose = (e: React.MouseEvent, name: string) => {
@@ -340,8 +568,166 @@ export default function App() {
     return "plaintext";
   };
 
+  const renderTreeNodes = (nodes: TreeNode[], depth = 0) => {
+    return nodes.map((node) => {
+      const isExpanded = expandedFolders[node.path];
+      const isRenaming = renamingPath === node.path;
+      const isActive = activeFile === node.path;
+      const showCreationInputHere = createParentPath === node.path && createType !== null;
+
+      return (
+        <div key={node.path} className="flex flex-col">
+          <div
+            onClick={(e) => {
+              if (node.isFolder) {
+                toggleFolder(node.path);
+              } else {
+                setActiveFile(node.path);
+                if (!openTabs.includes(node.path)) {
+                  setOpenTabs([...openTabs, node.path]);
+                }
+              }
+            }}
+            className={`group flex items-center justify-between py-1.5 px-2 rounded-lg text-xs font-mono transition-all duration-150 cursor-pointer select-none ${
+              !node.isFolder && isActive
+                ? "bg-app-primary/10 text-app-primary font-semibold border-l-2 border-l-app-primary/60 rounded-l-none"
+                : "hover:bg-zinc-900/50 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {node.isFolder ? (
+                <span className="text-zinc-500 hover:text-zinc-300">
+                  {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </span>
+              ) : (
+                <></>
+              )}
+
+              {node.isFolder ? (
+                <Folder size={14} className={isExpanded ? "text-app-primary" : "text-zinc-500"} />
+              ) : (
+                <File size={14} className={isActive ? "text-app-primary" : "text-zinc-500"} />
+              )}
+
+              {isRenaming ? (
+                <input
+                  type="text"
+                  value={renameInputVal}
+                  onChange={(e) => setRenameInputVal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleRenameSubmit(node.path, node.isFolder, renameInputVal);
+                    } else if (e.key === "Escape") {
+                      setRenamingPath(null);
+                    }
+                  }}
+                  onBlur={() => handleRenameSubmit(node.path, node.isFolder, renameInputVal)}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-zinc-900 border border-zinc-800 rounded px-1 py-0.5 text-[11px] text-zinc-200 outline-none w-32 font-sans"
+                />
+              ) : (
+                <span className="text-xs font-normal truncate">{node?.name}</span>
+              )}
+            </div>
+
+            {!readOnly && !isRenaming && (
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {node.isFolder && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCreateParentPath(node.path);
+                        setCreateType("file");
+                        setCreateInputVal("");
+                        setExpandedFolders(prev => ({ ...prev, [node.path]: true }));
+                      }}
+                      className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 transition cursor-pointer"
+                      title="New File"
+                    >
+                      <Plus size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCreateParentPath(node.path);
+                        setCreateType("folder");
+                        setCreateInputVal("");
+                        setExpandedFolders(prev => ({ ...prev, [node.path]: true }));
+                      }}
+                      className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 transition cursor-pointer"
+                      title="New Folder"
+                    >
+                      <FolderPlus size={12} />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRenamingPath(node.path);
+                    setRenameInputVal(node.name);
+                  }}
+                  className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 transition cursor-pointer"
+                  title="Rename"
+                >
+                  <FileEdit size={12} />
+                </button>
+                {node.path !== "app.tsx" && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteItem(node.path, node.isFolder);
+                    }}
+                    className="p-0.5 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/20 transition cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {node.isFolder && isExpanded && (
+            <div className="flex flex-col border-l border-zinc-800/60 ml-[15px] pl-3 mt-0.5">
+              {showCreationInputHere && (
+                <div className="flex items-center gap-1.5 py-1 px-2">
+                  {createType === "folder" ? (
+                    <Folder size={14} className="text-zinc-500" />
+                  ) : (
+                    <File size={14} className="text-zinc-500" />
+                  )}
+                  <input
+                    type="text"
+                    value={createInputVal}
+                    onChange={(e) => setCreateInputVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleCreateSubmit(node.path, createType!, createInputVal);
+                      } else if (e.key === "Escape") {
+                        setCreateType(null);
+                      }
+                    }}
+                    onBlur={() => handleCreateSubmit(node.path, createType!, createInputVal)}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={createType === "folder" ? "Folder name..." : "File name..."}
+                    className="w-full rounded px-1.5 py-0.5 text-[11px] text-zinc-200 outline-none font-sans"
+                  />
+                </div>
+              )}
+              {renderTreeNodes(node.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   return (
-    <div className="flex w-full h-[calc(100vh-140px)] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden text-zinc-300">
+    <div className="flex w-full h-[calc(100vh-80px)] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden text-zinc-300">
       {/* File Tree Sidebar */}
       <div className="w-64 border-r border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md flex flex-col shrink-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
@@ -349,80 +735,65 @@ export default function App() {
             Files
           </span>
           {!readOnly && (
-            <button
-              onClick={() => setIsCreatingFile(!isCreatingFile)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
-              title="Add File"
-            >
-              <Plus size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setCreateParentPath("");
+                  setCreateType("file");
+                  setCreateInputVal("");
+                }}
+                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                title="New File"
+              >
+                <Plus size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  setCreateParentPath("");
+                  setCreateType("folder");
+                  setCreateInputVal("");
+                }}
+                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                title="New Folder"
+              >
+                <FolderPlus size={15} />
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Create File Input Form */}
-        {isCreatingFile && (
-          <form onSubmit={handleCreateFile} className="p-3 border-b border-zinc-800/60">
-            <input
-              type="text"
-              autoFocus
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-              placeholder="e.g. Button.tsx"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500/80 focus:ring-0"
-            />
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                type="button"
-                onClick={() => setIsCreatingFile(false)}
-                className="px-2 py-1 text-[10px] text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-2.5 py-1 text-[10px] bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
-                Create
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* File List */}
+        {/* File List / Tree root */}
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {Object.keys(files).map((name) => {
-            const isActive = activeFile === name;
-            return (
-              <div
-                key={name}
-                onClick={() => {
-                  setActiveFile(name);
-                  if (!openTabs.includes(name)) {
-                    setOpenTabs([...openTabs, name]);
+          {createParentPath === "" && createType !== null && (
+            <div
+              className="flex items-center gap-1.5 py-1 px-2"
+            >
+              <span className="w-3.5 h-3.5" />
+              {createType === "folder" ? (
+                <Folder size={14} className="text-zinc-500" />
+              ) : (
+                <File size={14} className="text-zinc-500" />
+              )}
+              <input
+                type="text"
+                value={createInputVal}
+                onChange={(e) => setCreateInputVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleCreateSubmit("", createType!, createInputVal);
+                  } else if (e.key === "Escape") {
+                    setCreateType(null);
                   }
                 }}
-                className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer select-none ${
-                  isActive
-                    ? "bg-blue-600/10 text-blue-400 font-semibold border border-blue-500/15"
-                    : "hover:bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 border border-transparent"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileCode2 size={14} className={isActive ? "text-blue-400" : "text-zinc-500"} />
-                  <span className="truncate">{name}</span>
-                </div>
-                {!readOnly && name !== "app.tsx" && (
-                  <button
-                    onClick={(e) => handleDeleteFile(e, name)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/20 transition cursor-pointer"
-                    title="Delete File"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                onBlur={() => handleCreateSubmit("", createType!, createInputVal)}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                placeholder={createType === "folder" ? "Folder name" : "File name"}
+                className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full font-sans"
+              />
+            </div>
+          )}
+          {renderTreeNodes(treeData)}
         </div>
       </div>
 
@@ -440,7 +811,7 @@ export default function App() {
                   onClick={() => setActiveFile(tab)}
                   className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
                     isActive
-                      ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-blue-500"
+                      ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
                       : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
                   }`}
                 >

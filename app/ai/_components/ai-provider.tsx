@@ -52,9 +52,32 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [chats, setChats] = useState<StoredChat[]>([]);
   const [memories, setMemories] = useState<MemoryItem[]>([]);
   const [activeChatId, setActiveChatId] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path && (
+        /^\/ai\/vault\/[^\/]+$/.test(path) ||
+        path.startsWith("/ai/workflows") ||
+        path.startsWith("/ai/studio")
+      )) {
+        return false;
+      }
+    }
+    return true;
+  });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+
+  // Automatically close sidebar on route changes to specific pages
+  useEffect(() => {
+    if (pathname && (
+      /^\/ai\/vault\/[^\/]+$/.test(pathname) ||
+      pathname.startsWith("/ai/workflows") ||
+      pathname.startsWith("/ai/studio")
+    )) {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
   const { sidebarWidth, startResize } = useSidebarResize();
 
   const [selectedModel, setSelectedModelState] = useState<string>(mistralModels[0].id);
