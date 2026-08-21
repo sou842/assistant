@@ -275,42 +275,42 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
   const mountNode = iframeRef?.contentDocument?.getElementById("editor-root");
 
   return (
-    <div className="flex flex-col h-full bg-[#f3f4f6] text-black">
+    <div className="flex flex-col h-full bg-transparent text-app-text-primary">
       {/* TOOLBAR */}
       {!readOnly && (
-        <div className="flex items-center gap-1 p-2 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 justify-center">
-          <div className="flex bg-gray-100 p-0.5 rounded-md mr-2">
+        <div className="flex items-center gap-1 p-2 bg-app-surface-elevated border-b border-app-border-default shadow-xs sticky top-0 z-10 justify-center">
+          <div className="flex bg-app-surface-glass border border-app-border-subtle p-0.5 rounded-lg mr-2">
             <button
               onClick={() => setIsInspectorMode(false)}
-              className={`p-1.5 rounded-sm transition-colors ${!isInspectorMode ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+              className={`p-1.5 rounded-md transition-all cursor-pointer ${!isInspectorMode ? 'bg-app-surface-elevated text-brand-primary shadow-xs' : 'text-app-text-muted hover:text-app-text-primary'}`}
               title="Edit Mode (Text Cursor)"
             >
               <Type size={16} />
             </button>
             <button
               onClick={() => setIsInspectorMode(true)}
-              className={`p-1.5 rounded-sm transition-colors ${isInspectorMode ? 'bg-white shadow-sm text-indigo-500' : 'text-gray-500 hover:text-black'}`}
+              className={`p-1.5 rounded-md transition-all cursor-pointer ${isInspectorMode ? 'bg-app-surface-elevated text-brand-primary shadow-xs' : 'text-app-text-muted hover:text-app-text-primary'}`}
               title="Inspector Mode (Select Sections)"
             >
               <MousePointer2 size={16} />
             </button>
           </div>
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <div className="w-px h-5 bg-app-border-default mx-1" />
 
           <ToolbarButton icon={<Bold size={16} />} onClick={() => execCommand('bold')} tooltip="Bold" />
           <ToolbarButton icon={<Italic size={16} />} onClick={() => execCommand('italic')} tooltip="Italic" />
           <ToolbarButton icon={<Underline size={16} />} onClick={() => execCommand('underline')} tooltip="Underline" />
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <div className="w-px h-5 bg-app-border-default mx-1" />
           <ToolbarButton icon={<AlignLeft size={16} />} onClick={() => execCommand('justifyLeft')} tooltip="Align Left" />
           <ToolbarButton icon={<AlignCenter size={16} />} onClick={() => execCommand('justifyCenter')} tooltip="Align Center" />
           <ToolbarButton icon={<AlignRight size={16} />} onClick={() => execCommand('justifyRight')} tooltip="Align Right" />
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <div className="w-px h-5 bg-app-border-default mx-1" />
           <ToolbarButton icon={<List size={16} />} onClick={() => execCommand('insertUnorderedList')} tooltip="Bullet List" />
           <ToolbarButton icon={<ListOrdered size={16} />} onClick={() => execCommand('insertOrderedList')} tooltip="Numbered List" />
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <div className="w-px h-5 bg-app-border-default mx-1" />
           <select
             onChange={(e) => execCommand('formatBlock', e.target.value)}
-            className="h-8 px-2 text-sm border border-gray-300 rounded outline-none hover:bg-gray-50"
+            className="h-8 px-2.5 text-xs bg-app-surface border border-app-border-default rounded-lg outline-none hover:bg-app-surface-hover text-app-text-primary transition-colors cursor-pointer"
           >
             <option value="P">Paragraph</option>
             <option value="H1">Heading 1</option>
@@ -319,7 +319,7 @@ export function DocumentEditor({ initialData = "", onChange, readOnly = false, o
           </select>
         </div>
       )}
-
+ 
       {/* A4 PAGE CONTAINER */}
       <div className="flex-1 w-full h-full relative" id="document-scroll-container">
         <iframe
@@ -350,7 +350,7 @@ function ToolbarButton({ icon, onClick, tooltip }: { icon: React.ReactNode, onCl
     <button
       onClick={onClick}
       title={tooltip}
-      className="p-1.5 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition-colors"
+      className="p-1.5 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-glass rounded-lg transition-colors cursor-pointer"
       type="button"
     >
       {icon}

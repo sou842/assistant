@@ -331,12 +331,16 @@ ${itemContext}`,
       <div className="flex h-full flex-1 flex-col min-w-0 relative z-10">
         <PageHeader
           backHref="/ai/studio"
-          icon={<FileBadge />}
+          icon={<FileBadge className="text-brand-primary" />}
           title={
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full max-w-md border-none bg-transparent px-0 text-base font-medium text-app-text-primary outline-none placeholder:text-app-text-ghost"
+              className={`w-full max-w-md bg-transparent px-2.5 py-1 text-base font-semibold text-app-text-primary outline-none rounded-lg transition-all duration-200 ${
+                isEditing
+                  ? "border border-app-border-default bg-app-surface-glass-soft focus:border-brand-primary/55 focus:ring-1 focus:ring-brand-primary/10"
+                  : "border border-transparent cursor-default"
+              }`}
               placeholder="Enter document title..."
               readOnly={!isEditing}
             />
@@ -399,7 +403,8 @@ ${itemContext}`,
         />
 
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <div className="flex-1 relative overflow-y-auto bg-[#f3f4f6]">
+          <div className="flex-1 relative overflow-y-auto bg-app-canvas">
+            <div className="absolute inset-0 app-grid-overlay opacity-25 pointer-events-none" />
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-app-text-muted animate-spin" />

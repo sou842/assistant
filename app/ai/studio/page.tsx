@@ -1,27 +1,40 @@
 "use client";
 
 import React, { useState } from "react";
-import { Briefcase, Search, Plus, Trash2, Pencil, FileBadge } from "lucide-react";
-import Link from "next/link";
+import {
+  Briefcase,
+  Search,
+  Plus,
+  Trash2,
+  Pencil,
+  FileBadge,
+  Calendar,
+  AlertCircle,
+  ChevronRight,
+  X
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 import { PageHeader } from "../_components/page-header";
-import { VaultItemDialog } from "../vault/_components/vault-item-dialog";
+import { useAI } from "../_components/ai-provider";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function StudioPage() {
   const router = useRouter();
+  const { setSidebarOpen } = useAI();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+  React.useEffect(() => {
+    setSidebarOpen(false);
+  }, [setSidebarOpen]);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -85,117 +98,161 @@ export default function StudioPage() {
       toast.error("An error occurred");
     }
   };
+
   return (
-    <div className="min-h-screen bg-app-canvas flex flex-col">
-      {/* HEADER */}
-      <PageHeader
-        icon={<Briefcase className="text-brand-primary" />}
-        title="Studio"
-      >
-        <div className="flex items-center justify-end gap-3 w-full">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-app-text-ghost" />
+    <div className="min-h-screen bg-app-canvas text-app-text-primary">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* HEADER */}
+        <PageHeader
+          icon={<Briefcase className="text-brand-primary" />}
+          title="Studio"
+        >
+          <div className="flex items-center gap-2.5 max-w-sm w-full bg-app-surface-glass border border-app-border-default rounded-full px-3 py-1.5 shadow-sm">
+            <Search className="size-3.5 text-app-text-muted shrink-0" />
             <input
+              type="text"
+              placeholder="Search documents..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search documents..."
-              className="h-9 w-full rounded-full border border-transparent bg-app-surface pl-9 pr-4 text-xs text-app-text-primary outline-none transition-all placeholder:text-app-text-ghost focus:border-app-border-default/40 focus:ring-0 focus:outline-none"
+              className="bg-transparent border-none outline-none text-xs text-app-text-primary placeholder:text-app-text-muted/60 w-full focus:ring-0 focus:outline-none"
             />
+            {query && (
+              <button onClick={() => setQuery("")} className="text-app-text-muted hover:text-app-text-primary outline-none">
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
-        </div>
-      </PageHeader>
+        </PageHeader>
 
-      {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mx-auto max-w-8xl">
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="size-8 rounded-full border-2 border-app-border-default/30 border-t-brand-primary animate-spin" />
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 rounded-xl bg-app-surface border border-app-border-subtle animate-pulse p-4 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="size-8 bg-app-surface-glass rounded-lg animate-pulse" />
+                    <div className="space-y-1.5 flex-1 max-w-md">
+                      <div className="h-4 bg-app-surface-glass rounded w-1/3 animate-pulse" />
+                      <div className="h-3 bg-app-surface-glass rounded w-2/3 animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="h-4 bg-app-surface-glass rounded w-24 animate-pulse" />
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="py-20 text-center text-app-danger-strong text-sm">Failed to load documents.</div>
           ) : items.length === 0 ? (
-            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-transparent bg-app-surface px-6 text-center shadow-xs">
-              <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-app-surface-elevated">
-                <FileBadge className="size-7 text-app-text-secondary" />
+            <div className="flex flex-col items-center justify-center p-12 text-center bg-app-surface-glass border border-app-border-subtle rounded-2xl max-w-2xl mx-auto space-y-4">
+              <div className="size-12 rounded-full bg-app-surface-elevated border border-app-border-default flex items-center justify-center text-app-text-muted">
+                <FileBadge className="size-6 text-app-text-secondary" />
               </div>
-              <h2 className="text-lg font-semibold text-app-text-primary tracking-tight">No Documents Found</h2>
-              <p className="mt-2 max-w-md text-xs leading-relaxed text-app-text-muted">
-                Create a new document to build a professional resume, presentation slide, or report.
-              </p>
+              <div>
+                <h3 className="text-base font-semibold tracking-tight">No documents found</h3>
+                <p className="text-sm text-app-text-muted mt-1 leading-relaxed">
+                  Create a new document to build a professional resume, presentation slide, or report.
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {items.map((item: any) => (
-                <div
-                  key={item._id}
-                  onClick={() => handleEdit(item)}
-                  className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-transparent bg-app-surface p-5 transition-all duration-300 hover:bg-app-surface-hover hover:shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="rounded-full bg-app-surface-elevated p-2">
-                      <FileBadge size={20} className="text-brand-primary" />
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingId(item._id);
-                          setEditTitle(item.title);
-                        }}
-                        className="cursor-pointer rounded-full p-1.5 text-app-text-muted hover:bg-app-surface-elevated hover:text-app-text-primary outline-none transition-colors"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(e, item._id)}
-                        className="cursor-pointer rounded-full p-1.5 text-app-text-muted hover:bg-app-danger-soft hover:text-app-danger-strong outline-none transition-colors"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
+            <div className="bg-app-surface-glass-soft border border-app-border-subtle rounded-2xl overflow-hidden backdrop-blur-md">
+              {/* Table Header */}
+              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3.5 bg-app-surface-glass border-b border-app-border-subtle text-[10px] font-bold uppercase tracking-wider text-app-text-soft">
+                <div className="col-span-5">Document</div>
+                <div className="col-span-5">Tags</div>
+                <div className="col-span-2 text-right pr-8">Created</div>
+              </div>
 
-                  {editingId === item._id ? (
-                    <form
-                      onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
-                      className="mb-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        autoFocus
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
-                        className="w-full bg-app-surface-elevated border border-app-border-default/20 rounded-full px-4 py-1.5 text-xs text-app-text-primary outline-none focus:border-app-border-default"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </form>
-                  ) : (
-                    <h3 className="mb-1 truncate font-semibold text-app-text-primary text-[14px] tracking-tight">{item.title}</h3>
-                  )}
-                  <div className="mb-4 flex items-center gap-2 text-[11px] text-app-text-ghost">
-                    <span>Document</span>
-                    <span>•</span>
-                    <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
-                  </div>
+              {/* Table Body */}
+              <div className="divide-y divide-app-border-subtle">
+                {items.map((item: any) => (
+                  <div
+                    key={item._id}
+                    onClick={() => handleEdit(item)}
+                    className="group relative grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 px-6 py-4 items-center hover:bg-app-surface-glass transition-all duration-200 cursor-pointer"
+                  >
+                    {/* Document Info (Title & Icon) */}
+                    <div className="col-span-1 md:col-span-5 flex items-center gap-3 min-w-0">
+                      <div className="size-9 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shrink-0 text-brand-primary relative overflow-hidden group-hover:bg-brand-primary group-hover:text-white transition-all duration-300">
+                        <FileBadge className="size-4.5 relative z-10" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {editingId === item._id ? (
+                          <form
+                            onSubmit={(e) => handleRenameSubmit(e, item._id, item.title)}
+                            className="flex items-center w-full"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              autoFocus
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onBlur={(e) => handleRenameSubmit(e, item._id, item.title)}
+                              className="w-full bg-app-surface-elevated border border-app-border-default rounded-lg px-3 py-1 text-xs text-app-text-primary outline-none focus:border-brand-primary/55 focus:ring-0 focus:outline-none"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </form>
+                        ) : (
+                          <h3 className="font-normal text-app-text-primary text-sm truncate transition-colors duration-200 tracking-tight">
+                            {item.title}
+                          </h3>
+                        )}
+                      </div>
+                    </div>
 
-                  {item.tags && item.tags.length > 0 && (
-                    <div className="mt-auto flex flex-wrap gap-1 border-t border-app-border-default/10 pt-4">
-                      {item.tags.slice(0, 3).map((tag: string, i: number) => (
-                        <span key={i} className="rounded-full bg-app-surface-elevated/40 px-2 py-0.5 text-[10px] text-app-text-soft">
-                          {tag}
-                        </span>
-                      ))}
-                      {item.tags.length > 3 && (
-                        <span className="rounded-full bg-app-surface-elevated/40 px-2 py-0.5 text-[10px] text-app-text-soft">
-                          +{item.tags.length - 3}
-                        </span>
+                    {/* Tags */}
+                    <div className="col-span-1 md:col-span-5 flex flex-wrap gap-1.5 pr-4">
+                      {item.tags && item.tags.length > 0 ? (
+                        <>
+                          {item.tags.slice(0, 3).map((tag: string, i: number) => (
+                            <span key={i} className="rounded-full bg-app-surface-elevated border border-app-border-default px-2 py-0.5 text-[10px] text-app-text-muted">
+                              {tag}
+                            </span>
+                          ))}
+                          {item.tags.length > 3 && (
+                            <span className="rounded-full bg-app-surface-elevated border border-app-border-default px-2 py-0.5 text-[10px] text-app-text-muted">
+                              +{item.tags.length - 3}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-app-text-soft font-normal">No tags</span>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Created Date & Actions */}
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end gap-4">
+                      <span className="flex items-center gap-1.5 text-xs text-app-text-soft md:pr-4">
+                        <Calendar className="size-3.5 md:hidden" />
+                        {format(new Date(item.createdAt), 'MMM d, yyyy')}
+                      </span>
+
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingId(item._id);
+                            setEditTitle(item.title);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-2 text-app-text-muted hover:text-app-text-primary hover:bg-app-surface-elevated rounded-lg transition-all duration-200 cursor-pointer outline-none shrink-0 border border-transparent hover:border-app-border-default"
+                          title="Rename document"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(e, item._id)}
+                          className="opacity-0 group-hover:opacity-100 p-2 text-app-text-muted hover:text-app-danger-strong hover:bg-app-danger-soft rounded-lg transition-all duration-200 cursor-pointer outline-none shrink-0 border border-transparent hover:border-app-danger-border"
+                          title="Delete document"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                        <ChevronRight className="size-4 text-app-text-soft group-hover:text-brand-primary group-hover:translate-x-0.5 transition-all duration-300 shrink-0" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -219,7 +276,7 @@ export default function StudioPage() {
               toast.error("Failed to create document");
             }
           }}
-          className="group flex size-14 cursor-pointer items-center justify-center rounded-full bg-brand-primary text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+          className="group flex size-14 cursor-pointer items-center justify-center rounded-full bg-brand-primary text-white shadow-lg transition-all hover:scale-105 active:scale-95 border-none outline-none"
         >
           <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
         </button>
@@ -227,3 +284,4 @@ export default function StudioPage() {
     </div>
   );
 }
+
