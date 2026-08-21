@@ -31,11 +31,6 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function WorkflowsPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const router = useRouter();
-  const { setSidebarOpen } = useAI();
-
-  React.useEffect(() => {
-    setSidebarOpen(false);
-  }, [setSidebarOpen]);
 
   const { data: result, isLoading, mutate } = useSWR("/api/workflows", fetcher);
   const workflows = React.useMemo(() => result?.data || [], [result]);

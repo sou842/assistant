@@ -55,11 +55,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== "undefined") {
       const path = window.location.pathname;
-      if (path && (
-        /^\/ai\/vault\/[^\/]+$/.test(path) ||
-        path.startsWith("/ai/workflows") ||
-        path.startsWith("/ai/studio")
-      )) {
+      if (path && /^\/ai\/(vault|workflows|studio)\/[^\/]+$/.test(path)) {
         return false;
       }
     }
@@ -68,13 +64,9 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
 
-  // Automatically close sidebar on route changes to specific pages
+  // Automatically close sidebar on route changes to specific detail pages
   useEffect(() => {
-    if (pathname && (
-      /^\/ai\/vault\/[^\/]+$/.test(pathname) ||
-      pathname.startsWith("/ai/workflows") ||
-      pathname.startsWith("/ai/studio")
-    )) {
+    if (pathname && /^\/ai\/(vault|workflows|studio)\/[^\/]+$/.test(pathname)) {
       setSidebarOpen(false);
     }
   }, [pathname]);

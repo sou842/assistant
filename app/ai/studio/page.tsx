@@ -32,9 +32,7 @@ export default function StudioPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  React.useEffect(() => {
-    setSidebarOpen(false);
-  }, [setSidebarOpen]);
+
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
