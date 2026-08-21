@@ -46,6 +46,7 @@ export default function VaultItemPage() {
   const [input, setInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorInstanceRef = useRef<any>(null);
+  const checklistSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [coverLinkUrl, setCoverLinkUrl] = useState("");
@@ -265,6 +266,26 @@ ${itemContext}`,
       setIsSaving(false);
     }
   }, [id, title, content, mutate]);
+
+  // Auto-save when a checklist item is toggled in read-only mode.
+  // We debounce by 400ms to batch rapid clicks.
+  const handleNoteChange = useCallback((newContent: any) => {
+    setContent(newContent);
+    if (!isEditing) {
+      if (checklistSaveTimer.current) clearTimeout(checklistSaveTimer.current);
+      checklistSaveTimer.current = setTimeout(async () => {
+        try {
+          await fetch(`/api/vault/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newContent }),
+          });
+        } catch {
+          // silently ignore — the user can still manually save
+        }
+      }, 400);
+    }
+  }, [id, isEditing]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -657,7 +678,7 @@ ${itemContext}`,
                   <NoteEditor
                     key={`${id}-${data.item.updatedAt}`}
                     initialData={data.item.content}
-                    onChange={setContent}
+                    onChange={handleNoteChange}
                     readOnly={!isEditing}
                     editorInstanceRef={editorInstanceRef}
                   />

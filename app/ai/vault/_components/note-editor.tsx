@@ -19,6 +19,9 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
   const dragDropRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
   const onChangeRef = useRef(onChange);
+  // Stable ref for the undo interceptor — set once in onReady, never overwritten
+  // by the parent useEffect that refreshes onChangeRef.
+  const undoInterceptRef = useRef<((data: any) => void) | null>(null);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -48,7 +51,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
         import('editorjs-drag-drop'),
         import('@editorjs/image'),
         import('@editorjs/link'),
-        import('editorjs-undo'),
+        Promise.resolve(null), // editorjs-undo replaced by custom stack
       ]).then(([
         Header,
         List,
@@ -66,7 +69,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
         DragDrop,
         ImageTool,
         LinkTool,
-        Undo
+        _unusedUndo
       ]) => {
         if (!isCurrent) return;
 
@@ -304,7 +307,9 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
                   activeTab.content = contentEl.innerHTML;
                 });
                 contentEl.addEventListener('keydown', (e) => {
-                  e.stopPropagation();
+                  if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete' || e.key.startsWith('Arrow')) {
+                    e.stopPropagation();
+                  }
                 });
 
                 body.appendChild(contentEl);
@@ -583,19 +588,24 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
         // Sanitize data before passing to EditorJS to prevent plugin crashes
         if (parsedData && Array.isArray(parsedData.blocks)) {
+          const sanitizeListItems = (items: any[]): any[] => {
+            return items.map((item: any) => {
+              if (typeof item === 'string') {
+                return { content: item, items: [] };
+              } else if (item && typeof item === 'object') {
+                return {
+                  content: item.content || item.text || '',
+                  meta: item.meta,
+                  items: Array.isArray(item.items) ? sanitizeListItems(item.items) : []
+                };
+              }
+              return { content: '', items: [] };
+            });
+          };
+
           parsedData.blocks = parsedData.blocks.map((block: any) => {
             if (block.type === 'list' && block.data && Array.isArray(block.data.items)) {
-              block.data.items = block.data.items.map((item: any) => {
-                if (typeof item === 'string') {
-                  return { content: item, items: [] };
-                } else if (item && typeof item === 'object') {
-                  return {
-                    content: item.content || item.text || '',
-                    items: Array.isArray(item.items) ? item.items : []
-                  };
-                }
-                return { content: '', items: [] };
-              });
+              block.data.items = sanitizeListItems(block.data.items);
             }
             return block;
           });
@@ -759,23 +769,158 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
             },
             onChange: async (api) => {
               const data = await api.saver.save();
+              // Route through undo interceptor first (captures snapshots), then notify parent.
+              // Using two separate refs keeps undo logic immune to parent re-renders.
+              undoInterceptRef.current?.(data);
               onChangeRef.current(data);
             },
             onReady: () => {
               setIsReady(true);
-              if (!readOnly) {
+
+              // ── Checklist persistence in read-only mode ──────────────────────
+              // Editor.js does NOT fire onChange when a checklist item is toggled
+              // in readOnly mode. We listen for clicks on the checkbox element,
+              // wait one tick for the plugin to update its internal state, then
+              // manually save and call onChange so the parent can persist the change.
+              containerRef.current?.addEventListener('click', async (ev: MouseEvent) => {
+                const target = ev.target as HTMLElement;
+                // The plugin toggles items via the label or the checkbox span
+                const checkboxEl = target.closest('.cdx-checklist__item-checkbox') || target.closest('.cdx-checklist__item');
+                if (!checkboxEl) return;
+                // Give Editor.js one tick to flip the `checked` data attribute
+                await new Promise(r => setTimeout(r, 0));
                 try {
-                  const UndoConstructor = Undo.default || Undo;
-                  const undoInstance = new UndoConstructor({ editor });
-                  
-                  // Initialize undo stack with the parsed initial data to prevent
-                  // "can't access property 'data', t[n] is undefined" crash when undoing.
-                  if (parsedData && parsedData.blocks && parsedData.blocks.length > 0) {
-                    undoInstance.initialize(parsedData);
-                  }
-                } catch (e) {
-                  console.error("Failed to initialize EditorJS Undo plugin:", e);
+                  const savedData = await editor.save();
+                  onChangeRef.current(savedData);
+                } catch {
+                  // editor may not be ready; ignore
                 }
+              });
+              if (!readOnly) {
+                // ── Notion-grade snapshot-based undo/redo ────────────────────────
+                // Strategy:
+                //   1. STRUCTURAL changes (block added/deleted/reordered) → snapshot immediately.
+                //      Detected by comparing block count + block-ID fingerprint.
+                //   2. TEXT-ONLY changes → debounce 500 ms, so rapid keystrokes collapse
+                //      into one undo step (same behaviour as Notion/Google Docs).
+                //   3. Ctrl+Z undoes to previous snapshot; Ctrl+Y / Ctrl+Shift+Z redoes.
+                //   4. Any new edit while in the redo history clears the redo stack.
+                //   5. After render() we try to restore caret focus to the last block.
+                const UNDO_LIMIT = 200;
+                const undoStack: any[] = [];
+                const redoStack: any[] = [];
+                let isBusy = false;
+                let textDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+                // Block-structure fingerprint helpers
+                const fingerprint = (data: any): string =>
+                  (data?.blocks ?? []).map((b: any) => b.id).join(',');
+                const blockCount = (data: any): number =>
+                  data?.blocks?.length ?? 0;
+
+                // Seed the stack with the initial document
+                const seed = parsedData?.blocks
+                  ? JSON.parse(JSON.stringify(parsedData))
+                  : { time: Date.now(), blocks: [], version: '2.31.6' };
+                undoStack.push(seed);
+
+                let lastFingerprint = fingerprint(seed);
+                let lastCount = blockCount(seed);
+
+                const flushDebounce = () => {
+                  if (textDebounceTimer !== null) {
+                    clearTimeout(textDebounceTimer);
+                    textDebounceTimer = null;
+                  }
+                };
+
+                const pushSnapshot = (data: any) => {
+                  undoStack.push(JSON.parse(JSON.stringify(data)));
+                  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+                  redoStack.length = 0;
+                };
+
+                // Patch onChangeRef to intercept every editor mutation
+                // ── WRONG: onChangeRef is overwritten by the parent useEffect on every
+                //    re-render where onChange changes, silently killing the interceptor.
+                //    We use undoInterceptRef instead — it's only set here, never externally.
+                undoInterceptRef.current = (data: any) => {
+                  if (!isBusy) {
+                    const fp = fingerprint(data);
+                    const cnt = blockCount(data);
+                    const isStructural = cnt !== lastCount || fp !== lastFingerprint;
+                    lastFingerprint = fp;
+                    lastCount = cnt;
+
+                    if (isStructural) {
+                      // Structural: flush any pending text snapshot and snap immediately
+                      flushDebounce();
+                      pushSnapshot(data);
+                    } else {
+                      // Text-only: debounce
+                      flushDebounce();
+                      textDebounceTimer = setTimeout(() => {
+                        textDebounceTimer = null;
+                        // Re-read live state at debounce expiry to avoid stale closure
+                        editor.save().then((live: any) => {
+                          if (!isBusy) pushSnapshot(live);
+                        }).catch(() => {});
+                      }, 500);
+                    }
+                  }
+                  // No origOnChange call here — EditorJS onChange does that separately
+                };
+
+                const restoreSnapshot = async (snapshot: any) => {
+                  flushDebounce();
+                  isBusy = true;
+                  try {
+                    await editor.blocks.render(snapshot);
+                    // Update fingerprint so the post-render onChange is not mistaken for a new edit
+                    lastFingerprint = fingerprint(snapshot);
+                    lastCount = blockCount(snapshot);
+                    // Restore caret to last block if possible
+                    try {
+                      const lastIdx = Math.max(0, (snapshot.blocks?.length ?? 1) - 1);
+                      editor.caret.setToBlock(lastIdx, 'end');
+                    } catch { /* best-effort */ }
+                    // Notify parent directly — bypass undoInterceptRef to avoid snapshot pollution
+                    onChangeRef.current(JSON.parse(JSON.stringify(snapshot)));
+                  } catch (e) {
+                    console.error('EditorJS undo restore failed:', e);
+                  } finally {
+                    isBusy = false;
+                  }
+                };
+
+                containerRef.current?.addEventListener('keydown', (ev: KeyboardEvent) => {
+                  if (!(ev.ctrlKey || ev.metaKey)) return;
+                  const key = ev.key.toLowerCase();
+
+                  if (key === 'z' && !ev.shiftKey) {
+                    if (isBusy) return;
+                    // Flush any pending text debounce into the stack first
+                    flushDebounce();
+                    // Need at least 2 entries (current + target)
+                    if (undoStack.length < 2) return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    const current = undoStack.pop()!;
+                    redoStack.push(current);
+                    restoreSnapshot(undoStack[undoStack.length - 1]);
+                    return;
+                  }
+
+                  if (key === 'y' || (key === 'z' && ev.shiftKey)) {
+                    if (isBusy || redoStack.length === 0) return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    flushDebounce();
+                    const next = redoStack.pop()!;
+                    undoStack.push(next);
+                    restoreSnapshot(next);
+                  }
+                }, { capture: true });
               }
               try {
                 let dragDropInstance;
@@ -788,6 +933,130 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
               } catch (e) {
                 console.error("Failed to initialize EditorJS DragDrop plugin:", e);
               }
+
+              // Track whether the user has invoked "select all" on the whole editor.
+              // We use a simple flag rather than trying to inspect DOM ranges on the
+              // non-contenteditable redactor wrapper, which is unreliable.
+              let allEditorSelected = false;
+
+              const resetAllSelected = () => { allEditorSelected = false; };
+
+              const selectWholeEditor = (redactor: Element) => {
+                const sel = window.getSelection();
+                if (!sel) return;
+                const newRange = document.createRange();
+                newRange.selectNodeContents(redactor);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                allEditorSelected = true;
+              };
+
+              // Listen on the document so we catch blur/clicks that deselect
+              const deselectionListener = () => { allEditorSelected = false; };
+              document.addEventListener('mousedown', deselectionListener, { capture: true });
+              document.addEventListener('selectionchange', () => {
+                if (allEditorSelected) {
+                  const sel = window.getSelection();
+                  // If selection collapses (user clicked somewhere), reset flag
+                  if (!sel || sel.isCollapsed) allEditorSelected = false;
+                }
+              });
+
+              containerRef.current?.addEventListener('keydown', (e: KeyboardEvent) => {
+                const redactor = containerRef.current?.querySelector('.codex-editor__redactor');
+
+                // ── Handle keys while entire editor is selected ──────────────────
+                if (allEditorSelected) {
+                  if (e.key === 'Backspace' || e.key === 'Delete') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    allEditorSelected = false;
+                    editor.blocks.clear();
+                    return;
+                  }
+
+                  // Any printable character: clear editor then insert the char
+                  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    allEditorSelected = false;
+                    editor.blocks.clear();
+                    // After clear EditorJS inserts an empty paragraph; focus it then
+                    // dispatch the keystroke so the char lands naturally.
+                    setTimeout(() => {
+                      try { editor.caret.setToBlock(0, 'end'); } catch {}
+                      const activeEl = document.activeElement as HTMLElement | null;
+                      const editable = activeEl?.hasAttribute('contenteditable')
+                        ? activeEl
+                        : activeEl?.closest('[contenteditable="true"]') as HTMLElement | null;
+                      if (editable) {
+                        // Insert char via execCommand (works inside contenteditable)
+                        editable.focus();
+                        document.execCommand('insertText', false, e.key);
+                      }
+                    }, 30);
+                    return;
+                  }
+
+                  // Ctrl+C / Cmd+C → allow the browser to copy naturally (selection is
+                  // already set), just reset the flag afterward.
+                  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                    setTimeout(resetAllSelected, 0);
+                    return; // let the browser handle the copy
+                  }
+
+                  // Any other key (arrows, Escape, etc.) → deselect
+                  if (!e.ctrlKey && !e.metaKey) {
+                    allEditorSelected = false;
+                  }
+                }
+
+                // ── Ctrl+A / Cmd+A: Notion-style two-stage select-all ────────────
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                  if (!redactor) return;
+                  const selection = window.getSelection();
+                  if (!selection) return;
+
+                  const activeEl = document.activeElement;
+                  if (!activeEl) return;
+
+                  const isTextarea = activeEl.tagName === 'TEXTAREA';
+                  const editableParent = (activeEl.hasAttribute('contenteditable')
+                    ? activeEl
+                    : activeEl.closest('[contenteditable="true"]')) as Element | null;
+
+                  if (isTextarea) {
+                    // Inside a code block textarea: first Ctrl+A selects the
+                    // textarea content (browser default). Second Ctrl+A selects all.
+                    const textarea = activeEl as HTMLTextAreaElement;
+                    if (textarea.selectionStart === 0 && textarea.selectionEnd === textarea.value.length) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      selectWholeEditor(redactor);
+                    }
+                    // else: let browser do the first select-all inside textarea
+                  } else if (editableParent) {
+                    if (selection.rangeCount === 0) return;
+                    const range = selection.getRangeAt(0);
+                    const elementRange = document.createRange();
+                    elementRange.selectNodeContents(editableParent);
+
+                    // compareBoundaryPoints: ≤0 means range start is at or before element start,
+                    // ≥0 means range end is at or after element end → fully covers the element.
+                    const blockIsFullySelected =
+                      range.compareBoundaryPoints(Range.START_TO_START, elementRange) <= 0 &&
+                      range.compareBoundaryPoints(Range.END_TO_END, elementRange) >= 0;
+
+                    if (blockIsFullySelected) {
+                      // Second Ctrl+A: escalate to whole-editor selection
+                      e.preventDefault();
+                      e.stopPropagation();
+                      selectWholeEditor(redactor);
+                    }
+                    // else: let Editor.js / browser handle the first Ctrl+A
+                  }
+                }
+              }, { capture: true });
             },
           });
 
@@ -808,10 +1077,6 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
       isCurrent = false;
       if (editorRef.current && typeof editorRef.current.destroy === 'function') {
         try {
-          // Dispatch custom destroy event so editorjs-undo cleans up its DOM listeners
-          if (containerRef.current) {
-            containerRef.current.dispatchEvent(new CustomEvent("destroy"));
-          }
           editorRef.current.destroy();
         } catch (e) {
           console.error("EditorJS cleanup error", e);
@@ -881,7 +1146,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .ce-popover__container {
             background-color: #0f0f0f !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border: 0px !important;
             top: 48px;
           }
           
@@ -901,6 +1166,7 @@ export function NoteEditor({ initialData, onChange, readOnly = false, compact = 
 
           .ce-toolbar__actions--opened {
             left: -120px !important;
+            width: fit-content;
           }
 
           .cdx-input {
