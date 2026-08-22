@@ -333,11 +333,11 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
         <iframe
           ref={iframeRef}
           onLoad={handleIframeLoad}
-          className={`border-0 bg-white shadow-2xl transition-all duration-300 ${
+          className={`border-0 bg-white transition-all duration-300 ${
             deviceMode === "mobile" 
-              ? "w-[375px] h-[667px] max-h-full rounded-2xl border border-zinc-800/80" 
+              ? "w-93.75 h-166.75 max-h-full rounded-2xl border-2 border-gray-500" 
               : deviceMode === "tablet" 
-              ? "w-[768px] h-[1024px] max-h-full rounded-2xl border border-zinc-800/80" 
+              ? "w-3xl h-256 max-h-full rounded-2xl border-3 border-gray-500" 
               : "w-full h-full"
           }`}
           sandbox="allow-scripts allow-same-origin allow-modals"

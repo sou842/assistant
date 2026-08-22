@@ -286,7 +286,7 @@ ${itemContext}`,
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={`w-full max-w-md bg-transparent px-2.5 py-1 text-base font-semibold text-app-text-primary outline-none rounded-lg transition-all duration-200 ${
+              className={`w-full max-w-md bg-transparent px-2.5 py-1 text-base font-semibold text-app-text-primary outline-none rounded-full transition-all duration-200 ${
                 isEditing
                   ? "bg-app-surface-glass-soft focus:border-brand-primary/55 focus:ring-1 focus:ring-brand-primary/10"
                   : "cursor-default"

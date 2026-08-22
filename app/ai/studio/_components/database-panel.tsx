@@ -156,18 +156,15 @@ export function DatabasePanel({ id }: DatabasePanelProps) {
             <span>Fetching database state...</span>
           </div>
         ) : keys.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl max-w-md mx-auto my-12">
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center rounded-xl max-w-md mx-auto my-2">
             <Database size={32} className="text-zinc-600 mb-3" />
             <h4 className="font-semibold text-zinc-300 mb-1">No Database Records</h4>
             <p className="text-xs text-zinc-500 leading-relaxed mb-4">
               Write or set values in your React sandbox code using the global client library:
             </p>
-            <div className="bg-zinc-900 p-3 rounded-lg border border-zinc-800 text-[11px] font-mono text-blue-400 w-full text-left">
-              {'await window.studioDb.set("key", { value: 123 });'}
-            </div>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="w-full h-full flex gap-3">
             {keys.map((key) => {
               const value = db[key];
               const valueType = Array.isArray(value) ? "array" : typeof value;
@@ -176,7 +173,7 @@ export function DatabasePanel({ id }: DatabasePanelProps) {
               return (
                 <div
                   key={key}
-                  className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col gap-2 hover:border-zinc-700/60 transition-all duration-200"
+                  className="w-full h-full bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col gap-2 hover:border-zinc-700/60 transition-all duration-200"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -230,7 +227,7 @@ export function DatabasePanel({ id }: DatabasePanelProps) {
                       </div>
                     </div>
                   ) : (
-                    <pre className="bg-zinc-950/80 border border-zinc-850 rounded-lg p-3 text-xs text-zinc-400 font-mono overflow-x-auto select-all max-h-40">
+                    <pre className="w-full h-full bg-zinc-950/80 border border-zinc-850 rounded-lg p-3 text-xs text-zinc-400 font-mono overflow-x-auto select-all">
                       {typeof value === "object"
                         ? JSON.stringify(value, null, 2)
                         : String(value)}
