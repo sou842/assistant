@@ -397,7 +397,7 @@ ${itemContext}`,
         variant={showChat ? "default" : "ghost"}
         onClick={() => setShowChat(!showChat)}
         size="sm"
-        className={`fixed right-6 bottom-6 z-50 group flex size-14 cursor-pointer items-center justify-center rounded-full bg-app-primary text-app-primary-foreground shadow-2xl transition-all hover:scale-110 hover:bg-app-primary-hover active:scale-95 ${showChat ? "bg-app-primary text-white hover:bg-brand-primary/90 hidden" : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong"
+        className={`hidden fixed right-6 bottom-6 z-50 group md:flex size-14 cursor-pointer items-center justify-center rounded-full bg-app-primary text-app-primary-foreground shadow-2xl transition-all hover:scale-110 hover:bg-app-primary-hover active:scale-95 ${showChat ? "bg-app-primary text-white hover:bg-brand-primary/90 hidden" : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass-strong"
           }`}
         title={showChat ? "Close AI Assistant" : "Open AI Assistant"}
       >
