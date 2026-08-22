@@ -308,7 +308,7 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
           </div>
         </div>
 
-        <div className="relative flex-1 w-full bg-zinc-950 flex items-center justify-center p-2.5 overflow-hidden">
+        <div className="relative flex-1 w-full bg-zinc-950 flex items-center justify-center p-0 overflow-hidden">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-20 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-2">
