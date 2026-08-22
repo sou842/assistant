@@ -23,7 +23,9 @@ import {
   ChevronDown,
   Search,
   Sidebar as SidebarIcon,
-  BrainCog
+  BrainCog,
+  Boxes,
+  HardDrive
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -219,14 +221,14 @@ export function Sidebar({
             />
             <SidebarNavItem
               href="/ai/vault"
-              icon={<Database size={16} />}
+              icon={<HardDrive size={16} />}
               label="Vault"
               active={pathname.startsWith("/ai/vault")}
               isCollapsed={isCollapsed}
             />
             <SidebarNavItem
               href="/ai/studio"
-              icon={<Briefcase size={16} />}
+              icon={<Boxes size={16} />}
               label="Studio"
               active={pathname.startsWith("/ai/studio")}
               isCollapsed={isCollapsed}

@@ -11,7 +11,8 @@ import {
   Calendar,
   AlertCircle,
   ChevronRight,
-  X
+  X,
+  Boxes
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -102,7 +103,7 @@ export default function StudioPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* HEADER */}
         <PageHeader
-          icon={<Briefcase className="text-brand-primary" />}
+          icon={<Boxes className="text-brand-primary" />}
           title="Studio"
         >
           <div className="flex items-center gap-2.5 max-w-sm w-full bg-app-surface-glass border border-app-border-default rounded-full px-3 py-1.5 shadow-sm">

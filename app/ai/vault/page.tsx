@@ -18,6 +18,7 @@ import {
   List,
   Ellipsis,
   LucideIcon,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -494,7 +495,7 @@ export default function VaultPage() {
   return (
     <div className="flex h-full flex-col">
       {/* HEADER */}
-      <PageHeader icon={<Database />} title="Vault">
+      <PageHeader icon={<HardDrive />} title="Vault">
         <div className="flex w-full items-center justify-end gap-3">
           {selectedIds.length > 0 && (
             <button
