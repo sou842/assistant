@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Node Editor",
+  title: "Jarvis | Studio",
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
