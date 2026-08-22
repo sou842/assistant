@@ -295,6 +295,7 @@ ${itemContext}`,
               readOnly={!isEditing}
             />
           }
+          className="hidden md:sticky"
           subtitle="Professional Document"
           actions={
             <div className="flex items-center gap-2">

@@ -17,7 +17,22 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsExpanded(true);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const buildAndRender = () => {
     setLoading(true);
@@ -254,9 +269,9 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
               <span className="size-3 rounded-full bg-yellow-500/80" />
               <span className="size-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="ml-3 text-xs font-medium text-zinc-400 font-mono select-none tracking-tight">
+            {/* <span className="ml-3 text-xs font-medium text-zinc-400 font-mono select-none tracking-tight">
               Live Preview
-            </span>
+            </span> */}
           </div>
 
           {/* Device Toggles */}
