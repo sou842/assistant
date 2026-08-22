@@ -35,7 +35,7 @@ export default function StudioEditorPage() {
   const [content, setContent] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
-  const [layoutMode, setLayoutMode] = useState<"code" | "split" | "preview">("split");
+  const [layoutMode, setLayoutMode] = useState<"code" | "preview">("preview");
 
   // History State
   const [history, setHistory] = useState<{ title: string; content: string }[]>([]);
@@ -323,7 +323,7 @@ ${itemContext}`,
 
               {/* Layout mode switcher */}
               <div className="flex items-center gap-0.5 bg-app-surface-glass-strong border border-app-border-default/40 rounded-full p-0.5 shadow-sm">
-                {(["code", "split", "preview"] as const).map((mode) => (
+                {(["code", "preview"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setLayoutMode(mode)}
@@ -373,6 +373,7 @@ ${itemContext}`,
             ) : (
               <>
                 <SandboxEditor
+                  id={id}
                   key={id}
                   initialData={content}
                   onChange={(json) => setContent(json)}

@@ -20,11 +20,12 @@ import { PreviewRenderer } from "./preview-renderer";
 import { toast } from "sonner";
 
 interface SandboxEditorProps {
+  id: string;
   initialData?: string;
   onChange: (data: string) => void;
   readOnly?: boolean;
-  layoutMode?: "code" | "split" | "preview";
-  setLayoutMode?: (mode: "code" | "split" | "preview") => void;
+  layoutMode?: "code" | "preview";
+  setLayoutMode?: (mode: "code" | "preview") => void;
 }
 
 interface TreeNode {
@@ -99,7 +100,7 @@ function buildTree(files: Record<string, string>): TreeNode[] {
   return root;
 }
 
-export function SandboxEditor({ initialData = "", onChange, readOnly = false, layoutMode = "split", setLayoutMode = () => {} }: SandboxEditorProps) {
+export function SandboxEditor({ id, initialData = "", onChange, readOnly = false, layoutMode = "preview", setLayoutMode = () => {} }: SandboxEditorProps) {
   const [files, setFiles] = useState<Record<string, string>>({});
   const [activeFile, setActiveFile] = useState<string>("app.tsx");
   const [openTabs, setOpenTabs] = useState<string[]>(["app.tsx"]);
@@ -731,145 +732,142 @@ export default function App() {
   return (
     <div className="flex w-full h-[calc(100vh-80px)] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden text-zinc-300">
       {/* File Tree Sidebar */}
-      {layoutMode !== "preview" && (
-        <div className="w-64 border-r border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md flex flex-col shrink-0">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 font-mono">
-              Files
-            </span>
-            {!readOnly && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => {
-                    setCreateParentPath("");
-                    setCreateType("file");
-                    setCreateInputVal("");
-                  }}
-                  className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
-                  title="New File"
-                >
-                  <Plus size={16} />
-                </button>
-                <button
-                  onClick={() => {
-                    setCreateParentPath("");
-                    setCreateType("folder");
-                    setCreateInputVal("");
-                  }}
-                  className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
-                  title="New Folder"
-                >
-                  <FolderPlus size={15} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* File List / Tree root */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-            {createParentPath === "" && createType !== null && (
-              <div
-                className="flex items-center gap-1.5 py-1 px-2"
+      <div className="w-64 border-r border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md flex flex-col shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 font-mono">
+            Files
+          </span>
+          {!readOnly && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setCreateParentPath("");
+                  setCreateType("file");
+                  setCreateInputVal("");
+                }}
+                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                title="New File"
               >
-                <span className="w-3.5 h-3.5" />
-                {createType === "folder" ? (
-                  <Folder size={14} className="text-zinc-500" />
-                ) : (
-                  <File size={14} className="text-zinc-500" />
-                )}
-                <input
-                  type="text"
-                  value={createInputVal}
-                  onChange={(e) => setCreateInputVal(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleCreateSubmit("", createType!, createInputVal);
-                    } else if (e.key === "Escape") {
-                      setCreateType(null);
-                    }
-                  }}
-                  onBlur={() => handleCreateSubmit("", createType!, createInputVal)}
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder={createType === "folder" ? "Folder name" : "File name"}
-                  className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full font-sans"
-                />
-              </div>
-            )}
-            {renderTreeNodes(treeData)}
-          </div>
+                <Plus size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  setCreateParentPath("");
+                  setCreateType("folder");
+                  setCreateInputVal("");
+                }}
+                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                title="New Folder"
+              >
+                <FolderPlus size={15} />
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* File List / Tree root */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          {createParentPath === "" && createType !== null && (
+            <div
+              className="flex items-center gap-1.5 py-1 px-2"
+            >
+              <span className="w-3.5 h-3.5" />
+              {createType === "folder" ? (
+                <Folder size={14} className="text-zinc-500" />
+              ) : (
+                <File size={14} className="text-zinc-500" />
+              )}
+              <input
+                type="text"
+                value={createInputVal}
+                onChange={(e) => setCreateInputVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleCreateSubmit("", createType!, createInputVal);
+                  } else if (e.key === "Escape") {
+                    setCreateType(null);
+                  }
+                }}
+                onBlur={() => handleCreateSubmit("", createType!, createInputVal)}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+                placeholder={createType === "folder" ? "Folder name" : "File name"}
+                className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full font-sans"
+              />
+            </div>
+          )}
+          {renderTreeNodes(treeData)}
+        </div>
+      </div>
 
       {/* Editor & Preview Workspace */}
       <div className="flex-1 flex min-w-0">
         {/* Editor Area */}
-        {layoutMode !== "preview" && (
-          <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-800/80 bg-zinc-950">
-            {/* Tabs */}
-            <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
-              {openTabs.map((tab) => {
-                const isActive = activeFile === tab;
-                return (
-                  <div
-                    key={tab}
-                    onClick={() => setActiveFile(tab)}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
-                      isActive
-                        ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
-                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
-                    }`}
-                  >
-                    <span>{tab}</span>
-                    {tab !== "app.tsx" && (
-                      <button
-                        onClick={(e) => handleTabClose(e, tab)}
-                        className="p-0.5 rounded-full hover:bg-zinc-800/60 text-zinc-600 hover:text-zinc-300 transition cursor-pointer"
-                      >
-                        <X size={10} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Monaco Code Editor */}
-            <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden py-2">
-              {activeFile ? (
-                <Editor
-                  height="100%"
-                  theme="vs-dark"
-                  language={getLanguage(activeFile)}
-                  value={files[activeFile] || ""}
-                  onChange={handleFileChange}
-                  options={{
-                    readOnly,
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    lineNumbers: "on",
-                    scrollbar: {
-                      vertical: "auto",
-                      horizontal: "auto",
-                    },
-                    automaticLayout: true,
-                    padding: { top: 8, bottom: 8 },
-                  }}
-                />
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-zinc-500 gap-2">
-                  <File size={32} />
-                  <span className="text-xs font-mono">Select a file to start editing</span>
+        <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-800/80 bg-zinc-950">
+          {/* Tabs */}
+          <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
+            {openTabs.map((tab) => {
+              const isActive = activeFile === tab;
+              return (
+                <div
+                  key={tab}
+                  onClick={() => setActiveFile(tab)}
+                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
+                    isActive
+                      ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
+                      : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
+                  }`}
+                >
+                  <span>{tab}</span>
+                  {tab !== "app.tsx" && (
+                    <button
+                      onClick={(e) => handleTabClose(e, tab)}
+                      className="p-0.5 rounded-full hover:bg-zinc-800/60 text-zinc-600 hover:text-zinc-300 transition cursor-pointer"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
-        )}
+
+          {/* Monaco Code Editor */}
+          <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden py-2">
+            {activeFile ? (
+              <Editor
+                height="100%"
+                theme="vs-dark"
+                language={getLanguage(activeFile)}
+                value={files[activeFile] || ""}
+                onChange={handleFileChange}
+                options={{
+                  readOnly,
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  lineNumbers: "on",
+                  scrollbar: {
+                    vertical: "auto",
+                    horizontal: "auto",
+                  },
+                  automaticLayout: true,
+                  padding: { top: 8, bottom: 8 },
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-zinc-500 gap-2">
+                <File size={32} />
+                <span className="text-xs font-mono">Select a file to start editing</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Live Preview Panel */}
         {layoutMode !== "code" && (
           <div className="flex-1 flex flex-col bg-zinc-950 p-4 min-w-0">
             <PreviewRenderer 
+              id={id}
               files={files} 
               entryPoint="app.tsx" 
               layoutMode={layoutMode} 

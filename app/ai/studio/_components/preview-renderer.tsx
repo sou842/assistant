@@ -1,21 +1,23 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Loader2, RotateCcw, AlertTriangle, Monitor, Tablet, Smartphone } from "lucide-react";
+import { Loader2, RotateCcw, AlertTriangle, Monitor, Tablet, Smartphone, Maximize2, Minimize2 } from "lucide-react";
 import * as Babel from "@babel/standalone";
 
 interface PreviewRendererProps {
+  id: string;
   files: Record<string, string>;
   entryPoint?: string;
-  layoutMode?: "code" | "split" | "preview";
-  setLayoutMode?: (mode: "code" | "split" | "preview") => void;
+  layoutMode?: "code" | "preview";
+  setLayoutMode?: (mode: "code" | "preview") => void;
 }
 
-export function PreviewRenderer({ files, entryPoint = "app.tsx", layoutMode = "split", setLayoutMode = () => {} }: PreviewRendererProps) {
+export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode = "preview", setLayoutMode = () => {} }: PreviewRendererProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const buildAndRender = () => {
     setLoading(true);
@@ -103,6 +105,32 @@ export function PreviewRenderer({ files, entryPoint = "app.tsx", layoutMode = "s
 
   <script>
     (function(){
+      // ── Studio Database API ───────────────────────────────────────────────
+      window.studioDb = {
+        async get(key) {
+          const res = await fetch('/api/studio/${id}/db');
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          return key ? data.db[key] : data.db;
+        },
+        async set(key, value) {
+          const res = await fetch('/api/studio/${id}/db', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, value })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          return data.db;
+        },
+        async getAll() {
+          const res = await fetch('/api/studio/${id}/db');
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          return data.db || {};
+        }
+      };
+
       // ── Mini CommonJS runtime ──────────────────────────────────────────────
       var MODULES = ${modulesJson};
       var registry = {};
@@ -206,29 +234,81 @@ export function PreviewRenderer({ files, entryPoint = "app.tsx", layoutMode = "s
   const handleIframeLoad = () => setLoading(false);
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-2xl">
-      {/* Bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800/60 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <span className="size-3 rounded-full bg-red-500/80" />
-            <span className="size-3 rounded-full bg-yellow-500/80" />
-            <span className="size-3 rounded-full bg-green-500/80" />
+    <>
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-50 transition-opacity"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+      <div className={`flex flex-col bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden shadow-2xl transition-all duration-300 ${
+        isExpanded 
+          ? "fixed inset-0 z-50 border-zinc-700/80 rounded-none" 
+          : "relative w-full h-full"
+      }`}>
+        {/* Bar */}
+        <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <span className="size-3 rounded-full bg-red-500/80" />
+              <span className="size-3 rounded-full bg-yellow-500/80" />
+              <span className="size-3 rounded-full bg-green-500/80" />
+            </div>
+            <span className="ml-3 text-xs font-medium text-zinc-400 font-mono select-none tracking-tight">
+              Live Preview
+            </span>
           </div>
-          <span className="ml-3 text-xs font-medium text-zinc-400 font-mono select-none tracking-tight">
-            Live Preview
-          </span>
-        </div>
-        <button
-          onClick={buildAndRender}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-all active:scale-95 cursor-pointer"
-          title="Refresh Preview"
-        >
-          <RotateCcw size={14} />
-        </button>
-      </div>
 
-      <div className="relative flex-1 w-full bg-zinc-950">
+          {/* Device Toggles */}
+          <div className="flex items-center gap-0.5 bg-zinc-950/80 border border-zinc-800/80 rounded-full p-1 shadow-inner">
+            <button
+              onClick={() => setDeviceMode("desktop")}
+              className={`p-1 rounded-full transition-all cursor-pointer ${
+                deviceMode === "desktop" ? "bg-zinc-800 text-zinc-100 font-semibold" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+              title="Desktop View"
+            >
+              <Monitor size={14} />
+            </button>
+            <button
+              onClick={() => setDeviceMode("tablet")}
+              className={`p-1 rounded-full transition-all cursor-pointer ${
+                deviceMode === "tablet" ? "bg-zinc-800 text-zinc-100 font-semibold" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+              title="Tablet View"
+            >
+              <Tablet size={14} />
+            </button>
+            <button
+              onClick={() => setDeviceMode("mobile")}
+              className={`p-1 rounded-full transition-all cursor-pointer ${
+                deviceMode === "mobile" ? "bg-zinc-800 text-zinc-100 font-semibold" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+              title="Mobile View"
+            >
+              <Smartphone size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={buildAndRender}
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-all active:scale-95 cursor-pointer"
+              title="Refresh Preview"
+            >
+              <RotateCcw size={14} />
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-all active:scale-95 cursor-pointer"
+              title={isExpanded ? "Minimize Preview" : "Maximize Preview"}
+            >
+              {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="relative flex-1 w-full bg-zinc-950 flex items-center justify-center p-2.5 overflow-hidden">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-20 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-2">
@@ -253,11 +333,18 @@ export function PreviewRenderer({ files, entryPoint = "app.tsx", layoutMode = "s
         <iframe
           ref={iframeRef}
           onLoad={handleIframeLoad}
-          className="w-full h-full border-0 bg-white"
+          className={`border-0 bg-white shadow-2xl transition-all duration-300 ${
+            deviceMode === "mobile" 
+              ? "w-[375px] h-[667px] max-h-full rounded-2xl border border-zinc-800/80" 
+              : deviceMode === "tablet" 
+              ? "w-[768px] h-[1024px] max-h-full rounded-2xl border border-zinc-800/80" 
+              : "w-full h-full"
+          }`}
           sandbox="allow-scripts allow-same-origin allow-modals"
           title="sandbox-preview"
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

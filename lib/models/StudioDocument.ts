@@ -4,6 +4,7 @@ export interface IStudioDocument extends Document {
   title: string;
   content: string; // Raw HTML content
   tags: string[];
+  db?: Record<string, any>;
   userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +24,10 @@ const studioDocumentSchema = new Schema<IStudioDocument>(
     tags: {
       type: [String],
       default: [],
+    },
+    db: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     userId: { 
       type: mongoose.Schema.Types.ObjectId, 
