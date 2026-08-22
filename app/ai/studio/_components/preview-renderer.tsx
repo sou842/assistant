@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Loader2, RotateCcw, AlertTriangle, Monitor, Tablet, Smartphone, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, AlertTriangle, Monitor, Tablet, Smartphone, Minimize2, Expand, RefreshCcw } from "lucide-react";
 import * as Babel from "@babel/standalone";
 
 interface PreviewRendererProps {
@@ -296,14 +296,14 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
               className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-all active:scale-95 cursor-pointer"
               title="Refresh Preview"
             >
-              <RotateCcw size={14} />
+              <RefreshCcw size={14} />
             </button>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-all active:scale-95 cursor-pointer"
               title={isExpanded ? "Minimize Preview" : "Maximize Preview"}
             >
-              {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {isExpanded ? <Minimize2 size={14} /> : <Expand size={14} />}
             </button>
           </div>
         </div>
