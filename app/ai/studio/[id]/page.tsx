@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Loader2, Save, Download, FileBadge, AlertCircle, Bot, Undo2, Redo2 } from "lucide-react";
+import { Loader2, Save, FileBadge, AlertCircle, Bot, Code2, Eye, Database } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -321,21 +321,24 @@ ${itemContext}`,
               
               <div className="w-px h-4 bg-app-border-default mx-1" /> */}
 
-              {/* Layout mode switcher */}
-              <div className="flex items-center gap-0.5 bg-app-surface-glass-strong border border-app-border-default/40 rounded-full p-0.5 shadow-sm">
-                {(["code", "preview", "database"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setLayoutMode(mode)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer capitalize ${
-                      layoutMode === mode
-                        ? "bg-app-primary/20 text-white shadow-md font-bold"
-                        : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass"
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1.5 bg-app-surface-glass-strong border border-app-border-default/40 rounded-full py-0.5 px-1 shadow-sm">
+                {(["code", "preview", "database"] as const).map((mode) => {
+                  const Icon = mode === "code" ? Code2 : mode === "preview" ? Eye : Database;
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setLayoutMode(mode)}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
+                        layoutMode === mode
+                          ? "bg-app-primary/20 text-white shadow-md"
+                          : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass"
+                      }`}
+                      title={mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    >
+                      <Icon size={14} />
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="w-px h-4 bg-app-border-default mx-1" />
