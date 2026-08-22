@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PreviewRenderer } from "./preview-renderer";
+import { DatabasePanel } from "./database-panel";
 import { toast } from "sonner";
 
 interface SandboxEditorProps {
@@ -24,8 +25,8 @@ interface SandboxEditorProps {
   initialData?: string;
   onChange: (data: string) => void;
   readOnly?: boolean;
-  layoutMode?: "code" | "preview";
-  setLayoutMode?: (mode: "code" | "preview") => void;
+  layoutMode?: "code" | "preview" | "database";
+  setLayoutMode?: (mode: "code" | "preview" | "database") => void;
 }
 
 interface TreeNode {
@@ -803,68 +804,70 @@ export default function App() {
       {/* Editor & Preview Workspace */}
       <div className="flex-1 flex min-w-0">
         {/* Editor Area */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-800/80 bg-zinc-950">
-          {/* Tabs */}
-          <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
-            {openTabs.map((tab) => {
-              const isActive = activeFile === tab;
-              return (
-                <div
-                  key={tab}
-                  onClick={() => setActiveFile(tab)}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
-                    isActive
-                      ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
-                      : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
-                  }`}
-                >
-                  <span>{tab}</span>
-                  {tab !== "app.tsx" && (
-                    <button
-                      onClick={(e) => handleTabClose(e, tab)}
-                      className="p-0.5 rounded-full hover:bg-zinc-800/60 text-zinc-600 hover:text-zinc-300 transition cursor-pointer"
-                    >
-                      <X size={10} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {layoutMode !== "database" && (
+          <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-800/80 bg-zinc-950">
+            {/* Tabs */}
+            <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
+              {openTabs.map((tab) => {
+                const isActive = activeFile === tab;
+                return (
+                  <div
+                    key={tab}
+                    onClick={() => setActiveFile(tab)}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
+                      isActive
+                        ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
+                    }`}
+                  >
+                    <span>{tab}</span>
+                    {tab !== "app.tsx" && (
+                      <button
+                        onClick={(e) => handleTabClose(e, tab)}
+                        className="p-0.5 rounded-full hover:bg-zinc-800/60 text-zinc-600 hover:text-zinc-300 transition cursor-pointer"
+                      >
+                        <X size={10} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-          {/* Monaco Code Editor */}
-          <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden py-2">
-            {activeFile ? (
-              <Editor
-                height="100%"
-                theme="vs-dark"
-                language={getLanguage(activeFile)}
-                value={files[activeFile] || ""}
-                onChange={handleFileChange}
-                options={{
-                  readOnly,
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  lineNumbers: "on",
-                  scrollbar: {
-                    vertical: "auto",
-                    horizontal: "auto",
-                  },
-                  automaticLayout: true,
-                  padding: { top: 8, bottom: 8 },
-                }}
-              />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-zinc-500 gap-2">
-                <File size={32} />
-                <span className="text-xs font-mono">Select a file to start editing</span>
-              </div>
-            )}
+            {/* Monaco Code Editor */}
+            <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden py-2">
+              {activeFile ? (
+                <Editor
+                  height="100%"
+                  theme="vs-dark"
+                  language={getLanguage(activeFile)}
+                  value={files[activeFile] || ""}
+                  onChange={handleFileChange}
+                  options={{
+                    readOnly,
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    lineNumbers: "on",
+                    scrollbar: {
+                      vertical: "auto",
+                      horizontal: "auto",
+                    },
+                    automaticLayout: true,
+                    padding: { top: 8, bottom: 8 },
+                  }}
+                />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-zinc-500 gap-2">
+                  <File size={32} />
+                  <span className="text-xs font-mono">Select a file to start editing</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Live Preview Panel */}
-        {layoutMode !== "code" && (
+        {layoutMode === "preview" && (
           <div className="flex-1 flex flex-col bg-zinc-950 p-4 min-w-0">
             <PreviewRenderer 
               id={id}
@@ -873,6 +876,13 @@ export default function App() {
               layoutMode={layoutMode} 
               setLayoutMode={setLayoutMode}
             />
+          </div>
+        )}
+
+        {/* Database Panel */}
+        {layoutMode === "database" && (
+          <div className="flex-1 flex flex-col bg-zinc-950 p-4 min-w-0">
+            <DatabasePanel id={id} />
           </div>
         )}
       </div>

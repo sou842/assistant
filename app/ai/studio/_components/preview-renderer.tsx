@@ -8,8 +8,8 @@ interface PreviewRendererProps {
   id: string;
   files: Record<string, string>;
   entryPoint?: string;
-  layoutMode?: "code" | "preview";
-  setLayoutMode?: (mode: "code" | "preview") => void;
+  layoutMode?: "code" | "preview" | "database";
+  setLayoutMode?: (mode: "code" | "preview" | "database") => void;
 }
 
 export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode = "preview", setLayoutMode = () => {} }: PreviewRendererProps) {
