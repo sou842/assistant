@@ -262,7 +262,7 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
           : "relative w-full h-full"
       }`}>
         {/* Bar */}
-        <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800/60 shrink-0">
+        <div className="hidden md:flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800/60 shrink-0">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
               <span className="size-3 rounded-full bg-red-500/80" />
