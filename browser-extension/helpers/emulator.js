@@ -466,6 +466,66 @@ async function executeSandboxCommand(command) {
       return { success: true };
     }
     
+    case "isVisible": {
+      const selector = subArgs.selector;
+      const opts = subArgs.opts || {};
+      const timeout = opts.timeout || 0;
+      
+      let tabId = lastInteractedTabId;
+      if (!tabId) {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab) throw new Error("No active tab found");
+        tabId = tab.id;
+      }
+      
+      const checkVisibility = async () => {
+        return await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (sel) => {
+            const queryAll = (s) => {
+              const list = [];
+              const traverse = (node) => {
+                if (!node) return;
+                if (node.nodeType === 1) {
+                  if (node.matches(s)) list.push(node);
+                  const ch = node.children;
+                  if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                  if (node.shadowRoot) traverse(node.shadowRoot);
+                } else if (node.nodeType === 11 || node === document) {
+                  const ch = node.children;
+                  if (ch) { for (let i=0; i<ch.length; i++) traverse(ch[i]); }
+                }
+              };
+              traverse(document);
+              return list;
+            };
+            const els = queryAll(sel);
+            for (let i = 0; i < els.length; i++) {
+              const el = els[i];
+              const rect = el.getBoundingClientRect();
+              const visible = rect.width > 0 && rect.height > 0 && window.getComputedStyle(el).visibility !== 'hidden' && window.getComputedStyle(el).opacity !== '0';
+              if (visible) return true;
+            }
+            return false;
+          },
+          args: [selector]
+        }).then(res => !!res[0]?.result).catch(() => false);
+      };
+
+      if (timeout > 0) {
+        const startTime = Date.now();
+        while (Date.now() - startTime < timeout) {
+          const visible = await checkVisibility();
+          if (visible) return { success: true, result: true };
+          await new Promise(r => setTimeout(r, 500));
+        }
+        return { success: true, result: false };
+      } else {
+        const visible = await checkVisibility();
+        return { success: true, result: visible };
+      }
+    }
+
     case "waitFor": {
       const selector = subArgs.selector;
       const opts = subArgs.opts || {};
@@ -711,7 +771,7 @@ async function executeSandboxCommand(command) {
     case "evaluate": {
       const fnStr = subArgs.fnStr;
       const evalArgs = subArgs.args || [];
-      await addAgentChatMessage(`🧠 Evaluating script in page context`);
+      await addAgentChatMessage(`💡 *Thinking:* Evaluating script in page context`);
       
       let tabId = lastInteractedTabId;
       if (!tabId) {
@@ -720,60 +780,89 @@ async function executeSandboxCommand(command) {
         tabId = tab.id;
       }
       
-      const res = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: (str, ...a) => {
-          if (str.includes("scrollHeight")) {
-            return { success: true, val: document.documentElement.scrollHeight || document.body.scrollHeight };
-          }
-          if (str.includes("window.scrollTo") || str.includes("window.scrollBy")) {
-            window.scrollBy(0, 10000);
-            return { success: true, val: undefined };
-          }
-          if (str.includes("ytd-rich-item-renderer") || str.includes("videoElements")) {
+      try {
+        const res = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (str, ...a) => {
+            if (str.includes("scrollHeight")) {
+              return { success: true, val: document.documentElement.scrollHeight || document.body.scrollHeight };
+            }
+            if (str.includes("window.scrollTo") || str.includes("window.scrollBy")) {
+              window.scrollBy(0, 10000);
+              return { success: true, val: undefined };
+            }
+            if (str.includes("ytd-rich-item-renderer") || str.includes("videoElements")) {
+              try {
+                const videos = [];
+                const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
+                videoElements.forEach((element) => {
+                  const titleLink = element.querySelector('a.ytLockupMetadataViewModelTitle');
+                  if (!titleLink) return;
+                  const title = titleLink.innerText.trim();
+                  const url = titleLink.href;
+                  const thumbnailImg = element.querySelector('img');
+                  const thumbnail = thumbnailImg ? thumbnailImg.getAttribute('src') || thumbnailImg.src : null;
+                  const textLines = element.innerText.split('\n').map(l => l.trim()).filter(Boolean);
+                  const viewsIndex = textLines.findIndex(l => l.includes('views'));
+                  const views = viewsIndex !== -1 ? textLines[viewsIndex] : null;
+                  const uploadDate = viewsIndex !== -1 && textLines.length > viewsIndex + 2 ? textLines[viewsIndex + 2] : null;
+                  if (title && url) {
+                    videos.push({ title, url, thumbnail, views, uploadDate });
+                  }
+                });
+                return { success: true, val: videos };
+              } catch (e) {
+                return { success: false, error: e.message, stack: e.stack };
+              }
+            }
             try {
-              const videos = [];
-              const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
-              videoElements.forEach((element) => {
-                const titleLink = element.querySelector('a.ytLockupMetadataViewModelTitle');
-                if (!titleLink) return;
-                const title = titleLink.innerText.trim();
-                const url = titleLink.href;
-                const thumbnailImg = element.querySelector('img');
-                const thumbnail = thumbnailImg ? thumbnailImg.getAttribute('src') || thumbnailImg.src : null;
-                const textLines = element.innerText.split('\n').map(l => l.trim()).filter(Boolean);
-                const viewsIndex = textLines.findIndex(l => l.includes('views'));
-                const views = viewsIndex !== -1 ? textLines[viewsIndex] : null;
-                const uploadDate = viewsIndex !== -1 && textLines.length > viewsIndex + 2 ? textLines[viewsIndex + 2] : null;
-                if (title && url) {
-                  videos.push({ title, url, thumbnail, views, uploadDate });
-                }
-              });
-              return { success: true, val: videos };
+              const f = eval('(' + str + ')');
+              return { success: true, val: f(...a) };
             } catch (e) {
               return { success: false, error: e.message, stack: e.stack };
             }
-          }
+          },
+          args: [fnStr, ...evalArgs]
+        });
+        
+        const scriptRes = res[0]?.result;
+        if (scriptRes && scriptRes.success === false) {
+          throw new Error(`Evaluation failed in page: ${scriptRes.error}\n${scriptRes.stack}`);
+        }
+        return { success: true, result: scriptRes ? scriptRes.val : null };
+      } catch (executeError) {
+        const errorMsg = executeError.message || String(executeError);
+        if (errorMsg.includes("Content Security Policy") || errorMsg.includes("unsafe-eval") || errorMsg.includes("eval")) {
+          await addAgentChatMessage(`💡 *Thinking:* CSP block detected. Retrying evaluation using Chrome Debugger...`);
+          const debuggerTarget = { tabId };
           try {
-            const f = eval('(' + str + ')');
-            return { success: true, val: f(...a) };
-          } catch (e) {
-            return { success: false, error: e.message, stack: e.stack };
+            await chrome.debugger.attach(debuggerTarget, "1.3");
+            const argsStr = evalArgs.map(arg => JSON.stringify(arg)).join(", ");
+            const expression = `(${fnStr})(${argsStr})`;
+            const res = await chrome.debugger.sendCommand(debuggerTarget, "Runtime.evaluate", {
+              expression: expression,
+              returnByValue: true,
+              awaitPromise: true
+            });
+            if (res.exceptionDetails) {
+              throw new Error(res.exceptionDetails.exception?.description || "Evaluation exception");
+            }
+            return { success: true, result: res.result?.value };
+          } catch (debuggerError) {
+            console.error("Debugger evaluation fallback failed:", debuggerError);
+            throw debuggerError;
+          } finally {
+            await chrome.debugger.detach(debuggerTarget).catch(() => {});
           }
-        },
-        args: [fnStr, ...evalArgs]
-      });
-      console.log("[Background] executeScript result:", res);
-      const scriptRes = res[0]?.result;
-      if (scriptRes && scriptRes.success === false) {
-        throw new Error(`Evaluation failed in page: ${scriptRes.error}\n${scriptRes.stack}`);
+        } else {
+          throw executeError;
+        }
       }
-      return { success: true, result: scriptRes ? scriptRes.val : null };
     }
     
     case "type": {
       const selector = subArgs.selector;
-      const val = subArgs.val;
+      const val = subArgs.val !== undefined ? subArgs.val : "";
       await addAgentChatMessage(`✏️ Typing "${val}" into \`${selector}\``);
       
       let tabId = lastInteractedTabId;
@@ -833,7 +922,7 @@ async function executeSandboxCommand(command) {
 
     case "fill": {
       const selector = subArgs.selector;
-      const val = subArgs.val;
+      const val = subArgs.val !== undefined ? subArgs.val : "";
       await addAgentChatMessage(`✏️ Filling "${val}" into \`${selector}\``);
       
       let tabId = lastInteractedTabId;

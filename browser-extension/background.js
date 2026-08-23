@@ -529,6 +529,7 @@ async function handleBrowserCommand(command, sender) {
       }
 
       case "run_workflow_sandbox": {
+        chrome.storage.local.set({ agentStopRequested: false });
         return new Promise((resolve, reject) => {
           const messageId = Date.now().toString();
           

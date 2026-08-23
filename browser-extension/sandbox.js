@@ -40,6 +40,10 @@ window.addEventListener("message", async (event) => {
         inputValue: async () => {
           const res = await callParent("inputValue", { selector });
           return res?.result;
+        },
+        isVisible: async (opts) => {
+          const res = await callParent("isVisible", { selector, opts });
+          return res?.result ?? res;
         }
       });
 
