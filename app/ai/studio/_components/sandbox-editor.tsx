@@ -731,11 +731,11 @@ export default function App() {
   };
 
   return (
-    <div className="flex w-full h-[calc(100vh-80px)] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden text-zinc-300">
+    <div className="flex w-full h-[calc(100vh-64px)] border-t border-b-app-border-default overflow-hidden text-zinc-300">
       {/* File Tree Sidebar */}
-      <div className="w-64 border-r border-zinc-800/80 bg-zinc-950/70 backdrop-blur-md flex flex-col shrink-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
-          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 font-mono">
+      <div className="w-64 border-r border-zinc-800/80 backdrop-blur-md flex flex-col shrink-0">
+        <div className="h-11 flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
+          <span className="text-xs font-medium tracking-wider text-zinc-500">
             Files
           </span>
           {!readOnly && (
@@ -793,7 +793,7 @@ export default function App() {
                 autoFocus
                 onClick={(e) => e.stopPropagation()}
                 placeholder={createType === "folder" ? "Folder name" : "File name"}
-                className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full font-sans"
+                className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full"
               />
             </div>
           )}
@@ -805,7 +805,7 @@ export default function App() {
       <div className="flex-1 flex min-w-0">
         {/* Editor Area */}
         {layoutMode !== "database" && (
-          <div className="flex-1 flex flex-col min-w-0 border-r border-zinc-800/80 bg-zinc-950">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Tabs */}
             <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
               {openTabs.map((tab) => {
@@ -835,7 +835,7 @@ export default function App() {
             </div>
 
             {/* Monaco Code Editor */}
-            <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden py-2">
+            <div className="flex-1 w-full bg-zinc-950 relative overflow-hidden">
               {activeFile ? (
                 <Editor
                   height="100%"

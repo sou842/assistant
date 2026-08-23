@@ -368,7 +368,7 @@ ${itemContext}`,
         />
 
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <div className="flex-1 relative overflow-y-auto bg-app-canvas px-3">
+          <div className="flex-1 relative overflow-y-auto bg-app-canvas">
             <div className="absolute inset-0 app-grid-overlay opacity-25 pointer-events-none" />
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center">
