@@ -11,12 +11,15 @@ import {
   AlertCircle,
   ChevronRight,
   Terminal,
-  BrainCog
+  BrainCog,
+  Plus,
+  Loader2
 } from "lucide-react";
 import { PageHeader } from "../_components/page-header";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAI } from "../_components/ai-provider";
+import { Button } from "@/components/ui/button";
 
 interface Workflow {
   _id: string;
@@ -34,6 +37,37 @@ export default function WorkflowsPage() {
 
   const { data: result, isLoading, mutate } = useSWR("/api/workflows", fetcher);
   const workflows = React.useMemo(() => result?.data || [], [result]);
+  const [isCreating, setIsCreating] = React.useState(false);
+
+  const handleCreateWorkflow = async () => {
+    setIsCreating(true);
+    try {
+      const res = await fetch("/api/workflows", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Untitled Workflow",
+          description: "A manually created workflow.",
+          script: `// Write your automation script here\n// You can interact with the browser using page locator actions etc.\n\nreturn {\n  success: true,\n  message: "Workflow executed successfully!"\n};`,
+          inputs: [],
+          isPublic: false,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?._id) {
+        toast.success("Workflow created successfully");
+        router.push(`/ai/workflows/${data.data._id}`);
+      } else {
+        toast.error(data.error || "Failed to create workflow");
+      }
+    } catch (err) {
+      toast.error("Failed to create workflow");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const filteredWorkflows = React.useMemo(() => {
     if (!searchQuery.trim()) return workflows;
@@ -68,23 +102,39 @@ export default function WorkflowsPage() {
         <PageHeader
           icon={<BrainCog className="text-brand-primary" />}
           title="AI Workflows"
+          actions={
+            <div className="flex gap-2">
+              {/* Controls in Header */}
+              <div className="flex items-center gap-2.5 max-w-sm w-full bg-app-surface-glass border border-app-border-default rounded-full px-3 py-1.5 shadow-sm">
+                <Search className="size-3.5 text-app-text-muted shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search workflows..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-xs text-app-text-primary placeholder:text-app-text-muted/60 w-full focus:ring-0 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="text-app-text-muted hover:text-app-text-primary outline-none">
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+              <Button
+                onClick={handleCreateWorkflow}
+                disabled={isCreating}
+                className="gap-2 bg-brand-primary rounded-full hover:bg-brand-primary/90 transition-colors text-white border-transparent text-xs py-1.5 h-9 px-4 shrink-0"
+              >
+                {isCreating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
+                Create Workflow
+              </Button>
+            </div>
+          }
         >
-          {/* Controls in Header */}
-          <div className="flex items-center gap-2.5 max-w-sm w-full bg-app-surface-glass border border-app-border-default rounded-full px-3 py-1.5 shadow-sm">
-            <Search className="size-3.5 text-app-text-muted shrink-0" />
-            <input
-              type="text"
-              placeholder="Search workflows..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs text-app-text-primary placeholder:text-app-text-muted/60 w-full focus:ring-0 focus:outline-none"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-app-text-muted hover:text-app-text-primary outline-none">
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
         </PageHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
@@ -111,9 +161,21 @@ export default function WorkflowsPage() {
               </div>
               <div>
                 <h3 className="text-base font-semibold tracking-tight">No workflows found</h3>
-                <p className="text-sm text-app-text-muted mt-1 leading-relaxed">
-                  Ask Jarvis in the chat to create a workflow for you (e.g. "Create a workflow to like a YouTube video").
+                <p className="text-sm text-app-text-muted mt-1 leading-relaxed mb-4">
+                  Ask Jarvis in the chat to create a workflow for you, or create one manually to get started.
                 </p>
+                <Button
+                  onClick={handleCreateWorkflow}
+                  disabled={isCreating}
+                  className="gap-2 bg-brand-primary rounded-full hover:bg-brand-primary/90 transition-colors text-white border-transparent text-xs py-1.5 h-9 px-4 mx-auto"
+                >
+                  {isCreating ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Plus className="size-4" />
+                  )}
+                  Create Manually
+                </Button>
               </div>
             </div>
           ) : (
