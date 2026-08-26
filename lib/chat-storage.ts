@@ -42,7 +42,11 @@ export const loadLocalChats = (): StoredChat[] => {
 export const loadStoredChats = async (): Promise<StoredChat[]> => {
   try {
     const response = await fetch('/api/chats');
-    if (!response.ok) throw new Error('Failed to fetch from DB');
+    if (response.status === 401) {
+      // User is not logged in, return local chats silently
+      return loadLocalChats();
+    }
+    if (!response.ok) throw new Error(`Failed to fetch from DB (Status: ${response.status})`);
     const chats = await response.json();
     
     // Map MongoDB _id to id for frontend compatibility
@@ -61,12 +65,12 @@ export const loadChatDetails = async (id: string): Promise<StoredChat | null> =>
   try {
     const response = await fetch(`/api/chats/${id}`);
     
-    if (response.status === 404) {
+    if (response.status === 401 || response.status === 404) {
       const locals = loadLocalChats();
       return locals.find(c => c.id === id) || null;
     }
     
-    if (!response.ok) throw new Error('Failed to fetch chat details');
+    if (!response.ok) throw new Error(`Failed to fetch chat details (Status: ${response.status})`);
     
     const chat = await response.json();
     return {

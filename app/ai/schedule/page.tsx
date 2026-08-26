@@ -193,8 +193,8 @@ export default function SchedulePage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-app-canvas">
-        <div className="flex-1 flex flex-col min-w-0">
+      <div className="h-full flex flex-col bg-app-canvas overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <PageHeader
             icon={<Calendar className="text-brand-primary" />}
             title="Schedule"
@@ -211,7 +211,10 @@ export default function SchedulePage() {
             }
           />
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <div 
+            className="flex-1 overflow-y-auto"
+            style={{ scrollbarWidth: 'thin' }}
+          >
             <div className="mx-auto w-full max-w-7xl space-y-8 px-6 py-10">
               
               {/* Create with AI Section */}

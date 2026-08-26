@@ -47,7 +47,11 @@ export const loadLocalMemories = (): MemoryItem[] => {
 export const loadStoredMemories = async (): Promise<MemoryItem[]> => {
   try {
     const response = await fetch('/api/memory');
-    if (!response.ok) throw new Error('Failed to fetch memories');
+    if (response.status === 401) {
+      // User is not logged in, return local memories silently
+      return loadLocalMemories();
+    }
+    if (!response.ok) throw new Error(`Failed to fetch memories (Status: ${response.status})`);
     const memories = await response.json();
     return memories.map((m: any) => ({
       ...m,
@@ -56,7 +60,7 @@ export const loadStoredMemories = async (): Promise<MemoryItem[]> => {
       createdAt: new Date(m.createdAt).getTime(),
     }));
   } catch (error) {
-    console.error('Database memory load failed:', error);
+    console.error('Database memory load failed, falling back to local:', error);
     return loadLocalMemories();
   }
 };

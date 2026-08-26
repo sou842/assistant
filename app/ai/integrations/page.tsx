@@ -613,7 +613,7 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-canvas">
+    <div className="h-full flex flex-col bg-app-canvas overflow-hidden">
       <header className="sticky top-0 z-30 h-16 w-full backdrop-blur-xl">
         <div className="mx-auto flex h-full max-w-8xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
@@ -637,7 +637,10 @@ export default function IntegrationsPage() {
         </div>
       </header>
 
-      <main className="w-full overflow-y-auto max-w-7xl mx-auto px-6 py-10">
+      <main 
+        className="flex-1 w-full overflow-y-auto max-w-7xl mx-auto px-6 py-10"
+        style={{ scrollbarWidth: 'thin' }}
+      >
         <Suspense fallback={null}>
           <IntegrationStatus />
         </Suspense>

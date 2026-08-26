@@ -99,8 +99,8 @@ export default function StudioPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-canvas text-app-text-primary">
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="h-full flex flex-col bg-app-canvas text-app-text-primary overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* HEADER */}
         <PageHeader
           icon={<Boxes className="text-brand-primary" />}
@@ -124,7 +124,10 @@ export default function StudioPage() {
         </PageHeader>
 
         {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+        <div 
+          className="flex-1 overflow-y-auto px-6 py-8 space-y-6"
+          style={{ scrollbarWidth: 'thin' }}
+        >
           {isLoading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (

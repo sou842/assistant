@@ -97,8 +97,8 @@ export default function WorkflowsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-canvas text-app-text-primary">
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="h-full flex flex-col bg-app-canvas text-app-text-primary overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <PageHeader
           icon={<BrainCog className="text-brand-primary" />}
           title="AI Workflows"
@@ -137,7 +137,10 @@ export default function WorkflowsPage() {
         >
         </PageHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+        <div 
+          className="flex-1 overflow-y-auto px-6 py-8 space-y-6"
+          style={{ scrollbarWidth: 'thin' }}
+        >
           {/* Workflow List */}
           {isLoading ? (
             <div className="flex flex-col gap-3">
