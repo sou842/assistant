@@ -70,10 +70,20 @@ window.addEventListener("message", async (event) => {
               }
             }
           };
+        },
+        switchBack: async () => {
+          return await callParent("switchBack", {});
         }
       };
 
       const result = await runner(browserProxy, inputs, runWorkflow);
+
+      if (inputs?.switchBack !== false) {
+        try {
+          await callParent("switchBack", {});
+        } catch (e) {}
+      }
+
       window.parent.postMessage({ action: "result", success: true, result, messageId }, "*");
     } catch (err) {
       window.parent.postMessage({ action: "result", success: false, error: err.message, messageId }, "*");

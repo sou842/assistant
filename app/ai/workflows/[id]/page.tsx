@@ -85,6 +85,7 @@ export default function WorkflowDetailPage() {
   const [executionInputs, setExecutionInputs] = useState<Record<string, string>>({});
   const [executionResult, setExecutionResult] = useState<any>(null);
   const [isExecutingWorkflow, setIsExecutingWorkflow] = useState(false);
+  const [switchBackToMainTab, setSwitchBackToMainTab] = useState(true);
 
   useEffect(() => {
     if (workflow) {
@@ -164,7 +165,8 @@ export default function WorkflowDetailPage() {
         action: "run_workflow_sandbox",
         script: script,
         inputs: resolvedInputs,
-        isManual: true
+        isManual: true,
+        switchBack: switchBackToMainTab
       });
       setExecutionResult(response);
       toast.success("Workflow executed successfully", { id: "workflow-execution" });
@@ -343,10 +345,19 @@ export default function WorkflowDetailPage() {
                       )}
                     </div>
                   ))}
+                  <div className="flex items-center justify-between pt-1 px-1 text-xs text-app-text-secondary">
+                    <span>Return to main tab after execution</span>
+                    <input
+                      type="checkbox"
+                      checked={switchBackToMainTab}
+                      onChange={(e) => setSwitchBackToMainTab(e.target.checked)}
+                      className="size-4 rounded accent-indigo-500 cursor-pointer"
+                    />
+                  </div>
                   <Button
                     onClick={handleExecute}
                     disabled={!isConnected}
-                    className="w-full gap-2 bg-brand-primary hover:bg-brand-primary/90 transition-all text-app-primary mt-4 h-10 disabled:opacity-50 disabled:cursor-not-allowed rounded-full"
+                    className="w-full gap-2 bg-brand-primary hover:bg-brand-primary/90 transition-all text-app-primary mt-2 h-10 disabled:opacity-50 disabled:cursor-not-allowed rounded-full"
                   >
                     <Play className="size-4 fill-current" />
                     {isConnected ? "Execute Now" : "Extension Disconnected"}

@@ -14,6 +14,7 @@ export interface BrowserCommand {
   model?: string;
   inputs?: Record<string, any>;
   isManual?: boolean;
+  switchBack?: boolean;
 }
 
 export interface ExtensionLog {

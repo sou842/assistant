@@ -530,10 +530,26 @@ async function handleBrowserCommand(command, sender) {
 
       case "run_workflow_sandbox": {
         chrome.storage.local.set({ agentStopRequested: false });
+        let originTabId = sender?.tab?.id;
+        if (!originTabId) {
+          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          originTabId = activeTab?.id;
+        }
+
+        const shouldSwitchBack = command.switchBack !== undefined 
+          ? command.switchBack 
+          : (command.inputs?.switchBack !== undefined ? command.inputs.switchBack : true);
+
         return new Promise((resolve, reject) => {
           const messageId = Date.now().toString();
           
-          pendingWorkflows.set(messageId, { resolve, reject, isManual: command.isManual });
+          pendingWorkflows.set(messageId, { 
+            resolve, 
+            reject, 
+            isManual: command.isManual,
+            originTabId: originTabId,
+            switchBack: shouldSwitchBack
+          });
           
           chrome.runtime.sendMessage({
             action: "RUN_WORKFLOW_SANDBOX",
@@ -592,21 +608,39 @@ async function handleBrowserCommand(command, sender) {
         const { success: sandboxSuccess, result, error, messageId } = command;
         
         let isManual = command.isManual || false;
+        let originTabId = null;
+        let switchBack = true;
+
         if (messageId && pendingWorkflows.has(messageId)) {
-          isManual = pendingWorkflows.get(messageId).isManual;
+          const info = pendingWorkflows.get(messageId);
+          isManual = info.isManual;
+          originTabId = info.originTabId;
+          switchBack = info.switchBack !== false;
         }
 
-          if (sandboxSuccess) {
-            const formattedResult = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
-            if (isManual) {
-              await addAgentChatMessage(`✅ **Workflow finished successfully!**\n\n\`\`\`json\n${formattedResult}\n\`\`\``);
-            } else {
-              await addAgentChatMessage(`⚙️ Workflow finished successfully! Result: ${JSON.stringify(result)}`);
+        // Default behavior: Switch back to origin main tab after execution
+        if (switchBack && originTabId) {
+          try {
+            await chrome.tabs.update(originTabId, { active: true });
+            const originTab = await chrome.tabs.get(originTabId).catch(() => null);
+            if (originTab?.windowId) {
+              await chrome.windows.update(originTab.windowId, { focused: true });
             }
-          } else {
-            await addAgentChatMessage(`🚨 Workflow error: ${error || "Unknown error"}`);
+          } catch (tabErr) {
+            console.warn("[Jarvis Extension] Failed to switch back to origin tab:", tabErr);
           }
+        }
 
+        if (sandboxSuccess) {
+          const formattedResult = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+          if (isManual) {
+            await addAgentChatMessage(`✅ **Workflow finished successfully!**\n\n\`\`\`json\n${formattedResult}\n\`\`\``);
+          } else {
+            await addAgentChatMessage(`⚙️ Workflow finished successfully! Result: ${JSON.stringify(result)}`);
+          }
+        } else {
+          await addAgentChatMessage(`🚨 Workflow error: ${error || "Unknown error"}`);
+        }
 
         if (messageId && pendingWorkflows.has(messageId)) {
           const { resolve } = pendingWorkflows.get(messageId);

@@ -275,10 +275,23 @@ export default function ExtensionPanel() {
               }
             }
           };
+        },
+        switchBack: async () => {
+          return await callParent("switchBack", {});
         }
       };
 
       const result = await runner(browserProxy, inputs, runWorkflow);
+
+      // Auto switch back to main Jarvis/Studio tab if switchBack is not explicitly false
+      if (inputs?.switchBack !== false) {
+        try {
+          await callParent("switchBack", {});
+        } catch (switchErr) {
+          console.warn("[Jarvis Extension] Auto switchBack failed:", switchErr);
+        }
+      }
+
       window.parent.postMessage({ action: "result", success: true, result, messageId, isManual }, "*");
     } catch (err: any) {
       window.parent.postMessage({ action: "result", success: false, error: err.message, messageId, isManual }, "*");

@@ -451,6 +451,27 @@ async function executeSandboxCommand(command) {
       return { success: true };
     }
 
+    case "switchBack": {
+      try {
+        const tabs = await chrome.tabs.query({});
+        const jarvisTab = tabs.find(t => t.url && (
+          t.url.includes("localhost") ||
+          t.url.includes("127.0.0.1") ||
+          t.url.includes("assistant-nine-ecru.vercel.app")
+        ));
+        if (jarvisTab) {
+          await chrome.tabs.update(jarvisTab.id, { active: true });
+          if (jarvisTab.windowId) {
+            await chrome.windows.update(jarvisTab.windowId, { focused: true });
+          }
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn("[Jarvis Extension] switchBack failed:", err);
+      }
+      return { success: false };
+    }
+
     case "waitForTimeout": {
       const ms = subArgs.ms || 1000;
       await addAgentChatMessage(`⏳ Waiting for ${ms / 1000}s...`);

@@ -1599,6 +1599,51 @@ export const tools = {
     },
   }),
 
+  listWorkflows: tool({
+    description: "List all available automation workflows saved in the system. Use this to discover workflows, their IDs, titles, and expected input parameters so you can integrate them into Studio React applications with useWorkflow.",
+    inputSchema: z.object({
+      search: z.string().optional().describe("Optional search query to filter workflows by title or description."),
+    }),
+    execute: async ({ search }) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+        await dbConnect();
+
+        let query: any = {
+          $or: [{ userId: session.user.id }, { isPublic: true }]
+        };
+
+        if (search) {
+          const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          query = {
+            $and: [
+              { $or: [{ userId: session.user.id }, { isPublic: true }] },
+              {
+                $or: [
+                  { title: { $regex: new RegExp(escaped, 'i') } },
+                  { description: { $regex: new RegExp(escaped, 'i') } }
+                ]
+              }
+            ]
+          };
+        }
+
+        const items = await Workflow.find(query)
+          .select('_id title description inputs isPublic createdAt updatedAt')
+          .sort({ updatedAt: -1 })
+          .limit(20);
+
+        return { 
+          success: true, 
+          workflows: JSON.parse(JSON.stringify(items)) 
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  }),
+
   callApi: tool({
     description: "Make an HTTP/HTTPS API request to any external API. Use this when the user explicitly asks you to fetch data, call an API, make an API request, or trigger a webhook, optionally providing a URL, HTTP method, headers (such as a Bearer token), and a request body.",
     inputSchema: z.object({

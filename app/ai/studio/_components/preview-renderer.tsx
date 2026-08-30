@@ -42,13 +42,10 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
   useEffect(() => {
     const handleHostMessage = async (event: MessageEvent) => {
       if (event.data && event.data.source === "studio-iframe-workflow") {
-        const { messageId, action, script, inputs } = event.data;
+        const { messageId, action, script, inputs, switchBack } = event.data;
         try {
-          try {
-            await openCompanion();
-            await new Promise((r) => setTimeout(r, 500));
-          } catch (e) {
-            // Extension side panel open failed or already open
+          if (!isConnected) {
+            openCompanion().catch(() => {});
           }
 
           const result = await sendBrowserCommand({
@@ -56,6 +53,7 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
             script,
             inputs: inputs || {},
             isManual: true,
+            switchBack: switchBack !== undefined ? switchBack : true,
           });
 
           if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -85,7 +83,7 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
 
     window.addEventListener("message", handleHostMessage);
     return () => window.removeEventListener("message", handleHostMessage);
-  }, [sendBrowserCommand, openCompanion]);
+  }, [isConnected, sendBrowserCommand, openCompanion]);
 
   const buildAndRender = () => {
     setLoading(true);
@@ -203,10 +201,11 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
       // ── Studio Workflow API ───────────────────────────────────────────────
       window.workflow_execute = async function(options) {
         var opts = typeof options === 'string' ? { workflowName: options } : (options || {});
+        var fetchPayload = Object.assign({}, opts, { fetchOnly: true });
         var res = await fetch('/api/workflow/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(opts)
+          body: JSON.stringify(fetchPayload)
         });
         var data = await res.json();
         if (!res.ok || data.error) {
@@ -241,7 +240,8 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
                 messageId: messageId,
                 action: 'run_workflow_sandbox',
                 script: data.workflowScript,
-                inputs: data.resolvedInputs || opts.inputs || {}
+                inputs: data.resolvedInputs || opts.inputs || {},
+                switchBack: opts.switchBack !== undefined ? opts.switchBack : (opts.inputs?.switchBack !== undefined ? opts.inputs.switchBack : true)
               }, '*');
             });
 
@@ -253,6 +253,12 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
             };
           } catch (extErr) {
             console.warn('[Studio Workflow] Extension execution fallback to server result:', extErr.message);
+            var fallbackRes = await fetch('/api/workflow/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(opts)
+            });
+            return await fallbackRes.json();
           }
         }
 

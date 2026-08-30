@@ -174,6 +174,16 @@ export async function POST(req: Request) {
           if (!mergedInputs.query) mergedInputs.query = passedInputs.input;
         }
 
+        if (body.fetchOnly) {
+          return NextResponse.json({ 
+            success: true, 
+            workflowId: workflow._id,
+            workflowTitle: workflow.title,
+            workflowScript: workflow.script,
+            resolvedInputs: mergedInputs,
+          });
+        }
+
         if (workflow.script) {
           try {
             const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;

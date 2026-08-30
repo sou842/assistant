@@ -243,9 +243,9 @@ export async function POST(req: Request) {
     
     // Always include studio tools if we are in the studio context
     if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT") || finalSystemPrompt.includes("Studio Workspaces")) {
-      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'createStudioDocument');
+      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'createStudioDocument', 'loadDesignSystem', 'listWorkflows');
     } else if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
-      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection');
+      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'loadDesignSystem', 'listWorkflows');
     }
     
     try {
