@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { nanoid } from "nanoid";
 
 export interface BrowserCommand {
-  action: "open_tab" | "search" | "click_element" | "execute_script" | "get_active_tab" | "open_companion" | "run_agent" | "run_workflow_sandbox";
+  action: "open_tab" | "search" | "click_element" | "execute_script" | "get_active_tab" | "open_companion" | "run_agent" | "run_workflow_sandbox" | "ping";
   url?: string;
   selector?: string;
   query?: string;
@@ -12,6 +12,8 @@ export interface BrowserCommand {
   description?: string;
   prompt?: string;
   model?: string;
+  inputs?: Record<string, any>;
+  isManual?: boolean;
 }
 
 export interface ExtensionLog {

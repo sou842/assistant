@@ -5,6 +5,88 @@ import Workflow from '@/lib/models/Workflow';
 import { auth } from '@/auth';
 import mongoose from 'mongoose';
 
+function createServerBrowser() {
+  const createPage = (initialUrl?: string) => {
+    let currentUrl = initialUrl || '';
+    let pageHtml = '';
+
+    const fetchPage = async (url: string) => {
+      currentUrl = url;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          }
+        });
+        pageHtml = await res.text();
+      } catch (err: any) {
+        pageHtml = `<html><body>Fetch failed: ${err.message}</body></html>`;
+      }
+      return pageHtml;
+    };
+
+    if (initialUrl) {
+      fetchPage(initialUrl);
+    }
+
+    const locator = (selector: string) => ({
+      click: async () => {},
+      waitFor: async () => {},
+      fill: async () => {},
+      getAttribute: async (attr: string) => {
+        if (!pageHtml && currentUrl) await fetchPage(currentUrl);
+        const match = new RegExp(`${attr}=["']([^"']+)["']`, 'i').exec(pageHtml);
+        return match ? match[1] : null;
+      },
+      textContent: async () => {
+        if (!pageHtml && currentUrl) await fetchPage(currentUrl);
+        return pageHtml
+          .replace(/<script\b[^<]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style\b[^<]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      },
+      inputValue: async () => ''
+    });
+
+    const pageObj = {
+      locator,
+      close: async () => {},
+      waitForTimeout: async (ms: number) => new Promise(res => setTimeout(res, ms)),
+      evaluate: async (fn: any, ...args: any[]) => {
+        if (!pageHtml && currentUrl) await fetchPage(currentUrl);
+        if (typeof fn === 'function') {
+          try { return fn(...args); } catch(e) { return null; }
+        }
+        return null;
+      },
+      keyboard: {
+        press: async () => {}
+      },
+      url: () => currentUrl,
+      content: async () => {
+        if (!pageHtml && currentUrl) await fetchPage(currentUrl);
+        return pageHtml;
+      }
+    };
+
+    return pageObj;
+  };
+
+  return {
+    newPage: async (url?: string) => {
+      const page = createPage(url);
+      if (url) await page.content();
+      return page;
+    },
+    getPage: async (urlPattern?: string) => {
+      return createPage(urlPattern);
+    }
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,8 +103,19 @@ export async function POST(req: Request) {
       const session = await auth();
 
       let query: any = {};
-      if (workflowId && mongoose.Types.ObjectId.isValid(workflowId)) {
-        query = { _id: workflowId };
+      const targetId = workflowId || (workflowName && mongoose.Types.ObjectId.isValid(workflowName) ? workflowName : null);
+      if (targetId && mongoose.Types.ObjectId.isValid(targetId)) {
+        if (workflowName && !workflowId) {
+          const escaped = workflowName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          query = {
+            $or: [
+              { _id: targetId },
+              { title: { $regex: new RegExp(`^${escaped}$`, 'i') } }
+            ]
+          };
+        } else {
+          query = { _id: targetId };
+        }
       } else if (workflowName) {
         const escaped = workflowName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         query = { title: { $regex: new RegExp(`^${escaped}$`, 'i') } };
@@ -48,26 +141,66 @@ export async function POST(req: Request) {
       }
 
       if (workflow) {
+        // Resolve input variables with defaults and intelligent aliases
+        const resolvedInputs: Record<string, any> = {};
+        if (Array.isArray(workflow.inputs)) {
+          for (const inp of workflow.inputs) {
+            if (inp && inp.name) {
+              resolvedInputs[inp.name] = inp.defaultValue !== undefined ? inp.defaultValue : '';
+            }
+          }
+        }
+
+        let passedInputs: Record<string, any> = {};
+        if (typeof inputs === 'string') {
+          passedInputs = { input: inputs, url: inputs, query: inputs, search_query: inputs, channel_url: inputs };
+        } else if (inputs && typeof inputs === 'object') {
+          passedInputs = { ...inputs };
+        }
+
+        const mergedInputs = { ...resolvedInputs, ...passedInputs };
+
+        // If user passed a single input like { input: "val" } and workflow expects a named input
+        if (passedInputs.input !== undefined) {
+          if (Array.isArray(workflow.inputs)) {
+            for (const inp of workflow.inputs) {
+              if (inp && inp.name && (mergedInputs[inp.name] === '' || mergedInputs[inp.name] === undefined)) {
+                mergedInputs[inp.name] = passedInputs.input;
+              }
+            }
+          }
+          if (!mergedInputs.url) mergedInputs.url = passedInputs.input;
+          if (!mergedInputs.channel_url) mergedInputs.channel_url = passedInputs.input;
+          if (!mergedInputs.query) mergedInputs.query = passedInputs.input;
+        }
+
         if (workflow.script) {
           try {
             const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-            const runner = new AsyncFunction('inputs', 'tools', `
+            let runnerCode = workflow.script;
+            if (/async\s+function\s+workflow\b/.test(runnerCode) || /function\s+workflow\b/.test(runnerCode)) {
+              runnerCode += "\nreturn await workflow(browser, __inputs);";
+            } else if (/async\s+function\s+main\b/.test(runnerCode) || /function\s+main\b/.test(runnerCode)) {
+              runnerCode += "\nreturn await main(browser, __inputs);";
+            }
+
+            const runner = new AsyncFunction('browser', '__inputs', 'inputs', 'tools', `
               try {
-                ${workflow.script}
-                if (typeof workflow === 'function') {
-                  return await workflow(null, inputs);
-                }
-                return { success: true, message: "Workflow executed successfully", data: inputs };
+                ${runnerCode}
+                return { success: true, message: "Workflow executed successfully", data: __inputs };
               } catch (e) {
                 return { success: false, error: e.message };
               }
             `);
 
-            const executionResult = await runner(inputs, tools);
+            const serverBrowser = createServerBrowser();
+            const executionResult = await runner(serverBrowser, mergedInputs, mergedInputs, tools);
             return NextResponse.json({ 
               success: true, 
               workflowId: workflow._id,
               workflowTitle: workflow.title,
+              workflowScript: workflow.script,
+              resolvedInputs: mergedInputs,
               result: executionResult 
             });
           } catch (scriptErr: any) {

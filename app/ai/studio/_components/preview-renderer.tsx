@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { Loader2, AlertTriangle, Monitor, Tablet, Smartphone, Minimize2, Expand, RefreshCcw } from "lucide-react";
 import * as Babel from "@babel/standalone";
 
+import { useBrowserExtension } from "@/hooks/use-browser-extension";
+
 interface PreviewRendererProps {
   id: string;
   files: Record<string, string>;
@@ -24,6 +26,8 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
     return false;
   });
 
+  const { isConnected, sendBrowserCommand, openCompanion } = useBrowserExtension();
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -33,6 +37,55 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Bridge messages between Studio preview iframe and Jarvis extension content script
+  useEffect(() => {
+    const handleHostMessage = async (event: MessageEvent) => {
+      if (event.data && event.data.source === "studio-iframe-workflow") {
+        const { messageId, action, script, inputs } = event.data;
+        try {
+          try {
+            await openCompanion();
+            await new Promise((r) => setTimeout(r, 500));
+          } catch (e) {
+            // Extension side panel open failed or already open
+          }
+
+          const result = await sendBrowserCommand({
+            action: (action as any) || "run_workflow_sandbox",
+            script,
+            inputs: inputs || {},
+            isManual: true,
+          });
+
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(
+              {
+                source: "jarvis-extension",
+                messageId,
+                response: { success: true, result },
+              },
+              "*"
+            );
+          }
+        } catch (err: any) {
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage(
+              {
+                source: "jarvis-extension",
+                messageId,
+                response: { success: false, error: err.message },
+              },
+              "*"
+            );
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", handleHostMessage);
+    return () => window.removeEventListener("message", handleHostMessage);
+  }, [sendBrowserCommand, openCompanion]);
 
   const buildAndRender = () => {
     setLoading(true);
@@ -159,6 +212,50 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
         if (!res.ok || data.error) {
           throw new Error(data.error || 'Workflow execution failed');
         }
+
+        if (data.workflowScript) {
+          try {
+            var extResult = await new Promise(function(resolve, reject) {
+              var messageId = 'wf-' + Math.random().toString(36).slice(2);
+              var timer = setTimeout(function() {
+                window.removeEventListener('message', handleResponse);
+                reject(new Error('Extension timeout'));
+              }, 300000);
+
+              function handleResponse(event) {
+                if (event.data && event.data.source === 'jarvis-extension' && event.data.messageId === messageId) {
+                  clearTimeout(timer);
+                  window.removeEventListener('message', handleResponse);
+                  if (event.data.response && event.data.response.success) {
+                    resolve(event.data.response.result);
+                  } else {
+                    reject(new Error(event.data.response ? event.data.response.error : 'Extension error'));
+                  }
+                }
+              }
+
+              window.addEventListener('message', handleResponse);
+
+              window.parent.postMessage({
+                source: 'studio-iframe-workflow',
+                messageId: messageId,
+                action: 'run_workflow_sandbox',
+                script: data.workflowScript,
+                inputs: data.resolvedInputs || opts.inputs || {}
+              }, '*');
+            });
+
+            return {
+              success: true,
+              workflowId: data.workflowId,
+              workflowTitle: data.workflowTitle,
+              result: extResult
+            };
+          } catch (extErr) {
+            console.warn('[Studio Workflow] Extension execution fallback to server result:', extErr.message);
+          }
+        }
+
         return data;
       };
 
@@ -181,12 +278,23 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
             setState(function(prev){ return Object.assign({}, prev, { loading: true, error: null }); });
             try {
               var payload;
+              var isHexId = function(val) { return typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val); };
               if (typeof inputsOrOpts === 'string') {
-                payload = { workflowName: inputsOrOpts, inputs: maybeInputs || {} };
+                if (isHexId(inputsOrOpts)) {
+                  payload = { workflowId: inputsOrOpts, workflowName: inputsOrOpts, inputs: typeof maybeInputs === 'string' ? { input: maybeInputs } : (maybeInputs || {}) };
+                } else if (defaultWorkflowName) {
+                  payload = isHexId(defaultWorkflowName)
+                    ? { workflowId: defaultWorkflowName, workflowName: defaultWorkflowName, inputs: { input: inputsOrOpts } }
+                    : { workflowName: defaultWorkflowName, inputs: { input: inputsOrOpts } };
+                } else {
+                  payload = { workflowName: inputsOrOpts, inputs: typeof maybeInputs === 'string' ? { input: maybeInputs } : (maybeInputs || {}) };
+                }
               } else if (inputsOrOpts && (inputsOrOpts.workflowName || inputsOrOpts.workflowId || inputsOrOpts.toolId)) {
                 payload = inputsOrOpts;
               } else {
-                payload = { workflowName: defaultWorkflowName, inputs: inputsOrOpts || {} };
+                payload = isHexId(defaultWorkflowName)
+                  ? { workflowId: defaultWorkflowName, workflowName: defaultWorkflowName, inputs: inputsOrOpts || {} }
+                  : { workflowName: defaultWorkflowName, inputs: inputsOrOpts || {} };
               }
               var res = await window.workflow_execute(payload);
               var resultData = res.result !== undefined ? res.result : res;
