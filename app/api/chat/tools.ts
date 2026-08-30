@@ -1458,10 +1458,10 @@ export const tools = {
   }),
 
   createStudioDocument: tool({
-    description: "Create a new Studio Document. Use this when the user asks to generate a professional document, resume, slide, or HTML page. The content MUST be valid raw HTML. Use inline styles (e.g. `style='color: red'`). NEVER use `<style>` tags. NEVER generate `<html>`, `<head>`, or `<body>` tags.",
+    description: "Create a new Studio workspace document for an interactive React application. The content should either be a stringified JSON file tree (e.g., JSON.stringify({'app.tsx': '...', 'styles.css': '...'})) or the raw React code for 'app.tsx'.",
     inputSchema: z.object({
-      title: z.string().min(1).describe('The title of the document'),
-      content: z.string().describe('The raw HTML content of the document.'),
+      title: z.string().min(1).describe('The title of the document or project'),
+      content: z.string().describe('The stringified JSON file map or raw React component code for app.tsx'),
       tags: z.array(z.string()).default([]).describe('Optional tags'),
     }),
     execute: async (data) => {
@@ -1469,7 +1469,21 @@ export const tools = {
         const session = await auth();
         if (!session?.user?.id) return { success: false, error: "Unauthorized" };
         await dbConnect();
-        const item = await StudioDocument.create({ ...data, userId: session.user.id });
+
+        let content = data.content;
+        // If content is pure React code instead of a JSON map, wrap it into a valid JSON map
+        if (content && !content.trim().startsWith('{')) {
+          content = JSON.stringify({
+            "app.tsx": content,
+            "styles.css": "/* Style sheet */"
+          });
+        }
+
+        const item = await StudioDocument.create({ 
+          ...data, 
+          content,
+          userId: session.user.id 
+        });
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
       } catch (error: any) {
         return { success: false, error: error.message };
@@ -1478,26 +1492,33 @@ export const tools = {
   }),
 
   updateStudioDocument: tool({
-    description: "Update an existing Studio Document's title, HTML content, or tags. You must have the document ID. The content MUST be valid raw HTML. ALWAYS use Tailwind CSS utility classes in class attributes for all styling (e.g. class='p-6 bg-slate-900 text-white rounded-xl shadow-lg'). Do NOT wrap in <html>, <head>, or <body> tags. Do NOT use style blocks (<style>). Output pure, beautiful Tailwind HTML structures.",
+    description: "Update an existing Studio Document's title, file tree content, or tags. The content must be the stringified JSON map of all virtual files in the workspace (e.g. {'app.tsx': '...', 'components/Button.tsx': '...'}).",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Studio Document to update'),
       title: z.string().optional().describe('New title for the document'),
-      content: z.string().optional().describe('New raw HTML content styled with Tailwind CSS utility classes'),
+      content: z.string().optional().describe('New stringified JSON file tree or raw React code for app.tsx'),
       tags: z.array(z.string()).optional().describe('Updated tags'),
     }),
     execute: async ({ id, ...updateData }) => {
       try {
-        console.log("updateStudioDocument called with id:", id, "updateData keys:", Object.keys(updateData));
         const session = await auth();
         if (!session?.user?.id) return { success: false, error: "Unauthorized" };
         await dbConnect();
+
+        if (updateData.content && !updateData.content.trim().startsWith('{')) {
+          // If the model passed raw code instead of JSON map, wrap it into app.tsx
+          updateData.content = JSON.stringify({
+            "app.tsx": updateData.content,
+            "styles.css": "/* Style sheet */"
+          });
+        }
+
         const item = await StudioDocument.findOneAndUpdate(
           { _id: id, userId: session.user.id },
           { $set: updateData },
           { new: true }
         );
         if (!item) {
-          console.error("Studio Document not found for id:", id);
           return { success: false, error: "Studio Document not found" };
         }
         return { success: true, item: JSON.parse(JSON.stringify(item)) };
@@ -1508,12 +1529,52 @@ export const tools = {
     },
   }),
 
-  editStudioDocumentSection: tool({
-    description: "Fast targeted edit for an existing Studio Document. Use this to update a specific section instead of rewriting the whole document. This is MUCH faster than updateStudioDocument. Provide a unique snippet of the existing HTML (targetText) and the new HTML (newText) that will replace it.",
+  updateStudioFile: tool({
+    description: "Create or update a specific virtual file (e.g. 'app.tsx', 'styles.css', 'components/Dashboard.tsx') in a Studio Document. This updates the specified file while preserving all other files in the workspace.",
     inputSchema: z.object({
       id: z.string().describe('The MongoDB ID of the Studio Document'),
-      targetText: z.string().describe('A unique snippet of the existing HTML to be replaced. Must match exactly. Try to include the full opening and closing tags of the element you are modifying.'),
-      newText: z.string().describe('The new HTML that will replace the targetText.'),
+      filePath: z.string().describe("The virtual file path to create or update (e.g. 'app.tsx', 'components/Header.tsx')"),
+      fileContent: z.string().describe("The raw code/content of the file"),
+    }),
+    execute: async ({ id, filePath, fileContent }) => {
+      try {
+        const session = await auth();
+        if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+        await dbConnect();
+
+        const doc = await StudioDocument.findOne({ _id: id, userId: session.user.id });
+        if (!doc) return { success: false, error: "Studio Document not found" };
+
+        let files: Record<string, string> = {};
+        if (doc.content) {
+          try {
+            files = JSON.parse(doc.content);
+          } catch (e) {
+            files = { "app.tsx": doc.content };
+          }
+        }
+
+        files[filePath] = fileContent;
+        doc.content = JSON.stringify(files);
+        await doc.save();
+
+        return { 
+          success: true, 
+          message: `Successfully updated ${filePath}`,
+          item: JSON.parse(JSON.stringify(doc)) 
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    }
+  }),
+
+  editStudioDocumentSection: tool({
+    description: "Fast targeted edit for an existing Studio Document. Use this to update a specific snippet of code or section inside the document without rewriting the entire file. Provide a unique snippet of the existing code (targetText) and the new code (newText) that will replace it.",
+    inputSchema: z.object({
+      id: z.string().describe('The MongoDB ID of the Studio Document'),
+      targetText: z.string().describe('A unique snippet of the existing code to be replaced. Must match exactly.'),
+      newText: z.string().describe('The new code that will replace the targetText.'),
     }),
     execute: async ({ id, targetText, newText }) => {
       try {
@@ -1525,7 +1586,7 @@ export const tools = {
         if (!doc) return { success: false, error: "Studio document not found" };
 
         if (!doc.content || !doc.content.includes(targetText)) {
-          return { success: false, error: "targetText not found in the document. Please ensure it matches exactly or use updateStudioDocument to replace the entire document." };
+          return { success: false, error: "targetText not found in the document. Please ensure it matches exactly or use updateStudioFile / updateStudioDocument to replace the file." };
         }
 
         doc.content = doc.content.replace(targetText, newText);

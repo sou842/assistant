@@ -121,6 +121,12 @@ CRITICAL WORKSPACE FORMAT:
 - Always preserve the primary entrypoint file "app.tsx", which must export a default React component. It is compiled and mounted automatically.
 - You can import React components from other virtual files using ESM imports (e.g. 'import Button from "./components/Button";').
 
+WORKFLOW & DATABASE INTEGRATION:
+- Workflows can be triggered directly in React components using:
+  1. \`import { useWorkflow } from '@studio/workflow';\` (or \`window.useWorkflow\`) -> \`const { execute, loading, data, error } = useWorkflow("workflowName");\`
+  2. \`window.workflow_execute({ workflowName: "...", inputs: { ... } })\`
+- Persistent Key-Value database is accessible via \`window.studioDb.get(key)\`, \`window.studioDb.set(key, value)\`, and \`window.studioDb.getAll()\`.
+
 DESIGN & CODE STYLING:
 - You have full access to Tailwind CSS. Use Tailwind classes inside your JSX elements.
 - Avoid styling with inline 'style' tags. Use Tailwind utility classes.
@@ -161,6 +167,12 @@ CRITICAL WORKSPACE FORMAT:
 - DO NOT output simple raw HTML unless requested. Output the JSON file map containing files like "app.tsx", "styles.css", or other subcomponents (e.g. "components/Button.tsx").
 - Always preserve the primary entrypoint file "app.tsx", which must export a default React component. It is compiled and mounted automatically.
 - You can import React components from other virtual files using ESM imports (e.g. 'import Button from "./components/Button";').
+
+WORKFLOW & DATABASE INTEGRATION:
+- Workflows can be triggered directly in React components using:
+  1. \`import { useWorkflow } from '@studio/workflow';\` (or \`window.useWorkflow\`) -> \`const { execute, loading, data, error } = useWorkflow("workflowName");\`
+  2. \`window.workflow_execute({ workflowName: "...", inputs: { ... } })\`
+- Persistent Key-Value database is accessible via \`window.studioDb.get(key)\`, \`window.studioDb.set(key, value)\`, and \`window.studioDb.getAll()\`.
 
 DESIGN & CODE STYLING:
 - You have full access to Tailwind CSS. Use Tailwind classes inside your JSX elements.

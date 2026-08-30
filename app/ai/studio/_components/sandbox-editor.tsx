@@ -324,9 +324,16 @@ export default function App() {
           console.error("Failed to parse sandbox files JSON:", e);
         }
       } else {
-        // Legacy HTML: convert to react dangerous markup
-        parsedFiles = {
-          "app.tsx": `import React from "react";
+        const isReactCode = /import\s+React|export\s+default|function\s+\w+|const\s+\w+\s*=\s*\(/i.test(initialData);
+        if (isReactCode) {
+          parsedFiles = {
+            "app.tsx": initialData,
+            "styles.css": `/* Custom styles */\nbody {\n  background-color: #09090b;\n}`,
+          };
+        } else {
+          // Legacy HTML: convert to react dangerous markup
+          parsedFiles = {
+            "app.tsx": `import React from "react";
 
 export default function App() {
   return (
@@ -335,8 +342,9 @@ export default function App() {
     </div>
   );
 }`,
-          "legacy.html": initialData,
-        };
+            "legacy.html": initialData,
+          };
+        }
       }
     }
 

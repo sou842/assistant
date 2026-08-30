@@ -242,11 +242,10 @@ export async function POST(req: Request) {
     let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl', 'webSearch']; // Base tools always included
     
     // Always include studio tools if we are in the studio context
-    // Always include studio tools if we are in the studio context
-    if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
-      activeToolNames.push('updateStudioDocument', 'editStudioDocumentSection', 'loadDesignSystem');
-    } else if (finalSystemPrompt.includes("Studio Documents")) {
-      activeToolNames.push('updateStudioDocument', 'createStudioDocument', 'editStudioDocumentSection', 'loadDesignSystem');
+    if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT") || finalSystemPrompt.includes("Studio Workspaces")) {
+      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'createStudioDocument');
+    } else if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
+      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection');
     }
     
     try {
@@ -280,17 +279,14 @@ export async function POST(req: Request) {
       }
 
       activeToolNames = Array.from(new Set(activeToolNames));
-      if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
-        activeToolNames = activeToolNames.filter(name => name !== 'createStudioDocument');
+      if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT")) {
+        activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection');
       }
       
       console.log('Dynamic Tools Selected (Smart):', activeToolNames);
     } catch (e) {
       console.warn('Pre-routing failed, falling back to all tools', e);
       activeToolNames = Object.keys(tools);
-      if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
-        activeToolNames = activeToolNames.filter(name => name !== 'createStudioDocument');
-      }
     }
 
     const activeTools: Record<string, any> = {};

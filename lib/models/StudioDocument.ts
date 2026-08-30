@@ -1,8 +1,9 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
-export interface IStudioDocument extends Document {
+export interface IStudioDocument {
+  _id: mongoose.Types.ObjectId;
   title: string;
-  content: string; // Raw HTML content
+  content: string; // Raw HTML content or JSON virtual file tree
   tags: string[];
   db?: Record<string, any>;
   userId: mongoose.Types.ObjectId;

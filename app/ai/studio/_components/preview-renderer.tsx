@@ -55,7 +55,7 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
               // env → converts ESM (import/export) → CommonJS (require/module.exports)
               ["env", { targets: { chrome: 100 }, modules: "commonjs" }],
               "typescript",
-            ],
+            ] as any,
           });
           compiledModules[path] = result.code ?? "";
         } catch (e: any) {
@@ -88,7 +88,8 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <!-- lucide-react UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/lucide-react@latest/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.468.0/dist/umd/lucide-react.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -146,6 +147,149 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
         }
       };
 
+      // ── Studio Workflow API ───────────────────────────────────────────────
+      window.workflow_execute = async function(options) {
+        var opts = typeof options === 'string' ? { workflowName: options } : (options || {});
+        var res = await fetch('/api/workflow/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(opts)
+        });
+        var data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Workflow execution failed');
+        }
+        return data;
+      };
+
+      window.studioWorkflow = {
+        execute: window.workflow_execute,
+        run: window.workflow_execute,
+      };
+
+      // Workflow React Hook Module
+      function createWorkflowModule() {
+        var React = window.React;
+        function useWorkflow(defaultWorkflowName) {
+          var state = React.useState({ loading: false, data: null, error: null });
+          var data = state[0].data;
+          var loading = state[0].loading;
+          var error = state[0].error;
+          var setState = state[1];
+
+          var execute = React.useCallback(async function(inputsOrOpts, maybeInputs) {
+            setState(function(prev){ return Object.assign({}, prev, { loading: true, error: null }); });
+            try {
+              var payload;
+              if (typeof inputsOrOpts === 'string') {
+                payload = { workflowName: inputsOrOpts, inputs: maybeInputs || {} };
+              } else if (inputsOrOpts && (inputsOrOpts.workflowName || inputsOrOpts.workflowId || inputsOrOpts.toolId)) {
+                payload = inputsOrOpts;
+              } else {
+                payload = { workflowName: defaultWorkflowName, inputs: inputsOrOpts || {} };
+              }
+              var res = await window.workflow_execute(payload);
+              var resultData = res.result !== undefined ? res.result : res;
+              setState({ loading: false, data: resultData, error: null });
+              return resultData;
+            } catch (err) {
+              var errMsg = err.message || 'Workflow execution failed';
+              setState({ loading: false, data: null, error: errMsg });
+              throw err;
+            }
+          }, [defaultWorkflowName]);
+
+          var reset = React.useCallback(function() {
+            setState({ loading: false, data: null, error: null });
+          }, []);
+
+          return {
+            execute: execute,
+            run: execute,
+            loading: loading,
+            data: data,
+            error: error,
+            reset: reset
+          };
+        }
+
+        return {
+          workflow_execute: window.workflow_execute,
+          useWorkflow: useWorkflow,
+          default: {
+            execute: window.workflow_execute,
+            useWorkflow: useWorkflow
+          }
+        };
+      }
+
+      var workflowModule = createWorkflowModule();
+      window.useWorkflow = workflowModule.useWorkflow;
+
+      // ── Lucide Icon Proxy Resolver ──────────────────────────────────────────
+      function getLucideModule() {
+        var source = window.lucideReact || window.LucideReact || (window.lucide && window.lucide.icons) || window.lucide || {};
+        var iconsMap = source.icons || source;
+
+        return new Proxy(source, {
+          get: function(target, prop) {
+            if (prop === '__esModule') return true;
+            if (prop === 'default') return target;
+            if (typeof prop === 'symbol') return target[prop];
+
+            // 1. Direct property match
+            if (target[prop] && typeof target[prop] === 'function') return target[prop];
+            if (iconsMap[prop] && typeof iconsMap[prop] === 'function') return iconsMap[prop];
+
+            // 2. Case-insensitive lookup (e.g. sparkless, Sparkles, LucideSparkles)
+            var clean = String(prop).toLowerCase().replace(/^lucide/, '');
+            for (var k in iconsMap) {
+              if (k.toLowerCase() === clean && typeof iconsMap[k] === 'function') {
+                return iconsMap[k];
+              }
+            }
+            for (var k in target) {
+              if (k.toLowerCase() === clean && typeof target[k] === 'function') {
+                return target[k];
+              }
+            }
+
+            // 3. Fallback: Dynamic Lucide-styled SVG React Component to guarantee no crashes
+            return function DynamicLucideIcon(props) {
+              var p = props || {};
+              var size = p.size || 24;
+              var color = p.color || 'currentColor';
+              var strokeWidth = p.strokeWidth || 2;
+              var className = p.className || '';
+              var rest = Object.assign({}, p);
+              delete rest.size;
+              delete rest.color;
+              delete rest.strokeWidth;
+              delete rest.className;
+
+              return window.React.createElement(
+                'svg',
+                Object.assign({
+                  xmlns: 'http://www.w3.org/2000/svg',
+                  width: size,
+                  height: size,
+                  viewBox: '0 0 24 24',
+                  fill: 'none',
+                  stroke: color,
+                  strokeWidth: strokeWidth,
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  className: className
+                }, rest),
+                window.React.createElement('circle', { cx: 12, cy: 12, r: 10 }),
+                window.React.createElement('line', { x1: 12, y1: 8, x2: 12, y2: 12 }),
+                window.React.createElement('line', { x1: 12, y1: 16, x2: 12.01, y2: 16 })
+              );
+            };
+          }
+        });
+      }
+
       // ── Mini CommonJS runtime ──────────────────────────────────────────────
       var MODULES = ${modulesJson};
       var registry = {};
@@ -156,7 +300,11 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
         'react': function(){ return window.React; },
         'react-dom': function(){ return window.ReactDOM; },
         'react-dom/client': function(){ return window.ReactDOM; },
-        'lucide-react': function(){ return window.LucideReact || {}; },
+        'lucide-react': function(){ return getLucideModule(); },
+        'lucide': function(){ return getLucideModule(); },
+        '@studio/workflow': function(){ return workflowModule; },
+        '@/workflow': function(){ return workflowModule; },
+        'workflow': function(){ return workflowModule; },
       };
 
       function resolve(from, id) {
