@@ -157,6 +157,48 @@ const stepSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
+function cleanStudioContent(rawContent: string): string {
+  if (!rawContent) return "";
+  let clean = rawContent.trim();
+  
+  // 1. Strip markdown fences if AI wrapped output in ```json or ```tsx
+  if (clean.startsWith("```")) {
+    clean = clean.replace(/^```(?:json|tsx|jsx|ts|js|html)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+  }
+
+  // 2. If it is valid JSON, validate and clean each file entry
+  if (clean.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(clean);
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        const cleanedMap: Record<string, string> = {};
+        for (const [key, val] of Object.entries(parsed)) {
+          let fileStr = typeof val === "string" ? val : JSON.stringify(val, null, 2);
+          if (fileStr.trim().startsWith("```")) {
+            fileStr = fileStr.trim().replace(/^```(?:tsx|jsx|ts|js|css|html|json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+          }
+          cleanedMap[key] = fileStr;
+        }
+        if (!cleanedMap["app.tsx"]) {
+          const firstKey = Object.keys(cleanedMap)[0];
+          if (firstKey && firstKey.endsWith(".tsx")) {
+            cleanedMap["app.tsx"] = cleanedMap[firstKey];
+          }
+        }
+        return JSON.stringify(cleanedMap);
+      }
+    } catch (e) {
+      // not direct JSON
+    }
+  }
+
+  // 3. If raw code, wrap into app.tsx and styles.css
+  return JSON.stringify({
+    "app.tsx": clean,
+    "styles.css": "/* Style sheet */"
+  });
+}
+
 export const tools = {
   createWorkflow: tool({
     description: "Create and save a browser automation workflow (script as code). The script should be written in JavaScript using the pseudo-Playwright API (browser.newPage(url), page.locator(selector).click(), page.locator(selector).waitFor(), page.locator(selector).getAttribute()). Always write robust code wrapping locators in waitFor blocks if they require waiting. IMPORTANT: If the user asks for an 'empty' or 'blank' workflow, do NOT perform any web actions or searches. Just immediately call this tool with a basic skeleton script like: async function workflow(browser, inputs) { \\n  // Your code here \\n  return { success: true }; \\n}",
@@ -1458,7 +1500,7 @@ export const tools = {
   }),
 
   createStudioDocument: tool({
-    description: "Create a new Studio workspace document for an interactive React application. The content should either be a stringified JSON file tree (e.g., JSON.stringify({'app.tsx': '...', 'styles.css': '...'})) or the raw React code for 'app.tsx'.",
+    description: "Create a brand new Studio workspace document. CRITICAL: Do NOT use this tool if you are already inside an existing Studio document or when the user asks to edit/modify an app. Use updateStudioFile or updateStudioDocument instead.",
     inputSchema: z.object({
       title: z.string().min(1).describe('The title of the document or project'),
       content: z.string().describe('The stringified JSON file map or raw React component code for app.tsx'),
@@ -1470,14 +1512,7 @@ export const tools = {
         if (!session?.user?.id) return { success: false, error: "Unauthorized" };
         await dbConnect();
 
-        let content = data.content;
-        // If content is pure React code instead of a JSON map, wrap it into a valid JSON map
-        if (content && !content.trim().startsWith('{')) {
-          content = JSON.stringify({
-            "app.tsx": content,
-            "styles.css": "/* Style sheet */"
-          });
-        }
+        const content = cleanStudioContent(data.content);
 
         const item = await StudioDocument.create({ 
           ...data, 
@@ -1505,12 +1540,8 @@ export const tools = {
         if (!session?.user?.id) return { success: false, error: "Unauthorized" };
         await dbConnect();
 
-        if (updateData.content && !updateData.content.trim().startsWith('{')) {
-          // If the model passed raw code instead of JSON map, wrap it into app.tsx
-          updateData.content = JSON.stringify({
-            "app.tsx": updateData.content,
-            "styles.css": "/* Style sheet */"
-          });
+        if (updateData.content) {
+          updateData.content = cleanStudioContent(updateData.content);
         }
 
         const item = await StudioDocument.findOneAndUpdate(
@@ -1554,7 +1585,12 @@ export const tools = {
           }
         }
 
-        files[filePath] = fileContent;
+        let cleanFile = fileContent.trim();
+        if (cleanFile.startsWith("```")) {
+          cleanFile = cleanFile.replace(/^```(?:tsx|jsx|ts|js|css|html|json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+        }
+
+        files[filePath] = cleanFile;
         doc.content = JSON.stringify(files);
         await doc.save();
 

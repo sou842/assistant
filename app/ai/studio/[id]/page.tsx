@@ -15,6 +15,7 @@ import { useChat } from "@ai-sdk/react";
 import { VaultChatSidePanel } from "../../vault/_components/vault-chat-side-panel";
 import { motion, AnimatePresence } from "motion/react";
 import { AgentWorkAura } from "../_components/agent-work-aura";
+import { saveLocalChat, loadLocalChat, deleteLocalChat } from "@/lib/local-chat-storage";
 
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch');
@@ -72,6 +73,7 @@ export default function StudioEditorPage() {
   const [showChat, setShowChat] = useState(false);
   const [input, setInput] = useState("");
   const [selectedContext, setSelectedContext] = useState<{ text: string, html: string } | null>(null);
+  const [chatLoaded, setChatLoaded] = useState(false);
 
   const { memories, selectedModel, setSelectedModel } = useAI();
 
@@ -91,53 +93,122 @@ export default function StudioEditorPage() {
   const sendMessage = (chat as any).sendMessage || (chat as any).append;
   const isChatLoading = status === "submitted" || status === "streaming";
 
-  const sendMessageWithContext = async (payload: any, options?: any) => {
-    const enabledMemories = memories
-      .filter((m) => m.enabled && m.content.trim())
-      .slice(0, 24)
-      .map(({ title, content, category, tags }) => ({ title, content, category, tags }));
+  const getSystemPrompt = () => {
+    const currentTitle = title || data?.item?.title || "Untitled Document";
+    const currentContent = content || data?.item?.content || "";
 
-    const itemContext = data?.item ? `
+    const itemContext = (data?.item || currentContent) ? `
 CURRENT WORKSPACE CONTEXT:
 ID: ${id}
-Title: ${title}
-Tags: ${data.item.tags?.join(", ") || "None"}
+Title: ${currentTitle}
+Tags: ${data?.item?.tags?.join(", ") || "None"}
 Workspace Files (JSON Format):
-${content}
+${currentContent}
 ` : "";
 
-    await sendMessage(payload, {
-      ...options,
-      body: {
-        ...options?.body,
-        memories: enabledMemories,
-        systemPrompt: `You are Jarvis, an expert full-stack React developer assistant integrated into a VS Code-style Multi-File React Sandbox workspace.
+    return `You are Jarvis, an expert full-stack React developer assistant integrated into a VS Code-style Multi-File React Sandbox workspace.
 The user is working on the workspace files provided in the CURRENT WORKSPACE CONTEXT below.
 
-CRITICAL WORKSPACE FORMAT & TOOLS:
-- Virtual File Structure: Files are stored as a JSON map of filename to code string in the document's 'content' attribute.
-- Fast Updates: To add or edit a specific file (e.g., 'app.tsx' or 'components/Header.tsx'), call 'updateStudioFile(documentId, filename, content)'. This is fast and precise.
-- Full Workspace Updates: To replace the whole file tree, call 'updateStudioDocument(id, { content: stringifiedJsonFileMap })'.
-- Exact Text Edits: To replace a substring, call 'editStudioDocumentSection(id, targetText, newText)'.
-- Always ensure 'app.tsx' exists and exports a default React component ('export default function App() { ... }').
-- Modularization: Split complex logic across multiple files using standard ESM imports (e.g. 'import Header from "./components/Header";').
+CRITICAL PRINCIPLES - APP COMPREHENSION & DEDICATED IN-PLACE EDITING:
+1. DEEP COMPREHENSION FIRST:
+   - Thoroughly inspect all files in the CURRENT WORKSPACE CONTEXT before making changes.
+   - Understand the existing component hierarchy, state variables, UI layout, routes/tabs, and dependencies.
+   - Understand the user's exact request carefully. Do NOT do random or unrelated things. Focus precisely on what the user asked for.
+
+2. SURGICAL & NON-DESTRUCTIVE EDITS:
+   - ALWAYS preserve existing working features, styling, state, and components unless the user explicitly asks to remove or change them.
+   - Do NOT wipe out or replace full apps with basic placeholder stubs.
+   - When modifying a file, ensure all necessary imports (e.g., Lucide icons, React hooks, UI components) are present and valid.
+
+3. DEDICATED WORKSPACE LOCK (ID: "${id}"):
+   - You are working exclusively inside the active Studio Document with ID "${id}".
+   - Apply edits DIRECTLY to THIS document using 'updateStudioFile', 'updateStudioDocument', or 'editStudioDocumentSection' with id: "${id}".
+   - NEVER call 'createStudioDocument'. The user is already in their active workspace and expects in-place updates.
+   - To update or add an individual file (e.g. 'app.tsx' or 'components/Header.tsx'), call 'updateStudioFile("${id}", filePath, fileContent)'.
+   - To replace the full file tree, call 'updateStudioDocument("${id}", { content: stringifiedJsonFileMap })'.
+   - To perform a fast substring replacement, call 'editStudioDocumentSection("${id}", targetText, newText)'.
+   - Always ensure 'app.tsx' exists and exports a default React component ('export default function App() { ... }').
+
+4. REPORT LATEST DETAILS AFTER EDITING:
+   - After invoking the tool to apply the change, clearly summarize the latest state of the app for the user:
+     * Specify which files were updated or created.
+     * Describe the exact features, components, or UI adjustments that were made.
+     * Explain how the user can interact with or test the newly added features.
 
 WORKFLOW & AUTOMATION INTEGRATION:
-- You can discover available workflows and their expected parameter names by calling the 'listWorkflows' tool.
-- To execute workflows inside React components:
+- Workflows are powerful multi-step automation pipelines (HTTP requests, AI prompts, weather checks, browser scraping, WhatsApp/Gmail dispatch) that can run directly inside React apps.
+- Discovery: Call the 'listWorkflows' tool to find available workflows, their exact IDs, titles, descriptions, and required input parameter keys.
+- Hook Import:
   \`\`\`tsx
-  import { useWorkflow } from '@studio/workflow';
-  
-  export default function App() {
-    const [query, setQuery] = useState('');
-    const { execute, loading, data, error } = useWorkflow("workflow-id-or-title");
-
-    const handleRun = async () => {
-      await execute({ input: query }); // or execute(query)
-    };
-    ...
+  import { useWorkflow } from '@studio/workflow'; // also available as '@/workflow' or 'workflow'
   \`\`\`
-- Always render loading indicators (skeletons / spinners), handle errors gracefully, and render the output data cleanly (cards, tables, formatted JSON views).
+- Complete Usage Pattern:
+  \`\`\`tsx
+  import React, { useState } from 'react';
+  import { useWorkflow } from '@studio/workflow';
+  import { Play, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+
+  export default function AutomationPanel() {
+    const [topic, setTopic] = useState('');
+    
+    // 1. Initialize hook with workflow title or MongoDB ID
+    const { execute, run, loading, data, error, reset } = useWorkflow("workflow-title-or-id");
+
+    const handleRun = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!topic.trim()) return;
+      
+      // 2. Pass input object matching expected workflow parameters
+      await execute({ query: topic, input: topic });
+    };
+
+    return (
+      <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl space-y-4">
+        <form onSubmit={handleRun} className="flex gap-2">
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Enter workflow parameter..."
+            className="flex-1 px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition cursor-pointer"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+            {loading ? 'Running...' : 'Execute'}
+          </button>
+        </form>
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-red-950/40 border border-red-800/60 rounded-xl text-red-400 text-sm">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {data && (
+          <div className="p-4 bg-zinc-950 border border-zinc-800/80 rounded-xl space-y-2">
+            <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+              <span className="flex items-center gap-1.5 text-green-400"><CheckCircle size={14} /> Result Ready</span>
+              <button onClick={reset} className="hover:text-zinc-200 transition cursor-pointer flex items-center gap-1">
+                <RefreshCw size={12} /> Reset
+              </button>
+            </div>
+            <pre className="text-xs text-zinc-300 overflow-x-auto p-2 bg-zinc-900/60 rounded-lg">
+              {typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)}
+            </pre>
+          </div>
+        )}
+      </div>
+    );
+  }
+  \`\`\`
+- Best Practices for Workflow UIs:
+  * Render loading spinners or skeleton loaders while \`loading\` is true.
+  * Allow retrying/resetting workflow state via \`reset()\`.
+  * Format workflow response objects neatly into visual cards, data tables, or charts rather than raw unformatted strings.
 
 PERSISTENT KEY-VALUE DATABASE:
 - Access persistent client storage via \`window.studioDb\`:
@@ -152,7 +223,22 @@ PREMIUM DESIGN & STYLING GUIDELINES:
 - Use 'lucide-react' for all icons (e.g., \`import { Sparkles, Activity, Play, CheckCircle, Database, Search, RefreshCw, AlertCircle, Copy } from "lucide-react";\`).
 - Ensure all interactive elements feel alive, modern, responsive, and state of the art.
 
-${itemContext}`,
+${itemContext}`;
+  };
+
+  const sendMessageWithContext = async (payload: any, options?: any) => {
+    const enabledMemories = memories
+      .filter((m) => m.enabled && m.content.trim())
+      .slice(0, 24)
+      .map(({ title, content, category, tags }) => ({ title, content, category, tags }));
+
+    await sendMessage(payload, {
+      ...options,
+      body: {
+        ...options?.body,
+        skipSave: true,
+        memories: enabledMemories,
+        systemPrompt: getSystemPrompt(),
       },
     });
   };
@@ -163,69 +249,40 @@ ${itemContext}`,
       .slice(0, 24)
       .map(({ title, content, category, tags }) => ({ title, content, category, tags }));
 
-    const itemContext = data?.item ? `
-CURRENT WORKSPACE CONTEXT:
-ID: ${id}
-Title: ${title}
-Tags: ${data.item.tags?.join(", ") || "None"}
-Workspace Files (JSON Format):
-${content}
-` : "";
-
     regenerate({
       ...options,
       body: {
         ...options?.body,
+        skipSave: true,
         memories: enabledMemories,
-        systemPrompt: `You are Jarvis, an expert full-stack React developer assistant integrated into a VS Code-style Multi-File React Sandbox workspace.
-The user is working on the workspace files provided in the CURRENT WORKSPACE CONTEXT below.
-
-CRITICAL WORKSPACE FORMAT & TOOLS:
-- Virtual File Structure: Files are stored as a JSON map of filename to code string in the document's 'content' attribute.
-- Fast Updates: To add or edit a specific file (e.g., 'app.tsx' or 'components/Header.tsx'), call 'updateStudioFile(documentId, filename, content)'. This is fast and precise.
-- Full Workspace Updates: To replace the whole file tree, call 'updateStudioDocument(id, { content: stringifiedJsonFileMap })'.
-- Exact Text Edits: To replace a substring, call 'editStudioDocumentSection(id, targetText, newText)'.
-- Always ensure 'app.tsx' exists and exports a default React component ('export default function App() { ... }').
-- Modularization: Split complex logic across multiple files using standard ESM imports (e.g. 'import Header from "./components/Header";').
-
-WORKFLOW & AUTOMATION INTEGRATION:
-- You can discover available workflows and their expected parameter names by calling the 'listWorkflows' tool.
-- To execute workflows inside React components:
-  \`\`\`tsx
-  import { useWorkflow } from '@studio/workflow';
-  
-  export default function App() {
-    const [query, setQuery] = useState('');
-    const { execute, loading, data, error } = useWorkflow("workflow-id-or-title");
-
-    const handleRun = async () => {
-      await execute({ input: query }); // or execute(query)
-    };
-    ...
-  \`\`\`
-- Always render loading indicators (skeletons / spinners), handle errors gracefully, and render the output data cleanly (cards, tables, formatted JSON views).
-
-PERSISTENT KEY-VALUE DATABASE:
-- Access persistent client storage via \`window.studioDb\`:
-  - \`await window.studioDb.get(key)\`
-  - \`await window.studioDb.set(key, value)\`
-  - \`await window.studioDb.getAll()\`
-  - \`await window.studioDb.remove(key)\`
-
-PREMIUM DESIGN & STYLING GUIDELINES:
-- Use Tailwind CSS utility classes inside your JSX elements exclusively. Do NOT use inline <style> tags.
-- Use polished dark themes (\`bg-zinc-950\`, \`bg-zinc-900/50\`, \`border-zinc-800/80\`), glowing gradients (\`bg-gradient-to-r from-indigo-500 to-purple-600\`), glassmorphism (\`backdrop-blur-xl\`), and smooth interactive hover effects.
-- Use 'lucide-react' for all icons (e.g., \`import { Sparkles, Activity, Play, CheckCircle, Database, Search, RefreshCw, AlertCircle, Copy } from "lucide-react";\`).
-- Ensure all interactive elements feel alive, modern, responsive, and state of the art.
-
-${itemContext}`,
+        systemPrompt: getSystemPrompt(),
       },
     });
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     chat.setMessages([]);
+    await deleteLocalChat(`studio-chat-${id}`);
   };
+
+  useEffect(() => {
+    loadLocalChat(`studio-chat-${id}`).then((msgs) => {
+      if (msgs.length > 0) {
+        chat.setMessages(msgs);
+      }
+      setChatLoaded(true);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (chatLoaded) {
+      if (messages.length > 0) {
+        saveLocalChat(`studio-chat-${id}`, messages);
+      } else {
+        deleteLocalChat(`studio-chat-${id}`);
+      }
+    }
+  }, [messages, chatLoaded, id]);
 
   useEffect(() => {
     if (data?.item) {
@@ -428,7 +485,7 @@ ${itemContext}`,
                 <SandboxEditor
                   id={id}
                   key={id}
-                  initialData={content}
+                  initialData={content || data?.item?.content || ""}
                   onChange={(json) => setContent(json)}
                   readOnly={!isEditing}
                   layoutMode={layoutMode}
@@ -477,6 +534,7 @@ ${itemContext}`,
               itemTitle={title || "Untitled Document"}
               itemType={data?.item?.type}
               selectedContext={selectedContext}
+              setMessages={chat.setMessages}
             />
           </motion.div>
         )}

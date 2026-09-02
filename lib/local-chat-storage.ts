@@ -1,4 +1,4 @@
-import { Message } from 'ai';
+import type { UIMessage } from 'ai';
 
 const DB_NAME = 'AssistantLocalDB';
 const DB_VERSION = 1;
@@ -29,7 +29,7 @@ function getDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveLocalChat(id: string, messages: Message[]): Promise<void> {
+export async function saveLocalChat(id: string, messages: UIMessage[]): Promise<void> {
   try {
     const db = await getDB();
     return new Promise((resolve, reject) => {
@@ -52,7 +52,7 @@ export async function saveLocalChat(id: string, messages: Message[]): Promise<vo
   }
 }
 
-export async function loadLocalChat(id: string): Promise<Message[]> {
+export async function loadLocalChat(id: string): Promise<UIMessage[]> {
   try {
     const db = await getDB();
     return new Promise((resolve, reject) => {

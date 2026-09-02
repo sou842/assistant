@@ -242,7 +242,10 @@ export async function POST(req: Request) {
     let activeToolNames: string[] = ['saveMemory', 'getWeather', 'getTime', 'callApi', 'browserControl', 'webSearch']; // Base tools always included
     
     // Always include studio tools if we are in the studio context
-    if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT") || finalSystemPrompt.includes("Studio Workspaces")) {
+    if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT")) {
+      // In active workspace sidepanel: ONLY allow editing tools (never create new document)
+      activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'loadDesignSystem', 'listWorkflows');
+    } else if (finalSystemPrompt.includes("Studio Workspaces")) {
       activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'createStudioDocument', 'loadDesignSystem', 'listWorkflows');
     } else if (finalSystemPrompt.includes("CURRENT ITEM CONTEXT")) {
       activeToolNames.push('updateStudioDocument', 'updateStudioFile', 'editStudioDocumentSection', 'loadDesignSystem', 'listWorkflows');
@@ -253,6 +256,7 @@ export async function POST(req: Request) {
       const routingModelId = model === 'gpt-4o-mini' ? 'gpt-4o-mini' : model === 'gemini-2.5-flash' ? 'gemini-2.5-flash' : 'mistral-small-latest';
       
       const availableToolsContext = Object.entries(tools)
+        .filter(([name]) => !finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT") || name !== 'createStudioDocument')
         .map(([name, tool]) => `- ${name}: ${(tool as any).description || 'No description available'}`)
         .join('\n');
  
@@ -287,6 +291,11 @@ export async function POST(req: Request) {
     } catch (e) {
       console.warn('Pre-routing failed, falling back to all tools', e);
       activeToolNames = Object.keys(tools);
+    }
+
+    // Strict Enforcement: Never include createStudioDocument when editing an existing studio workspace in the sidepanel
+    if (finalSystemPrompt.includes("CURRENT WORKSPACE CONTEXT")) {
+      activeToolNames = activeToolNames.filter((name) => name !== 'createStudioDocument');
     }
 
     const activeTools: Record<string, any> = {};

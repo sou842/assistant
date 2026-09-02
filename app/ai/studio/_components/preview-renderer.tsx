@@ -97,8 +97,13 @@ export function PreviewRenderer({ id, files, entryPoint = "app.tsx", layoutMode 
         const ext = path.split(".").pop() ?? "";
         if (!["js", "jsx", "ts", "tsx"].includes(ext)) continue;
 
+        let cleanSrc = src;
+        if (cleanSrc.trim().startsWith("```")) {
+          cleanSrc = cleanSrc.trim().replace(/^```(?:tsx|jsx|ts|js|html)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+        }
+
         try {
-          const result = Babel.transform(src, {
+          const result = Babel.transform(cleanSrc, {
             filename: path,
             presets: [
               // classic: emits React.createElement (no jsx-runtime import)

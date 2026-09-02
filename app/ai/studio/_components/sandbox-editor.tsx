@@ -15,6 +15,8 @@ import {
   X,
   FileEdit,
   Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { PreviewRenderer } from "./preview-renderer";
 import { DatabasePanel } from "./database-panel";
@@ -101,7 +103,7 @@ function buildTree(files: Record<string, string>): TreeNode[] {
   return root;
 }
 
-export function SandboxEditor({ id, initialData = "", onChange, readOnly = false, layoutMode = "preview", setLayoutMode = () => {} }: SandboxEditorProps) {
+export function SandboxEditor({ id, initialData = "", onChange, readOnly = false, layoutMode = "preview", setLayoutMode = () => { } }: SandboxEditorProps) {
   const [files, setFiles] = useState<Record<string, string>>({});
   const [activeFile, setActiveFile] = useState<string>("app.tsx");
   const [openTabs, setOpenTabs] = useState<string[]>(["app.tsx"]);
@@ -115,6 +117,20 @@ export function SandboxEditor({ id, initialData = "", onChange, readOnly = false
   const [createInputVal, setCreateInputVal] = useState("");
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [renameInputVal, setRenameInputVal] = useState("");
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Keyboard shortcut Ctrl+B / Cmd+B to toggle files sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setIsSidebarCollapsed((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => ({
@@ -317,17 +333,40 @@ export default function App() {
     };
 
     if (initialData && initialData.trim()) {
-      if (initialData.trim().startsWith("{")) {
+      let raw = initialData.trim();
+      
+      // Strip markdown code fences if present (e.g. ```json ... ``` or ```tsx ... ```)
+      if (raw.startsWith("```")) {
+        raw = raw.replace(/^```(?:json|tsx|jsx|ts|js|html)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+      }
+
+      if (raw.startsWith("{")) {
         try {
-          parsedFiles = JSON.parse(initialData);
+          let parsed = JSON.parse(raw);
+          if (typeof parsed === "string") {
+            try { parsed = JSON.parse(parsed); } catch {}
+          }
+          if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+            const cleaned: Record<string, string> = {};
+            for (const [key, val] of Object.entries(parsed)) {
+              let fileStr = typeof val === "string" ? val : JSON.stringify(val, null, 2);
+              if (fileStr.trim().startsWith("```")) {
+                fileStr = fileStr.trim().replace(/^```(?:tsx|jsx|ts|js|css|html|json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+              }
+              cleaned[key] = fileStr;
+            }
+            if (Object.keys(cleaned).length > 0) {
+              parsedFiles = cleaned;
+            }
+          }
         } catch (e) {
           console.error("Failed to parse sandbox files JSON:", e);
         }
       } else {
-        const isReactCode = /import\s+React|export\s+default|function\s+\w+|const\s+\w+\s*=\s*\(/i.test(initialData);
+        const isReactCode = /import\s+[\s\S]+?from|export\s+default|function\s+\w+|const\s+\w+\s*=\s*\(/i.test(raw);
         if (isReactCode) {
           parsedFiles = {
-            "app.tsx": initialData,
+            "app.tsx": raw,
             "styles.css": `/* Custom styles */\nbody {\n  background-color: #09090b;\n}`,
           };
         } else {
@@ -338,11 +377,11 @@ export default function App() {
 export default function App() {
   return (
     <div className="p-6 bg-zinc-950 text-zinc-50 min-h-screen">
-      <div dangerouslySetInnerHTML={{ __html: \`${initialData.replace(/`/g, "\\`").replace(/\${/g, "\\${")}\` }} />
+      <div dangerouslySetInnerHTML={{ __html: \`${raw.replace(/`/g, "\\`").replace(/\${/g, "\\${")}\` }} />
     </div>
   );
 }`,
-            "legacy.html": initialData,
+            "legacy.html": raw,
           };
         }
       }
@@ -383,7 +422,7 @@ export default function App() {
     }
     const cleanName = name.trim();
     let targetPath = parentPath ? `${parentPath}/${cleanName}` : cleanName;
-    
+
     if (type === "folder") {
       targetPath += "/";
       if (files[targetPath] !== undefined) {
@@ -442,7 +481,7 @@ export default function App() {
     if (isFolder) {
       const oldPrefix = oldPath + "/";
       const newPrefix = newPath + "/";
-      
+
       if (Object.keys(files).some(k => k.startsWith(newPrefix))) {
         toast.error("Folder already exists");
         return;
@@ -456,7 +495,7 @@ export default function App() {
           delete updated[key];
         }
       }
-      
+
       if (updated[oldPath + "/"] !== undefined) {
         updated[newPath + "/"] = updated[oldPath + "/"];
         delete updated[oldPath + "/"];
@@ -469,7 +508,7 @@ export default function App() {
 
       setOpenTabs(prev => prev.map(t => t.startsWith(oldPrefix) ? newPrefix + t.slice(oldPrefix.length) : t));
       setActiveFile(prev => prev.startsWith(oldPrefix) ? newPrefix + prev.slice(oldPrefix.length) : prev);
-      
+
       setExpandedFolders(prev => {
         const next = { ...prev };
         if (next[oldPath]) {
@@ -600,11 +639,10 @@ export default function App() {
                 }
               }
             }}
-            className={`group flex items-center justify-between py-1.5 px-2 rounded-lg text-xs font-mono transition-all duration-150 cursor-pointer select-none ${
-              !node.isFolder && isActive
-                ? "bg-app-primary/10 text-app-primary font-semibold border-l-2 border-l-app-primary/60 rounded-l-none"
-                : "hover:bg-zinc-900/50 text-zinc-400 hover:text-zinc-200"
-            }`}
+            className={`group flex items-center justify-between py-1.5 px-2 rounded-lg text-xs font-mono transition-all duration-150 cursor-pointer select-none ${!node.isFolder && isActive
+              ? "bg-app-primary/10 text-app-primary font-semibold border-l-2 border-l-app-primary/60 rounded-l-none"
+              : "hover:bg-zinc-900/50 text-zinc-400 hover:text-zinc-200"
+              }`}
           >
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {node.isFolder ? (
@@ -741,73 +779,94 @@ export default function App() {
   return (
     <div className="flex w-full h-[calc(100vh-64px)] border-t border-b-app-border-default overflow-hidden text-zinc-300">
       {/* File Tree Sidebar */}
-      <div className="w-64 border-r border-zinc-800/80 backdrop-blur-md flex flex-col shrink-0">
-        <div className="h-11 flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
-          <span className="text-xs font-medium tracking-wider text-zinc-500">
-            Files
-          </span>
-          {!readOnly && (
+      {isSidebarCollapsed ? (
+        <div className="w-10 border-r border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md flex flex-col items-center py-2 shrink-0 select-none transition-all duration-200">
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="p-2 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 transition cursor-pointer"
+            title="Expand Files Panel (Ctrl+B)"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="w-64 border-r border-zinc-800/80 backdrop-blur-md flex flex-col shrink-0 transition-all duration-200">
+          <div className="h-11 flex items-center justify-between px-3 py-2 border-b border-zinc-800/60">
+            <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase px-1">
+              Files
+            </span>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => {
-                  setCreateParentPath("");
-                  setCreateType("file");
-                  setCreateInputVal("");
-                }}
-                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
-                title="New File"
-              >
-                <Plus size={16} />
-              </button>
-              <button
-                onClick={() => {
-                  setCreateParentPath("");
-                  setCreateType("folder");
-                  setCreateInputVal("");
-                }}
-                className="p-1 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
-                title="New Folder"
-              >
-                <FolderPlus size={15} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* File List / Tree root */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {createParentPath === "" && createType !== null && (
-            <div
-              className="flex items-center gap-1.5 py-1 px-2"
-            >
-              <span className="w-3.5 h-3.5" />
-              {createType === "folder" ? (
-                <Folder size={14} className="text-zinc-500" />
-              ) : (
-                <File size={14} className="text-zinc-500" />
+              {!readOnly && (
+                <>
+                  <button
+                    onClick={() => {
+                      setCreateParentPath("");
+                      setCreateType("file");
+                      setCreateInputVal("");
+                    }}
+                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                    title="New File"
+                  >
+                    <Plus size={15} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateParentPath("");
+                      setCreateType("folder");
+                      setCreateInputVal("");
+                    }}
+                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer"
+                    title="New Folder"
+                  >
+                    <FolderPlus size={14} />
+                  </button>
+                </>
               )}
-              <input
-                type="text"
-                value={createInputVal}
-                onChange={(e) => setCreateInputVal(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleCreateSubmit("", createType!, createInputVal);
-                  } else if (e.key === "Escape") {
-                    setCreateType(null);
-                  }
-                }}
-                onBlur={() => handleCreateSubmit("", createType!, createInputVal)}
-                autoFocus
-                onClick={(e) => e.stopPropagation()}
-                placeholder={createType === "folder" ? "Folder name" : "File name"}
-                className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full"
-              />
+              <button
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition active:scale-95 cursor-pointer ml-0.5"
+                title="Collapse Files (Ctrl+B)"
+              >
+                <PanelLeftClose size={15} />
+              </button>
             </div>
-          )}
-          {renderTreeNodes(treeData)}
+          </div>
+
+          {/* File List / Tree root */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+            {createParentPath === "" && createType !== null && (
+              <div
+                className="flex items-center gap-1.5 py-1 px-2"
+              >
+                <span className="w-3.5 h-3.5" />
+                {createType === "folder" ? (
+                  <Folder size={14} className="text-zinc-500" />
+                ) : (
+                  <File size={14} className="text-zinc-500" />
+                )}
+                <input
+                  type="text"
+                  value={createInputVal}
+                  onChange={(e) => setCreateInputVal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleCreateSubmit("", createType!, createInputVal);
+                    } else if (e.key === "Escape") {
+                      setCreateType(null);
+                    }
+                  }}
+                  onBlur={() => handleCreateSubmit("", createType!, createInputVal)}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder={createType === "folder" ? "Folder name" : "File name"}
+                  className="rounded px-1.5 py-0.5 text-xs text-zinc-200 outline-none w-full"
+                />
+              </div>
+            )}
+            {renderTreeNodes(treeData)}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Editor & Preview Workspace */}
       <div className="flex-1 flex min-w-0">
@@ -815,18 +874,17 @@ export default function App() {
         {layoutMode !== "database" && (
           <div className="flex-1 flex flex-col min-w-0">
             {/* Tabs */}
-            <div className="flex bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
-              {openTabs.map((tab) => {
+            <div className="flex items-center bg-zinc-950 border-b border-zinc-800/60 overflow-x-auto scrollbar-none h-11 shrink-0">
+              {openTabs?.map((tab) => {
                 const isActive = activeFile === tab;
                 return (
                   <div
                     key={tab}
                     onClick={() => setActiveFile(tab)}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${
-                      isActive
-                        ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
-                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-mono border-r border-zinc-900 cursor-pointer select-none transition-all duration-150 h-full relative ${isActive
+                      ? "bg-zinc-900/40 text-zinc-200 border-b-2 border-b-app-primary"
+                      : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/20"
+                      }`}
                   >
                     <span>{tab}</span>
                     {tab !== "app.tsx" && (
@@ -877,11 +935,11 @@ export default function App() {
         {/* Live Preview Panel */}
         {layoutMode === "preview" && (
           <div className="flex-1 flex flex-col bg-zinc-950 p-4 min-w-0">
-            <PreviewRenderer 
+            <PreviewRenderer
               id={id}
-              files={files} 
-              entryPoint="app.tsx" 
-              layoutMode={layoutMode} 
+              files={files}
+              entryPoint="app.tsx"
+              layoutMode={layoutMode}
               setLayoutMode={setLayoutMode}
             />
           </div>
