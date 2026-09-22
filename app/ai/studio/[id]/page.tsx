@@ -393,16 +393,16 @@ ${itemContext}`;
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={`w-full max-w-md bg-transparent px-2.5 py-1 text-base font-semibold text-app-text-primary outline-none rounded-full transition-all duration-200 ${
+              className={`w-full max-w-[160px] sm:max-w-xs md:max-w-md bg-transparent px-2 py-1 text-sm sm:text-base font-semibold text-app-text-primary outline-none rounded-lg transition-all duration-200 truncate ${
                 isEditing
                   ? "bg-app-surface-glass-soft focus:border-brand-primary/55 focus:ring-1 focus:ring-brand-primary/10"
                   : "cursor-default"
               }`}
-              placeholder="Enter document title..."
+              placeholder="Document title..."
               readOnly={!isEditing}
             />
           }
-          className="hidden md:sticky sm:block"
+          className="sticky top-0 z-30"
           actions={
             <div className="flex items-center gap-2">
               {/* <Button
