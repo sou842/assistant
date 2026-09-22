@@ -640,45 +640,45 @@ function AIPageContent() {
           openCompanion={handleOpenCompanion}
         />
 
-        <div className={`overflow-y-auto px-4 py-10 mb-40 scroll-smooth scrollbar-hide ${isEmpty ? 'flex h-full items-center ' : 'flex-1'}`} ref={scrollRef}>
+        <div className={`overflow-y-auto px-4 py-10 scroll-smooth scrollbar-hide ${isEmpty ? 'flex h-full items-center ' : 'flex-1 mb-40'}`} ref={scrollRef}>
           <div className="mx-auto w-full max-w-3xl space-y-12 pb-10">
-              {isEmpty ? (
-                  <EmptyState setInput={setInput}>
-                    <ChatInput
-                      className="w-full relative z-20"
-                      input={input}
-                      setInput={setInput}
-                      isLoading={isLoading}
-                      sendMessage={sendMessageWithMemory}
-                      stop={stop}
-                      selectedModel={selectedModel}
-                      setSelectedModel={setSelectedModel}
-                      selectedModelData={selectedModelData}
-                      modelSelectorOpen={modelSelectorOpen}
-                      setModelSelectorOpen={setModelSelectorOpen}
-                      onShowGallerySidePanel={(show, search) => {
-                        setShowGallerySidePanel(show);
-                        if (search !== undefined) setGallerySearchQuery(search);
-                      }}
-                      customFileToAttach={customFileToAttach}
-                      onCustomFileAttached={() => setCustomFileToAttach(null)}
-                    />
-                  </EmptyState>
-              ) : (
-                  <MessageList
-                    messages={renderMessages}
-                    isLoading={isLoading}
-                    copyToClipboard={copyToClipboard}
-                    onSaveMemory={saveMessageToMemory}
-                    regenerate={regenerateWithMemory}
-                    selectedModel={selectedModel}
-                    onEditMessage={onEditMessage}
-                    onDeleteMessage={deleteMessage}
-                    scrollContainerRef={scrollRef}
-                    debugPerf={PERF_DEBUG}
-                    browserCommandStates={browserCommandStates}
-                  />
-              )}
+            {isEmpty ? (
+              <EmptyState setInput={setInput}>
+                <ChatInput
+                  className="w-full relative z-20"
+                  input={input}
+                  setInput={setInput}
+                  isLoading={isLoading}
+                  sendMessage={sendMessageWithMemory}
+                  stop={stop}
+                  selectedModel={selectedModel}
+                  setSelectedModel={setSelectedModel}
+                  selectedModelData={selectedModelData}
+                  modelSelectorOpen={modelSelectorOpen}
+                  setModelSelectorOpen={setModelSelectorOpen}
+                  onShowGallerySidePanel={(show, search) => {
+                    setShowGallerySidePanel(show);
+                    if (search !== undefined) setGallerySearchQuery(search);
+                  }}
+                  customFileToAttach={customFileToAttach}
+                  onCustomFileAttached={() => setCustomFileToAttach(null)}
+                />
+              </EmptyState>
+            ) : (
+              <MessageList
+                messages={renderMessages}
+                isLoading={isLoading}
+                copyToClipboard={copyToClipboard}
+                onSaveMemory={saveMessageToMemory}
+                regenerate={regenerateWithMemory}
+                selectedModel={selectedModel}
+                onEditMessage={onEditMessage}
+                onDeleteMessage={deleteMessage}
+                scrollContainerRef={scrollRef}
+                debugPerf={PERF_DEBUG}
+                browserCommandStates={browserCommandStates}
+              />
+            )}
           </div>
         </div>
 

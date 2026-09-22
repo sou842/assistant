@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Brain, Settings as SettingsIcon, User, History, X, Search, Shield, CreditCard, Zap, Edit3, Clock, Terminal, Wrench, Plug } from "lucide-react";
+import { Brain, Settings as SettingsIcon, User, History, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GeneralTab } from "./settings/general-tab";
 import { MemoryTab } from "./settings/memory-tab";
@@ -81,8 +81,8 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted" />
                 <input 
                   type="text" 
-                  placeholder="Search" 
-                  className="w-full bg-app-surface-elevated text-app-text-primary text-[13px] rounded-full pl-9 pr-3 py-1.5 outline-none border border-transparent focus:border-app-border-default transition-colors" 
+                  placeholder="Search settings..." 
+                  className="w-full bg-app-surface-elevated text-app-text-primary text-[13px] rounded-full pl-9 pr-3 py-1.5 outline-none border border-transparent focus:border-app-border-default/40 transition-colors" 
                 />
               </div>
             </div>
@@ -101,13 +101,13 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id as SettingTab)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-full text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
+                          "flex items-center gap-3 px-3.5 py-2 rounded-xl text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
                           isActive
-                            ? "bg-[#2a2a2a] text-app-text-primary font-medium"
-                            : "text-[#a0a0a0] hover:bg-app-surface-elevated hover:text-app-text-primary"
+                            ? "bg-app-surface-elevated text-app-text-primary font-medium shadow-xs border border-app-border-default/20"
+                            : "text-app-text-muted hover:bg-app-surface-elevated/60 hover:text-app-text-primary"
                         )}
                       >
-                        <Icon className={cn("size-4", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
+                        <Icon className={cn("size-4 shrink-0", isActive ? "text-brand-primary" : "text-app-text-muted")} />
                         {tab.label}
                       </button>
                     );
@@ -127,13 +127,13 @@ export function SettingsModal({ children }: { children: React.ReactNode }) {
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id as SettingTab)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-full text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
+                          "flex items-center gap-3 px-3.5 py-2 rounded-xl text-[13px] transition-all cursor-pointer whitespace-nowrap outline-none",
                           isActive
-                            ? "bg-[#2a2a2a] text-app-text-primary font-medium"
-                            : "text-[#a0a0a0] hover:bg-app-surface-elevated hover:text-app-text-primary"
+                            ? "bg-app-surface-elevated text-app-text-primary font-medium shadow-xs border border-app-border-default/20"
+                            : "text-app-text-muted hover:bg-app-surface-elevated/60 hover:text-app-text-primary"
                         )}
                       >
-                        <Icon className={cn("size-4", isActive ? "text-app-text-primary" : "text-[#a0a0a0]")} />
+                        <Icon className={cn("size-4 shrink-0", isActive ? "text-brand-primary" : "text-app-text-muted")} />
                         {tab.label}
                       </button>
                     );
