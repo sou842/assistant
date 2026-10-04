@@ -49,6 +49,12 @@ export default function StudioEditorPage() {
     indexRef.current = historyIndex;
   }, [history, historyIndex]);
 
+  useEffect(() => {
+    if (title) {
+      document.title = title;
+    }
+  }, [title]);
+
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
@@ -289,6 +295,10 @@ ${itemContext}`;
       const newTitle = data.item.title;
       const newContent = data.item.content || "";
 
+      if (newTitle) {
+        document.title = newTitle;
+      }
+
       if (historyRef.current.length === 0) {
         setTitle(newTitle);
         setContent(newContent);
@@ -301,7 +311,7 @@ ${itemContext}`;
       if (!currentEntry || currentEntry.title !== newTitle || currentEntry.content !== newContent) {
         setTitle(newTitle);
         setContent(newContent);
-        
+
         const newHistory = historyRef.current.slice(0, indexRef.current + 1);
         newHistory.push({ title: newTitle, content: newContent });
         setHistory(newHistory);
@@ -393,11 +403,10 @@ ${itemContext}`;
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={`w-full max-w-[160px] sm:max-w-xs md:max-w-md bg-transparent px-2 py-1 text-sm sm:text-base font-semibold text-app-text-primary outline-none rounded-lg transition-all duration-200 truncate ${
-                isEditing
-                  ? "bg-app-surface-glass-soft focus:border-brand-primary/55 focus:ring-1 focus:ring-brand-primary/10"
-                  : "cursor-default"
-              }`}
+              className={`w-full max-w-[160px] sm:max-w-xs md:max-w-md bg-transparent px-2 py-1 text-sm sm:text-base font-semibold text-app-text-primary outline-none rounded-lg transition-all duration-200 truncate ${isEditing
+                ? "bg-app-surface-glass-soft focus:border-brand-primary/55 focus:ring-1 focus:ring-brand-primary/10"
+                : "cursor-default"
+                }`}
               placeholder="Document title..."
               readOnly={!isEditing}
             />
@@ -435,11 +444,10 @@ ${itemContext}`;
                     <button
                       key={mode}
                       onClick={() => setLayoutMode(mode)}
-                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
-                        layoutMode === mode
-                          ? "bg-app-primary/20 text-white shadow-md"
-                          : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass"
-                      }`}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer ${layoutMode === mode
+                        ? "bg-app-primary/20 text-white shadow-md"
+                        : "text-app-text-secondary hover:text-app-text-primary hover:bg-app-surface-glass"
+                        }`}
                       title={mode.charAt(0).toUpperCase() + mode.slice(1)}
                     >
                       <Icon size={14} />
